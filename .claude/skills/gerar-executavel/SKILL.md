@@ -1,6 +1,6 @@
 ---
 name: gerar-executavel
-description: Gera os executáveis do Prumo para Windows (prumo.exe e prumo-app.exe) com PyInstaller, localmente pelo build.ps1 ou pelo GitHub Actions ao criar uma tag de versão. Use quando pedirem para gerar, atualizar ou publicar o executável do Prumo.
+description: Gera os executáveis do Prumo para Windows (prumo.exe e prumo-app.exe) com PyInstaller, localmente pelo build.ps1 ou pelo GitHub Actions a cada push na main (Release da versão). Use quando pedirem para gerar, atualizar ou publicar o executável do Prumo.
 ---
 
 # Gerar o executável do Prumo
@@ -15,11 +15,11 @@ description: Gera os executáveis do Prumo para Windows (prumo.exe e prumo-app.e
 
 ## Opção B — pelo GitHub Actions (sem precisar de Windows)
 
-1. Atualize `VERSAO` em `prumo_cli/util.py`, faça commit e crie a tag: `git tag v0.2.0 && git push origin v0.2.0`.
+1. Para uma versão nova, atualize `VERSAO` em `prumo_cli/util.py`. Faça commit e push na `main`.
 2. O workflow `ci` roda os testes (Linux, Windows e macOS), testa o módulo PowerShell (5.1 e 7), gera os executáveis,
-   testa o `prumo.exe` (criar projeto, validar, hooks) e publica os dois `.exe` na Release da tag.
-3. Sem tag (push na main ou execução manual), os executáveis ficam como artefato `prumo-windows` da execução:
-   `gh run download <id> -n prumo-windows`.
+   testa o `prumo.exe` (criar projeto, validar, hooks) e publica ou atualiza a Release `v<VERSAO>` com os dois `.exe`.
+3. Download direto: `https://github.com/tombfarias/prumo/releases/latest/download/prumo.exe` (e `prumo-app.exe`).
+   Também ficam como artefato `prumo-windows` da execução: `gh run download <id> -n prumo-windows`.
 
 ## Cuidados
 

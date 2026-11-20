@@ -76,10 +76,21 @@ jobs:
           path: |
             dist/prumo.exe
             dist/prumo-app.exe
+      - name: Versão
+        id: versao
+        shell: pwsh
+        run: |
+          $v = python -c "import sys; sys.path.insert(0, '.'); from prumo_cli.util import VERSAO; print(VERSAO)"
+          "versao=$v" >> $env:GITHUB_OUTPUT
+      # Cada push na main publica (ou atualiza) a Release da versão definida em prumo_cli/util.py.
       - name: Publicar release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.versao.outputs.versao }}
+          target_commitish: ${{ github.sha }}
+          name: Prumo ${{ steps.versao.outputs.versao }}
+          make_latest: true
           files: |
             dist/prumo.exe
             dist/prumo-app.exe

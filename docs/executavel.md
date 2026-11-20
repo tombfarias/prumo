@@ -11,12 +11,18 @@ Os dois embutem os templates, a interface e o Python. Devem ficar na mesma pasta
 
 ## Baixar
 
-Cada tag de versão (`v*`) gera uma *Release* no GitHub com os dois arquivos. Execuções na branch `main` deixam os executáveis como artefato `prumo-windows` da execução do workflow:
+Cada push na branch `main` publica (ou atualiza) a *Release* da versão definida em `prumo_cli/util.py` (`VERSAO`), com os dois arquivos. Links diretos da versão mais recente:
+
+- https://github.com/tombfarias/prumo/releases/latest/download/prumo.exe
+- https://github.com/tombfarias/prumo/releases/latest/download/prumo-app.exe
 
 ```powershell
-gh run list --workflow ci --limit 5
-gh run download <id> --name prumo-windows --dir D:\SistemaCodigo
+cd D:\SistemaCodigo
+Invoke-WebRequest https://github.com/tombfarias/prumo/releases/latest/download/prumo.exe -OutFile prumo.exe
+Invoke-WebRequest https://github.com/tombfarias/prumo/releases/latest/download/prumo-app.exe -OutFile prumo-app.exe
 ```
+
+Os executáveis também ficam como artefato `prumo-windows` de cada execução do workflow (`gh run download <id> --name prumo-windows`).
 
 ## Gerar na sua máquina
 
@@ -33,9 +39,9 @@ Linux/macOS: `./build.sh` (gera `dist/prumo`).
 1. **testes**: suíte completa no Linux, Windows e macOS.
 2. **powershell**: testa o módulo `Prumo.psm1` no PowerShell 7 e no Windows PowerShell 5.1 (acentos, aspas, JSON).
 3. **executavel**: gera os `.exe`, cria um projeto com o `prumo.exe`, valida, gera a rastreabilidade e confere os hooks (`prumo.exe hook guarda_comandos` bloqueando `rm -rf /`).
-4. Em tags `v*`, publica a Release.
+4. Em todo push na `main`, publica ou atualiza a Release `v<VERSAO>` e a marca como a mais recente.
 
-Para lançar uma versão: atualize `VERSAO` em `prumo_cli/util.py`, faça commit e `git tag v0.2.0 && git push origin v0.2.0`.
+Para lançar uma versão nova: atualize `VERSAO` em `prumo_cli/util.py` e faça push na `main`.
 
 ## Observações
 
