@@ -1,0 +1,29 @@
+{
+  "id": "site-institucional",
+  "nome": "Site institucional / landing page",
+  "descricao": "Site de apresentação, landing page de campanha ou portfólio, com formulário de contato e foco em SEO e desempenho.",
+  "stack": "Astro + Tailwind CSS (alternativa: Next.js com exportação estática; WordPress se o cliente precisar editar o conteúdo sozinho)",
+  "documentos": [
+    "00-briefing",
+    "01-visao",
+    "02-requisitos",
+    "05-interface",
+    "07-arquitetura",
+    "08-backlog",
+    "09-plano-de-testes",
+    "10-proposta-comercial",
+    "11-entrega",
+    "12-seguranca"
+  ],
+  "pastas": [
+    "src",
+    "public"
+  ],
+  "figma": true,
+  "comandos_sugeridos": {
+    "formatar": "npx prettier --write {arquivo}",
+    "lint": "",
+    "testar": "npm run build"
+  },
+  "convencoes": "site-institucional.md"
+}

@@ -1,0 +1,36 @@
+{
+  "id": "api-rest",
+  "nome": "API REST / Backend",
+  "descricao": "Serviço backend com API HTTP/JSON, banco relacional e autenticação. Sem interface própria.",
+  "stack": "Node.js 22 LTS + TypeScript + Fastify + Prisma + PostgreSQL (alternativa: Python 3.12 + FastAPI + SQLAlchemy/Alembic)",
+  "documentos": [
+    "00-briefing",
+    "01-visao",
+    "02-requisitos",
+    "03-casos-de-uso",
+    "04-uml/classes",
+    "04-uml/sequencia",
+    "04-uml/estados",
+    "04-uml/atividades",
+    "04-uml/componentes",
+    "04-uml/implantacao",
+    "06-banco-de-dados",
+    "07-arquitetura",
+    "08-backlog",
+    "09-plano-de-testes",
+    "10-proposta-comercial",
+    "11-entrega",
+    "12-seguranca"
+  ],
+  "pastas": [
+    "src",
+    "tests"
+  ],
+  "figma": false,
+  "comandos_sugeridos": {
+    "formatar": "npx prettier --write {arquivo}",
+    "lint": "npx eslint {arquivo}",
+    "testar": "npm test"
+  },
+  "convencoes": "api-rest.md"
+}

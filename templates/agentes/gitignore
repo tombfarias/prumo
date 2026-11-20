@@ -1,0 +1,31 @@
+# Segredos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Prumo: registros locais (atividade, histórico do Claude)
+.prumo/
+
+# Claude Code: configurações pessoais
+.claude/settings.local.json
+
+# Dependências e builds
+node_modules/
+dist/
+build/
+.next/
+.astro/
+coverage/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

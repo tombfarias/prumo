@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+# executáveis vão para as Releases do GitHub
+prumo.exe
+prumo-app.exe
+# configurações pessoais e estado local
+config/freelancer.json
+config/projetos.json
+config/.janela/
+.prumo/

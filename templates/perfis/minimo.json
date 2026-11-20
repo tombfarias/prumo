@@ -1,0 +1,22 @@
+{
+  "id": "minimo",
+  "nome": "Mínimo (projeto pequeno ou exploratório)",
+  "descricao": "Só o essencial: briefing, visão, requisitos e backlog. Bom para orçamentos rápidos e pequenos ajustes.",
+  "stack": "[PREENCHER: definir com o cliente]",
+  "documentos": [
+    "00-briefing",
+    "01-visao",
+    "02-requisitos",
+    "08-backlog",
+    "10-proposta-comercial",
+    "12-seguranca"
+  ],
+  "pastas": [],
+  "figma": false,
+  "comandos_sugeridos": {
+    "formatar": "",
+    "lint": "",
+    "testar": ""
+  },
+  "convencoes": "minimo.md"
+}

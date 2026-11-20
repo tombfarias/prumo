@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prumo</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cline x1='16' y1='2' x2='16' y2='14' stroke='%236b8f7d' stroke-width='2.5' stroke-linecap='round'/%3E%3Cpath d='M16 13c4 4 6 7 6 10a6 6 0 0 1-12 0c0-3 2-6 6-10z' fill='%236b8f7d'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f6f5f2;--sup:#ffffff;--sup2:#fbfaf8;--borda:#ebe8e2;--texto:#2b2a28;--suave:#8a867f;--fraco:#b9b5ad;
+  --acento:#6b8f7d;--acento-2:#557565;--acento-bg:#e9f0ec;--ambar:#b8893f;--ambar-bg:#f7efe1;
+  --vermelho:#b86464;--vermelho-bg:#f6e8e6;--azul:#6a84a8;--azul-bg:#e8eef6;
+  --sombra:0 1px 2px rgba(40,36,30,.04),0 4px 18px rgba(40,36,30,.05);
+  --raio:14px;--raio-p:10px;--t:180ms cubic-bezier(.2,.7,.2,1);
+  --mono:ui-monospace,"Cascadia Code","JetBrains Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#191a19;--sup:#222423;--sup2:#1e201f;--borda:#2e312f;--texto:#e7e5e0;--suave:#9b978f;--fraco:#5e5b56;
+  --acento:#8fb3a0;--acento-2:#a7c6b5;--acento-bg:#26302b;--ambar:#d4a95e;--ambar-bg:#332b1e;
+  --vermelho:#d98c8c;--vermelho-bg:#362423;--azul:#93abcc;--azul-bg:#222a35;
+  --sombra:0 1px 2px rgba(0,0,0,.25),0 6px 20px rgba(0,0,0,.25);
+}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:14px/1.5 "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,Inter,sans-serif;background:var(--bg);color:var(--texto);
+  display:grid;grid-template-columns:248px 1fr;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+::selection{background:var(--acento-bg)}
+/* barra lateral */
+aside{background:var(--sup2);border-right:1px solid var(--borda);display:flex;flex-direction:column;padding:20px 14px;gap:18px;min-height:0}
+.marca{display:flex;align-items:center;gap:10px;padding:0 6px;font-weight:600;font-size:17px;letter-spacing:.2px}
+.marca svg{width:22px;height:22px}
+.marca small{font-weight:400;color:var(--fraco);font-size:12px;margin-left:auto}
+.rotulo{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--fraco);padding:0 8px;margin-bottom:6px}
+.lista-proj{display:flex;flex-direction:column;gap:2px;overflow:auto;min-height:0}
+.proj{all:unset;cursor:pointer;padding:9px 10px;border-radius:var(--raio-p);transition:background var(--t),transform var(--t);display:block}
+.proj:hover{background:var(--borda)}
+.proj.ativo{background:var(--acento-bg)}
+.proj b{display:block;font-weight:550;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj span{font-size:12px;color:var(--suave)}
+.rodape-lat{margin-top:auto;display:flex;flex-direction:column;gap:6px}
+/* botões */
+.btn{border:1px solid var(--borda);background:var(--sup);padding:8px 14px;border-radius:var(--raio-p);cursor:pointer;
+  transition:background var(--t),border-color var(--t),transform var(--t),box-shadow var(--t);display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.btn:hover{border-color:var(--fraco)}
+.btn:active{transform:scale(.98)}
+.btn.pri{background:var(--acento);border-color:var(--acento);color:#fff}
+.btn.pri:hover{background:var(--acento-2);border-color:var(--acento-2)}
+@media (prefers-color-scheme:dark){.btn.pri{color:#142019}}
+.btn.fan{border-color:transparent;background:transparent;color:var(--suave)}
+.btn.fan:hover{background:var(--borda);color:var(--texto)}
+.btn[disabled]{opacity:.5;pointer-events:none}
+.btn.larg{width:100%;justify-content:center}
+/* principal */
+main{overflow:auto;min-width:0}
+.conteudo{max-width:1080px;margin:0 auto;padding:34px 40px 60px}
+.cab{display:flex;align-items:flex-start;gap:16px;margin-bottom:22px}
+.cab h1{font-size:24px;font-weight:600;margin:0 0 4px;letter-spacing:-.2px}
+.cab .meta{color:var(--suave);font-size:13px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cab .acoes{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:99px;background:var(--acento-bg);color:var(--acento-2);font-size:12px;font-weight:500}
+.chip.ambar{background:var(--ambar-bg);color:var(--ambar)}.chip.verm{background:var(--vermelho-bg);color:var(--vermelho)}
+.chip.azul{background:var(--azul-bg);color:var(--azul)}.chip.cinza{background:var(--borda);color:var(--suave)}
+.abas{display:inline-flex;background:var(--borda);padding:3px;border-radius:12px;gap:2px;margin-bottom:22px;position:relative}
+.aba{all:unset;cursor:pointer;padding:7px 15px;border-radius:9px;color:var(--suave);font-weight:500;font-size:13.5px;transition:color var(--t),background var(--t)}
+.aba.ativa{background:var(--sup);color:var(--texto);box-shadow:var(--sombra)}
+.painel{animation:entra .28s cubic-bezier(.2,.7,.2,1)}
+@keyframes entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.cartao{background:var(--sup);border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra);padding:20px 22px}
+.cartao h3{margin:0 0 12px;font-size:14.5px;font-weight:600}
+.grade{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:900px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g2{grid-template-columns:1fr}}
+.num{font-size:28px;font-weight:600;letter-spacing:-.5px;line-height:1.1}
+.num small{font-size:13px;color:var(--suave);font-weight:400;margin-left:4px}
+.legenda{color:var(--suave);font-size:12.5px}
+.barra{height:6px;background:var(--borda);border-radius:99px;overflow:hidden;margin-top:12px}
+.barra i{display:block;height:100%;background:var(--acento);border-radius:99px;transition:width .6s cubic-bezier(.2,.7,.2,1)}
+/* listas */
+.linhas{display:flex;flex-direction:column}
+.linha{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--borda);cursor:default}
+.linha:last-child{border-bottom:0}
+.linha.clic{cursor:pointer;border-radius:8px;transition:background var(--t);padding-left:10px;padding-right:10px}
+.linha.clic:hover{background:var(--sup2)}
+.linha.sel{background:var(--acento-bg)}
+.linha .nome{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ponto{width:8px;height:8px;border-radius:50%;background:var(--fraco);flex:none}
+.ponto.ok{background:var(--acento)}.ponto.and{background:var(--ambar)}.ponto.apr{background:var(--azul)}.ponto.err{background:var(--vermelho)}
+/* documentos */
+.docs{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+@media (max-width:1000px){.docs{grid-template-columns:1fr}}
+.preview{min-height:420px;max-height:calc(100vh - 230px);overflow:auto}
+.md{line-height:1.65}
+.md h1{font-size:20px;margin:0 0 12px}.md h2{font-size:16px;margin:22px 0 8px}.md h3{font-size:14.5px;margin:18px 0 6px}.md h4{font-size:13.5px;margin:14px 0 4px;color:var(--suave)}
+.md table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+.md th,.md td{border:1px solid var(--borda);padding:6px 9px;text-align:left;vertical-align:top}
+.md th{background:var(--sup2);font-weight:600}
+.md code{font-family:var(--mono);font-size:12.5px;background:var(--sup2);border:1px solid var(--borda);padding:1px 5px;border-radius:6px}
+.md pre{background:var(--sup2);border:1px solid var(--borda);border-radius:var(--raio-p);padding:12px 14px;overflow:auto}
+.md pre code{border:0;padding:0;background:none}
+.md blockquote{margin:8px 0;padding:4px 14px;border-left:3px solid var(--acento);color:var(--suave)}
+.md .lac{background:var(--ambar-bg);color:var(--ambar);border-radius:5px;padding:0 4px}
+.md a{color:var(--acento-2)}
+/* claude */
+.tarefas{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.pill{all:unset;cursor:pointer;padding:6px 12px;border-radius:99px;border:1px solid var(--borda);font-size:13px;transition:all var(--t);background:var(--sup)}
+.pill:hover{border-color:var(--fraco)}
+.pill.ativa{background:var(--acento);border-color:var(--acento);color:#fff}
+@media (prefers-color-scheme:dark){.pill.ativa{color:#142019}}
+.campo{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.campo label{font-size:12.5px;color:var(--suave);font-weight:500}
+input[type=text],input[type=number],select,textarea{background:var(--sup2);border:1px solid var(--borda);border-radius:var(--raio-p);padding:9px 12px;outline:none;transition:border-color var(--t),box-shadow var(--t);width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--acento);box-shadow:0 0 0 3px var(--acento-bg)}
+textarea{resize:vertical;min-height:92px}
+.console{background:#1d201e;color:#d9dcd6;font:12.5px/1.55 var(--mono);border-radius:var(--raio);padding:14px 16px;height:340px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+.console .f{color:#8fb3a0}.console .s{color:#d4a95e}.console .e{color:#e09a9a}
+.linha-acao{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.troca{display:inline-flex;align-items:center;gap:8px;color:var(--suave);font-size:13px;cursor:pointer;user-select:none}
+.troca input{display:none}
+.troca i{width:30px;height:18px;border-radius:99px;background:var(--borda);position:relative;transition:background var(--t)}
+.troca i::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--sup);box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform var(--t)}
+.troca input:checked + i{background:var(--acento)}
+.troca input:checked + i::after{transform:translateX(12px)}
+/* vazio, modal, toast */
+.vazio{display:grid;place-items:center;min-height:70vh;text-align:center}
+.vazio h2{font-weight:600;font-size:22px;margin:16px 0 6px}
+.vazio p{color:var(--suave);max-width:460px;margin:0 auto 20px}
+.fundo{position:fixed;inset:0;background:rgba(25,24,22,.28);backdrop-filter:blur(3px);display:grid;place-items:center;z-index:20;animation:fade .2s ease}
+@keyframes fade{from{opacity:0}}
+.modal{background:var(--sup);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.18);width:min(720px,94vw);max-height:90vh;overflow:auto;padding:26px 28px;animation:sobe .28s cubic-bezier(.2,.7,.2,1)}
+@keyframes sobe{from{opacity:0;transform:translateY(12px) scale(.98)}}
+.modal h2{margin:0 0 18px;font-size:18px;font-weight:600}
+.perfis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+.perfil{all:unset;cursor:pointer;border:1px solid var(--borda);border-radius:var(--raio-p);padding:10px 12px;transition:all var(--t)}
+.perfil:hover{border-color:var(--fraco)}
+.perfil.ativo{border-color:var(--acento);background:var(--acento-bg)}
+.perfil b{display:block;font-size:13.5px;font-weight:550}.perfil span{font-size:12px;color:var(--suave)}
+.toasts{position:fixed;right:22px;bottom:22px;display:flex;flex-direction:column;gap:8px;z-index:30}
+.toast{background:var(--sup);border:1px solid var(--borda);box-shadow:var(--sombra);border-radius:12px;padding:10px 14px;max-width:380px;animation:sobe .25s ease;font-size:13.5px}
+.toast.erro{border-color:var(--vermelho);color:var(--vermelho)}
+.carregando{color:var(--suave);display:flex;gap:8px;align-items:center}
+.carregando::before{content:"";width:12px;height:12px;border-radius:50%;border:2px solid var(--borda);border-top-color:var(--acento);animation:gira .8s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+.oculto{display:none!important}
+.mono{font-family:var(--mono);font-size:12.5px}
+.tab-simples{width:100%;border-collapse:collapse;font-size:13px}
+.tab-simples td,.tab-simples th{padding:8px 6px;border-bottom:1px solid var(--borda);text-align:left}
+.tab-simples th{color:var(--suave);font-weight:500;font-size:12px}
+</style>
+</head>
+<body>
+<aside>
+  <div class="marca">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><line x1="16" y1="2" x2="16" y2="14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="color:var(--acento)"/><path d="M16 13c4 4 6 7 6 10a6 6 0 0 1-12 0c0-3 2-6 6-10z" fill="var(--acento)"/></svg>
+    Prumo <small id="versao"></small>
+  </div>
+  <button class="btn pri larg" onclick="abrirNovo()">＋ Novo projeto</button>
+  <div style="min-height:0;display:flex;flex-direction:column;flex:1">
+    <div class="rotulo">Projetos</div>
+    <div class="lista-proj" id="lista-proj"></div>
+  </div>
+  <div class="rodape-lat">
+    <button class="btn fan larg" onclick="abrirExistente()">Abrir pasta de projeto…</button>
+  </div>
+</aside>
+<main><div class="conteudo" id="app"></div></main>
+<div class="toasts" id="toasts"></div>
+
+<script>
+"use strict";
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const E = {projetos: [], perfis: [], projeto: null, status: null, aba: "geral", docSel: null, tarefa: "especificar", job: null};
+
+async function api(rota, corpo) {
+  const r = await fetch(rota, {method: corpo ? "POST" : "GET", headers: {"X-Prumo-Token": TOKEN, "Content-Type": "application/json"},
+                                body: corpo ? JSON.stringify(corpo) : undefined});
+  const j = await r.json().catch(() => ({erro: "resposta inválida"}));
+  if (!r.ok) throw new Error(j.erro || r.statusText);
+  return j;
+}
+async function prumo(args, projeto) {
+  const r = await api("/api/executar", {args, projeto});
+  if (r.dados && r.dados.erro) throw new Error(r.dados.erro);
+  if (r.dados === null && r.codigo !== 0) throw new Error((r.stderr || r.saida || "falha no comando").trim().split("\n").pop());
+  return r.dados;
+}
+function toast(msg, erro) {
+  const t = document.createElement("div"); t.className = "toast" + (erro ? " erro" : ""); t.textContent = msg;
+  $("#toasts").append(t); setTimeout(() => { t.style.transition = "opacity .3s"; t.style.opacity = 0; setTimeout(() => t.remove(), 300); }, erro ? 6000 : 3200);
+}
+const falhou = e => toast(e.message || String(e), true);
+
+/* ------------------------------------------------ markdown mínimo */
+function md(texto) {
+  const linhas = texto.replace(/<!--[\s\S]*?-->/g, "").split("\n"); let html = "", i = 0;
+  const inl = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+    .replace(/\[PREENCHER[^\]]*\]/g, m => `<span class="lac">${m}</span>`).replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  while (i < linhas.length) {
+    const l = linhas[i];
+    if (/^```/.test(l)) { const b = []; i++; while (i < linhas.length && !/^```/.test(linhas[i])) b.push(linhas[i++]); i++; html += `<pre><code>${esc(b.join("\n"))}</code></pre>`; continue; }
+    let m;
+    if ((m = l.match(/^(#{1,4})\s+(.*)/))) { html += `<h${m[1].length}>${inl(m[2])}</h${m[1].length}>`; i++; continue; }
+    if (/^\s*\|/.test(l)) { const rows = []; while (i < linhas.length && /^\s*\|/.test(linhas[i])) rows.push(linhas[i++]);
+      const cel = r => r.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+      const corpo = rows.filter(r => !/^\s*\|[\s:|-]+\|\s*$/.test(r));
+      html += "<table>" + corpo.map((r, k) => "<tr>" + cel(r).map(c => k === 0 && rows.length > 1 && /^\s*\|[\s:|-]+\|/.test(rows[1]) ? `<th>${inl(c)}</th>` : `<td>${inl(c)}</td>`).join("") + "</tr>").join("") + "</table>"; continue; }
+    if (/^\s*[-*]\s+/.test(l)) { html += "<ul>"; while (i < linhas.length && /^\s*[-*]\s+/.test(linhas[i])) html += `<li>${inl(linhas[i++].replace(/^\s*[-*]\s+(\[[ x]\]\s*)?/, (a, c) => c ? (c.includes("x") ? "☑ " : "☐ ") : ""))}</li>`; html += "</ul>"; continue; }
+    if (/^\s*\d+\.\s+/.test(l)) { html += "<ol>"; while (i < linhas.length && /^\s*\d+\.\s+/.test(linhas[i])) html += `<li>${inl(linhas[i++].replace(/^\s*\d+\.\s+/, ""))}</li>`; html += "</ol>"; continue; }
+    if (/^>\s?/.test(l)) { html += `<blockquote>${inl(l.replace(/^>\s?/, ""))}</blockquote>`; i++; continue; }
+    if (l.trim()) html += `<p>${inl(l)}</p>`;
+    i++;
+  }
+  return html;
+}
+
+/* ------------------------------------------------ barra lateral */
+async function carregarProjetos() {
+  try { E.projetos = await prumo(["projetos"]) || []; } catch { E.projetos = []; }
+  $("#lista-proj").innerHTML = E.projetos.length ? E.projetos.map(p => `
+    <button class="proj ${E.projeto === p.caminho ? "ativo" : ""}" data-c="${esc(p.caminho)}" title="${esc(p.caminho)}">
+      <b>${esc(p.nome)}</b><span>${esc(p.cliente || p.perfil || "")}</span></button>`).join("")
+    : `<div class="legenda" style="padding:4px 10px">Nenhum projeto ainda.</div>`;
+  document.querySelectorAll(".proj").forEach(b => b.onclick = () => abrirProjeto(b.dataset.c));
+}
+
+/* ------------------------------------------------ telas */
+function telaVazia() {
+  E.projeto = null;
+  $("#app").innerHTML = `<div class="vazio painel"><div>
+    <svg viewBox="0 0 32 32" width="56" height="56"><line x1="16" y1="2" x2="16" y2="14" stroke="var(--acento)" stroke-width="2" stroke-linecap="round"/><path d="M16 13c4 4 6 7 6 10a6 6 0 0 1-12 0c0-3 2-6 6-10z" fill="var(--acento)" opacity=".85"/></svg>
+    <h2>Especificação primeiro, código alinhado.</h2>
+    <p>Crie um projeto a partir de um perfil, conduza a especificação com o Claude e acompanhe documentos, rastreabilidade, segurança e orçamento num só lugar.</p>
+    <div class="linha-acao" style="justify-content:center"><button class="btn pri" onclick="abrirNovo()">Novo projeto</button>
+    <button class="btn" onclick="abrirExistente()">Abrir projeto existente</button></div></div></div>`;
+}
+
+async function abrirProjeto(caminho) {
+  E.projeto = caminho; E.docSel = null;
+  $("#app").innerHTML = `<div class="carregando">Abrindo projeto…</div>`;
+  try { E.status = await prumo(["status"], caminho); } catch (e) { falhou(e); return telaVazia(); }
+  carregarProjetos(); desenharProjeto();
+}
+async function atualizarStatus() { E.status = await prumo(["status"], E.projeto); }
+
+function desenharProjeto() {
+  const s = E.status;
+  const abas = [["geral", "Visão geral"], ["docs", "Documentos"], ["claude", "Claude"], ["qualidade", "Qualidade"], ["gestao", "Gestão"]];
+  $("#app").innerHTML = `
+    <div class="cab"><div><h1>${esc(s.projeto)}</h1>
+      <div class="meta"><span>${esc(s.cliente)}</span><span class="chip">${esc(s.perfil)}</span>${s.figma ? '<span class="chip azul">Figma</span>' : ""}<span class="mono" style="color:var(--fraco)">${esc(s.caminho)}</span></div></div>
+      <div class="acoes"><button class="btn fan" onclick="abrirNo('pasta')">Pasta</button><button class="btn fan" onclick="abrirNo('vscode')">VS Code</button>
+      <button class="btn" onclick="abrirNo('claude')">Abrir Claude Code</button></div></div>
+    <div class="abas">${abas.map(([id, n]) => `<button class="aba ${E.aba === id ? "ativa" : ""}" data-a="${id}">${n}</button>`).join("")}</div>
+    <div id="painel"></div>`;
+  document.querySelectorAll(".aba").forEach(b => b.onclick = () => { E.aba = b.dataset.a; desenharProjeto(); });
+  ({geral: painelGeral, docs: painelDocs, claude: painelClaude, qualidade: painelQualidade, gestao: painelGestao})[E.aba]();
+}
+
+function painelGeral() {
+  const s = E.status, docs = s.documentos, total = docs.length || 1;
+  const completos = docs.filter(d => d.estado !== "em andamento").length, lac = docs.reduce((a, d) => a + d.lacunas, 0);
+  const aprov = docs.filter(d => d.estado.startsWith("aprovado")).length;
+  const prox = docs.find(d => d.estado === "em andamento");
+  const ids = Object.entries(s.ids || {});
+  $("#painel").innerHTML = `<div class="painel grade">
+    <div class="grade g4">
+      <div class="cartao"><div class="legenda">Documentos completos</div><div class="num">${completos}<small>de ${docs.length}</small></div><div class="barra"><i style="width:${Math.round(completos / total * 100)}%"></i></div></div>
+      <div class="cartao"><div class="legenda">Lacunas a preencher</div><div class="num">${lac}</div></div>
+      <div class="cartao"><div class="legenda">Aprovados pelo cliente</div><div class="num">${aprov}</div></div>
+      <div class="cartao"><div class="legenda">Itens rastreados</div><div class="num">${ids.reduce((a, [, v]) => a + v, 0)}</div></div>
+    </div>
+    <div class="grade g2">
+      <div class="cartao"><h3>Próximo passo</h3>
+        ${prox ? `<p style="margin:0 0 14px">Completar <b>${esc(prox.documento)}</b> (${prox.lacunas} lacuna${prox.lacunas === 1 ? "" : "s"}).</p>` : `<p style="margin:0 0 14px">Especificação sem lacunas. Hora de aprovar com o cliente e implementar.</p>`}
+        <div class="linha-acao"><button class="btn pri" onclick="E.aba='claude';E.tarefa='especificar';desenharProjeto()">Especificar com o Claude</button>
+        <button class="btn" onclick="acaoRapida('validar')">Validar</button><button class="btn" onclick="acaoRapida('rastreabilidade')">Rastreabilidade</button></div></div>
+      <div class="cartao"><h3>Itens da especificação</h3><div class="linha-acao">${ids.length ? ids.map(([k, v]) => `<span class="chip cinza">${k} · ${v}</span>`).join("") : '<span class="legenda">Nenhum ID ainda.</span>'}</div>
+        <p class="legenda" style="margin:14px 0 0">Stack: ${esc(s.stack)}</p></div>
+    </div></div>`;
+}
+
+async function acaoRapida(cmd) {
+  try {
+    const d = await prumo([cmd], E.projeto);
+    if (cmd === "validar") toast(`${d.erros.length} erro(s), ${d.avisos.length} aviso(s)`, d.erros.length > 0);
+    else toast(`Matriz gerada em ${d.arquivo}`);
+  } catch (e) { falhou(e); }
+}
+
+function estadoPonto(d) { return d.estado.startsWith("aprovado") ? (d.estado.includes("ALTERADO") ? "err" : "apr") : d.estado === "completo" ? "ok" : "and"; }
+
+function painelDocs() {
+  const docs = E.status.documentos;
+  $("#painel").innerHTML = `<div class="painel docs">
+    <div class="cartao" style="padding:10px"><div class="linhas">${docs.map(d => `
+      <div class="linha clic ${E.docSel === d.documento ? "sel" : ""}" data-d="${esc(d.documento)}"><i class="ponto ${estadoPonto(d)}"></i>
+        <span class="nome">${esc(d.documento.replace(/^docs\//, ""))}</span>
+        ${d.lacunas ? `<span class="chip ambar">${d.lacunas}</span>` : d.estado.startsWith("aprovado") ? '<span class="chip azul">aprovado</span>' : '<span class="chip">ok</span>'}</div>`).join("")}</div>
+      <div class="linha-acao" style="padding:10px 6px 4px"><button class="btn fan" onclick="novoRegistro('adr')">＋ ADR</button><button class="btn fan" onclick="novoRegistro('mudanca')">＋ Mudança</button><button class="btn fan" onclick="adicionarDoc()">＋ Documento</button></div></div>
+    <div class="cartao preview" id="preview"><div class="legenda">Selecione um documento para visualizar.</div></div></div>`;
+  document.querySelectorAll(".linha.clic").forEach(l => l.onclick = () => { E.docSel = l.dataset.d; painelDocs(); });
+  if (E.docSel) mostrarDoc(E.docSel);
+}
+
+async function mostrarDoc(arq) {
+  const d = E.status.documentos.find(x => x.documento === arq); if (!d) return;
+  try {
+    const r = await api("/api/ler", {projeto: E.projeto, arquivo: arq});
+    const aprovado = d.estado.startsWith("aprovado");
+    $("#preview").innerHTML = `<div class="linha-acao" style="margin-bottom:12px"><span class="mono legenda" style="flex:1">${esc(arq)}</span>
+      <button class="btn fan" onclick="abrirNo('arquivo','${esc(arq)}')">Abrir no editor</button>
+      ${aprovado ? `<button class="btn" onclick="aprovacao('desaprovar','${esc(arq)}')">Liberar edição</button>` : `<button class="btn" onclick="aprovacao('aprovar','${esc(arq)}')">Marcar como aprovado</button>`}</div>
+      <div class="md">${md(r.texto || "")}</div>`;
+  } catch (e) { falhou(e); }
+}
+
+async function aprovacao(acao, arq) {
+  try {
+    if (acao === "aprovar" && !confirm("Marcar como aprovado pelo cliente? O documento fica somente leitura para os agentes.")) return;
+    await prumo([acao, arq], E.projeto); await atualizarStatus(); toast(acao === "aprovar" ? "Documento aprovado." : "Documento liberado para edição."); painelDocs();
+  } catch (e) { falhou(e); }
+}
+async function novoRegistro(tipo) {
+  const t = prompt(tipo === "adr" ? "Título da decisão arquitetural:" : "Título do pedido de mudança:"); if (!t) return;
+  try { const d = await prumo([tipo, t], E.projeto); await atualizarStatus(); E.docSel = d.arquivo; toast(`${d.id} criado.`); painelDocs(); } catch (e) { falhou(e); }
+}
+async function adicionarDoc() {
+  try {
+    const lista = (await prumo(["doc", "--listar"], E.projeto)).filter(d => !d.no_projeto);
+    if (!lista.length) return toast("Todos os documentos do catálogo já estão no projeto.");
+    const id = prompt("Documento para adicionar:\n" + lista.map(d => `• ${d.id} — ${d.descricao}`).join("\n")); if (!id) return;
+    await prumo(["doc", id.trim()], E.projeto); await atualizarStatus(); toast("Documento adicionado."); painelDocs();
+  } catch (e) { falhou(e); }
+}
+
+/* ------------------------------------------------ Claude */
+const TAREFAS = [
+  ["especificar", "Especificar tudo"], ["requisitos", "Requisitos"], ["casos-de-uso", "Casos de uso"], ["uml", "UML"], ["banco", "Banco"],
+  ["arquitetura", "Arquitetura"], ["backlog", "Backlog"], ["testes", "Testes"], ["proposta", "Proposta"],
+  ["implementar", "Implementar HU"], ["revisar", "Revisar"], ["documentar", "Atualizar docs"], ["seguranca", "Segurança"],
+  ["mudanca", "Mudança"], ["tela", "Tela do Figma"], ["figjam", "FigJam"], ["livre", "Pedido livre"]];
+const COM_ALVO = {implementar: "História (ex.: HU-003)", revisar: "História ou vazio para as mudanças atuais", tela: "Tela (TL-002) ou URL do frame"};
+
+function painelClaude() {
+  const t = E.tarefa, alvo = COM_ALVO[t];
+  $("#painel").innerHTML = `<div class="painel grade">
+    <div class="cartao"><div class="tarefas">${TAREFAS.filter(([id]) => E.status.figma || !["tela", "figjam"].includes(id))
+      .map(([id, n]) => `<button class="pill ${t === id ? "ativa" : ""}" data-t="${id}">${n}</button>`).join("")}</div>
+      ${alvo ? `<div class="campo"><label>${alvo}</label><input type="text" id="alvo" placeholder="${t === "implementar" ? "HU-001" : ""}"></div>` : ""}
+      <div class="campo"><label>${t === "livre" ? "Pedido para o Claude" : t === "mudanca" ? "O que o cliente pediu" : "Instruções adicionais (opcional)"}</label>
+        <textarea id="texto" placeholder="${t === "livre" ? "Ex.: crie o componente de listagem de pedidos seguindo a TL-004" : ""}"></textarea></div>
+      <div class="linha-acao"><button class="btn pri" id="enviar">Enviar ao Claude</button><button class="btn oculto" id="parar">Parar</button>
+        <label class="troca"><input type="checkbox" id="continuar"><i></i>Continuar a última sessão</label>
+        <span class="legenda" style="margin-left:auto">O Claude Code roda em modo não interativo nesta pasta.</span></div></div>
+    <div class="console" id="console"><span class="f">Pronto. A saída do Claude aparece aqui.</span></div>
+    <div class="cartao"><h3>Histórico</h3><div id="hist" class="carregando">Carregando…</div></div></div>`;
+  document.querySelectorAll(".pill").forEach(b => b.onclick = () => { E.tarefa = b.dataset.t; painelClaude(); });
+  $("#enviar").onclick = enviarClaude; $("#parar").onclick = pararClaude;
+  if (E.job) { $("#enviar").disabled = true; $("#parar").classList.remove("oculto"); acompanhar(E.job, 0, true); }
+  carregarHistorico();
+}
+
+async function enviarClaude() {
+  const t = E.tarefa, alvo = ($("#alvo") || {}).value || "", texto = $("#texto").value.trim();
+  if (t === "livre" && !texto) return toast("Escreva o pedido para o Claude.", true);
+  if (t === "mudanca" && !texto) return toast("Descreva a mudança pedida pelo cliente.", true);
+  if (t === "implementar" && !alvo.trim()) return toast("Informe a história (ex.: HU-003).", true);
+  const args = ["claude", t]; if (alvo.trim()) args.push(alvo.trim()); if (texto) args.push("--texto", texto);
+  if ($("#continuar").checked) args.push("--continuar"); if (t === "especificar") args.push("--sem-pausa");
+  try {
+    const r = await api("/api/tarefas", {projeto: E.projeto, args});
+    E.job = r.id; $("#console").innerHTML = ""; $("#enviar").disabled = true; $("#parar").classList.remove("oculto"); acompanhar(r.id, 0);
+  } catch (e) { falhou(e); }
+}
+async function pararClaude() { if (E.job) await api(`/api/tarefas/${E.job}/parar`, {}).catch(falhou); }
+
+async function acompanhar(id, desde, redesenhar) {
+  const c = $("#console"); if (!c) return;
+  try {
+    const r = await api(`/api/tarefas/${id}?desde=${redesenhar ? 0 : desde}`);
+    if (redesenhar) c.innerHTML = "";
+    for (const l of r.linhas) {
+      const s = document.createElement("div");
+      s.className = /^\s*→/.test(l) ? "f" : /^\[Prumo\]|^===/.test(l) ? "s" : /erro|error/i.test(l) ? "e" : "";
+      s.textContent = l; c.append(s);
+    }
+    if (r.linhas.length) c.scrollTop = c.scrollHeight;
+    if (r.fim) {
+      E.job = null; const b = $("#enviar"); if (b) b.disabled = false; const p = $("#parar"); if (p) p.classList.add("oculto");
+      toast(r.codigo === 0 ? "Claude concluiu a tarefa." : "A tarefa terminou com erro.", r.codigo !== 0);
+      await atualizarStatus().catch(() => {}); carregarHistorico(); return;
+    }
+    setTimeout(() => acompanhar(id, r.total), 700);
+  } catch (e) { falhou(e); E.job = null; }
+}
+
+async function carregarHistorico() {
+  try {
+    const h = await prumo(["claude", "historico"], E.projeto), el = $("#hist"); if (!el) return;
+    el.className = "";
+    el.innerHTML = h.length ? `<table class="tab-simples"><tr><th>Quando</th><th>Tarefa</th><th>Alvo</th><th>Duração</th><th>Custo</th><th></th></tr>
+      ${h.slice().reverse().map(x => `<tr><td>${esc((x.inicio || "").replace("T", " ").slice(0, 16))}</td><td>${esc(x.tarefa)}</td><td>${esc(x.alvo || "")}</td>
+      <td>${x.duracao_s ?? ""}s</td><td>${x.custo_usd != null ? "US$ " + Number(x.custo_usd).toFixed(3) : ""}</td>
+      <td>${x.erro ? '<span class="chip verm">erro</span>' : '<span class="chip">ok</span>'}</td></tr>`).join("")}</table>` : '<span class="legenda">Nenhuma execução ainda.</span>';
+  } catch (e) { const el = $("#hist"); if (el) el.textContent = ""; }
+}
+
+/* ------------------------------------------------ qualidade */
+function painelQualidade() {
+  $("#painel").innerHTML = `<div class="painel grade g2">
+    <div class="cartao"><div class="linha-acao" style="margin-bottom:10px"><h3 style="margin:0;flex:1">Validação</h3><button class="btn" onclick="rodarValidar()">Validar</button></div><div id="val" class="legenda">Verifica lacunas, diagramas Mermaid, IDs indefinidos ou duplicados e documentos aprovados alterados.</div></div>
+    <div class="cartao"><div class="linha-acao" style="margin-bottom:10px"><h3 style="margin:0;flex:1">Segurança</h3><button class="btn" onclick="rodarSeguranca()">Varrer código</button></div><div id="seg" class="legenda">Procura segredos, injeção, eval, TLS desligado, CORS aberto e outros padrões de risco.</div></div>
+    <div class="cartao" style="grid-column:1/-1"><div class="linha-acao" style="margin-bottom:10px"><h3 style="margin:0;flex:1">Rastreabilidade</h3><button class="btn" onclick="rodarRastreio()">Gerar matriz</button></div><div id="ras" class="legenda">Liga requisitos, casos de uso, histórias, testes e código.</div></div></div>`;
+}
+const listaMsgs = (itens, classe) => itens.map(m => `<div class="linha"><i class="ponto ${classe}"></i><span>${esc(m)}</span></div>`).join("");
+async function rodarValidar() {
+  const el = $("#val"); el.className = "carregando"; el.textContent = "Validando…";
+  try { const d = await prumo(["validar"], E.projeto); el.className = "linhas";
+    el.innerHTML = (d.erros.length || d.avisos.length) ? listaMsgs(d.erros, "err") + listaMsgs(d.avisos, "and") : '<span class="legenda">Tudo certo.</span>'; } catch (e) { falhou(e); }
+}
+async function rodarSeguranca() {
+  const el = $("#seg"); el.className = "carregando"; el.textContent = "Varrendo…";
+  try { const d = await prumo(["seguranca"], E.projeto); el.className = "";
+    el.innerHTML = d.achados.length ? `<table class="tab-simples"><tr><th>Gravidade</th><th>Local</th><th>Problema</th></tr>${d.achados.map(a => `<tr><td><span class="chip ${a.gravidade === "Baixa" ? "cinza" : a.gravidade === "Média" ? "ambar" : "verm"}">${a.gravidade}</span></td><td class="mono">${esc(a.arquivo)}:${a.linha}</td><td>${esc(a.descricao)}</td></tr>`).join("")}</table>`
+      : '<span class="legenda">Nenhum padrão de risco encontrado. Complete com a revisão manual (tarefa "Segurança" na aba Claude).</span>'; } catch (e) { falhou(e); }
+}
+async function rodarRastreio() {
+  const el = $("#ras"); el.className = "carregando"; el.textContent = "Gerando…";
+  try { const d = await prumo(["rastreabilidade"], E.projeto); el.className = "linhas";
+    el.innerHTML = `<div class="legenda" style="margin-bottom:6px">Matriz em <span class="mono">${esc(d.arquivo)}</span> <button class="btn fan" onclick="E.aba='docs';E.docSel=null;abrirNo('arquivo','${esc(d.arquivo)}')">abrir</button></div>`
+      + (d.problemas.length ? listaMsgs(d.problemas.map(p => p.mensagem), "and") : '<span class="legenda">Nenhum problema de rastreabilidade.</span>'); } catch (e) { falhou(e); }
+}
+
+/* ------------------------------------------------ gestão */
+function painelGestao() {
+  $("#painel").innerHTML = `<div class="painel grade g2">
+    <div class="cartao"><h3>Orçamento</h3>
+      <div class="grade g2" style="gap:10px"><div class="campo"><label>Valor da hora (R$)</label><input type="number" id="vh" min="0" step="5" placeholder="do config"></div>
+      <div class="campo"><label>Contingência (%)</label><input type="number" id="ct" min="0" step="5" placeholder="20"></div></div>
+      <button class="btn pri" onclick="rodarOrcamento()">Calcular a partir do backlog</button><div id="orc" style="margin-top:14px"></div></div>
+    <div class="cartao"><h3>Horas trabalhadas</h3><p class="legenda" style="margin-top:0">Estimadas pela atividade registrada nos hooks do Claude Code.</p>
+      <button class="btn" onclick="rodarHoras()">Atualizar</button><div id="hrs" style="margin-top:14px"></div></div>
+    <div class="cartao"><h3>Figma</h3>
+      ${E.status.figma ? `<div class="campo"><label>URL do arquivo</label><input type="text" id="furl" placeholder="https://www.figma.com/design/..."></div>
+      <div class="campo"><label>Token pessoal (ou variável FIGMA_TOKEN)</label><input type="text" id="ftok" placeholder="figd_…" autocomplete="off"></div>
+      <div class="linha-acao"><button class="btn pri" onclick="rodarFigma()">Sincronizar telas</button><label class="troca"><input type="checkbox" id="fimg"><i></i>Baixar imagens</label></div><div id="fig" class="legenda" style="margin-top:12px"></div>`
+      : `<p class="legenda" style="margin-top:0">A integração com o Figma não está ativa neste projeto.</p><button class="btn" onclick="ativarFigma()">Ativar Figma</button>`}</div>
+    <div class="cartao"><h3>Outros agentes</h3><p class="legenda" style="margin-top:0">Gera GEMINI.md, instruções do Copilot e regra do Cursor a partir do AGENTS.md.</p>
+      <div class="linha-acao"><button class="btn" onclick="exportarAgentes()">Exportar instruções</button><button class="btn fan" onclick="atualizarKit()">Atualizar skills e hooks</button></div></div></div>`;
+}
+async function rodarOrcamento() {
+  const args = ["orcamento"], vh = $("#vh").value, ct = $("#ct").value;
+  if (vh) args.push("--valor-hora", vh); if (ct) args.push("--contingencia", ct);
+  try { const o = await prumo(args, E.projeto);
+    const fmt = v => v == null ? "—" : v.toLocaleString("pt-BR", {style: "currency", currency: o.moeda || "BRL"});
+    $("#orc").innerHTML = `<div class="grade g2" style="gap:10px"><div><div class="legenda">Total de horas</div><div class="num">${o.horas_total.toFixed(1).replace(".", ",")}<small>h</small></div></div>
+      <div><div class="legenda">Valor</div><div class="num" style="font-size:22px">${fmt(o.valor_total)}</div></div></div>
+      <p class="legenda">${o.historias} histórias · base ${o.horas_base.toFixed(1)}h + ${o.contingencia}%${o.sem_estimativa.length ? ` · sem estimativa: ${esc(o.sem_estimativa.join(", "))}` : ""}</p>`;
+  } catch (e) { falhou(e); }
+}
+async function rodarHoras() {
+  try { const h = await prumo(["horas"], E.projeto), dias = Object.entries(h.dias);
+    $("#hrs").innerHTML = `<div class="num">${h.total_horas.toFixed(1).replace(".", ",")}<small>h no total</small></div>
+      <table class="tab-simples" style="margin-top:10px">${dias.slice(-10).reverse().map(([d, v]) => `<tr><td>${d.split("-").reverse().join("/")}</td><td>${v.sessoes} sessão(ões)</td><td>${v.horas.toFixed(1).replace(".", ",")}h</td></tr>`).join("")}</table>`;
+  } catch (e) { $("#hrs").innerHTML = `<span class="legenda">${esc(e.message)}</span>`; }
+}
+async function rodarFigma() {
+  const args = ["figma", "telas"], url = $("#furl").value.trim(), tok = $("#ftok").value.trim();
+  if (url) args.push(url); if (tok) args.push("--token", tok); if ($("#fimg").checked) args.push("--imagens");
+  $("#fig").className = "carregando"; $("#fig").textContent = "Lendo o Figma…";
+  try { const r = await prumo(args, E.projeto); $("#fig").className = "legenda"; $("#fig").textContent = `${r.telas} tela(s) sincronizadas em ${r.documento}.`; await atualizarStatus(); }
+  catch (e) { $("#fig").className = "legenda"; $("#fig").textContent = ""; falhou(e); }
+}
+async function ativarFigma() { try { await prumo(["figma", "ativar"], E.projeto); await atualizarStatus(); toast("Figma ativado."); desenharProjeto(); } catch (e) { falhou(e); } }
+async function exportarAgentes() { try { const d = await prumo(["agentes", "exportar"], E.projeto); toast("Gerado: " + d.arquivos.join(", ")); } catch (e) { falhou(e); } }
+async function atualizarKit() { try { const d = await prumo(["agentes", "atualizar"], E.projeto); toast(`${d.arquivos.length} arquivo(s) do kit atualizados.`); } catch (e) { falhou(e); } }
+
+/* ------------------------------------------------ abrir / novo */
+async function abrirNo(alvo, arquivo) { try { const r = await api("/api/abrir", {projeto: E.projeto, alvo, arquivo}); if (r.erro) toast(r.erro, true); } catch (e) { falhou(e); } }
+async function escolherPasta() { try { return (await api("/api/escolher-pasta", {})).pasta || ""; } catch { return ""; } }
+async function abrirExistente() {
+  let p = await escolherPasta(); if (!p) p = prompt("Caminho da pasta do projeto:") || ""; if (p) abrirProjeto(p.trim());
+}
+
+async function abrirNovo() {
+  if (!E.perfis.length) { try { E.perfis = await prumo(["perfis"]); } catch (e) { return falhou(e); } }
+  let perfil = E.perfis.find(p => p.id === "web-fullstack") || E.perfis[0];
+  const f = document.createElement("div"); f.className = "fundo";
+  f.innerHTML = `<div class="modal"><h2>Novo projeto</h2>
+    <div class="grade g2" style="gap:10px"><div class="campo"><label>Nome do projeto</label><input type="text" id="n-nome" placeholder="Loja da Ana"></div>
+    <div class="campo"><label>Cliente</label><input type="text" id="n-cli" placeholder="Ana Doces Ltda."></div></div>
+    <div class="campo"><label>Pasta onde criar</label><div class="linha-acao"><input type="text" id="n-pasta" style="flex:1" placeholder="D:\\Projetos\\loja-da-ana"><button class="btn" id="n-esc">Escolher…</button></div></div>
+    <div class="campo"><label>Perfil</label><div class="perfis">${E.perfis.map(p => `<button class="perfil ${p.id === perfil.id ? "ativo" : ""}" data-p="${p.id}"><b>${esc(p.nome)}</b><span>${esc(p.descricao)}</span></button>`).join("")}</div></div>
+    <div class="campo"><label>Stack</label><input type="text" id="n-stack" value="${esc(perfil.stack)}"></div>
+    <div class="campo"><label>Arquivo do Figma (opcional)</label><input type="text" id="n-figma" placeholder="https://www.figma.com/design/..."></div>
+    <div class="linha-acao" style="justify-content:flex-end;margin-top:8px"><button class="btn fan" id="n-canc">Cancelar</button><button class="btn pri" id="n-ok">Criar projeto</button></div></div>`;
+  document.body.append(f);
+  const fechar = () => f.remove();
+  f.onclick = e => { if (e.target === f) fechar(); }; $("#n-canc", f).onclick = fechar;
+  $("#n-esc", f).onclick = async () => { const p = await escolherPasta(); if (p) { const nome = $("#n-nome", f).value.trim(); $("#n-pasta", f).value = nome ? p.replace(/[\\/]$/, "") + (p.includes("\\") ? "\\" : "/") + nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") : p; } };
+  f.querySelectorAll(".perfil").forEach(b => b.onclick = () => { perfil = E.perfis.find(p => p.id === b.dataset.p);
+    f.querySelectorAll(".perfil").forEach(x => x.classList.toggle("ativo", x === b)); $("#n-stack", f).value = perfil.stack; });
+  $("#n-nome", f).focus();
+  $("#n-ok", f).onclick = async () => {
+    const pasta = $("#n-pasta", f).value.trim(), nome = $("#n-nome", f).value.trim();
+    if (!pasta || !nome) return toast("Informe o nome e a pasta do projeto.", true);
+    const args = ["novo", pasta, "--perfil", perfil.id, "--nome", nome, "--cliente", $("#n-cli", f).value.trim(), "--stack", $("#n-stack", f).value.trim()];
+    const fig = $("#n-figma", f).value.trim(); if (fig) args.push("--figma", fig);
+    $("#n-ok", f).disabled = true; $("#n-ok", f).textContent = "Criando…";
+    try { const r = await prumo(args); fechar(); toast("Projeto criado."); E.aba = "geral"; abrirProjeto(r.caminho); }
+    catch (e) { falhou(e); $("#n-ok", f).disabled = false; $("#n-ok", f).textContent = "Criar projeto"; }
+  };
+}
+
+/* ------------------------------------------------ início */
+(async function iniciar() {
+  try { const p = await api("/api/ping"); $("#versao").textContent = "v" + p.versao;
+    setInterval(() => api("/api/ping").catch(() => {}), 15000);
+    await carregarProjetos();
+    if (p.projeto_inicial) abrirProjeto(p.projeto_inicial); else if (E.projetos[0]) abrirProjeto(E.projetos[0].caminho); else telaVazia();
+  } catch (e) { document.body.innerHTML = `<div class="vazio"><div><h2>Sessão expirada</h2><p>Abra a interface de novo com <span class="mono">prumo gui</span>.</p></div></div>`; }
+})();
+</script>
+</body>
+</html>

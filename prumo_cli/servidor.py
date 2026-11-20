@@ -1,0 +1,291 @@
+"""Servidor local mínimo da interface gráfica.
+
+A interface (prumo_cli/gui/index.html) é HTML/CSS/JS puro; este servidor só entrega a página e
+traduz chamadas da interface em comandos do Prumo (`prumo --json ...`), executados em subprocesso.
+Escuta apenas em 127.0.0.1 e exige um token aleatório em toda chamada.
+"""
+
+import json
+import os
+import secrets
+import shutil
+import subprocess
+import sys
+import threading
+import time
+import webbrowser
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import parse_qs, urlparse
+
+from .util import CONGELADO, RAIZ_KIT, VERSAO, executavel_console, progresso
+
+PAGINA = Path(__file__).resolve().parent / "gui" / "index.html"
+PERMITIDOS = {"perfis", "projetos", "novo", "status", "validar", "rastreabilidade", "contexto", "aprovar",
+              "desaprovar", "adr", "mudanca", "doc", "agentes", "orcamento", "horas", "seguranca", "diagramas",
+              "figma", "versao"}
+EXT_LEITURA = {".md", ".json", ".txt", ".mmd", ".log"}
+
+
+def comando_base():
+    if CONGELADO:
+        return [str(executavel_console())]
+    return [sys.executable, str(RAIZ_KIT / "prumo.py")]
+
+
+def _env():
+    env = dict(os.environ)
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
+    return env
+
+
+def _flags_sem_janela():
+    return {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
+
+
+class Tarefa:
+    def __init__(self, args, cwd):
+        self.linhas = []
+        self.fim = False
+        self.codigo = None
+        self.inicio = time.time()
+        self.proc = subprocess.Popen(comando_base() + args, cwd=cwd, stdin=subprocess.DEVNULL,
+                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=_env(), **_flags_sem_janela())
+        threading.Thread(target=self._ler, daemon=True).start()
+
+    def _ler(self):
+        for bruto in self.proc.stdout:
+            self.linhas.append(bruto.decode("utf-8", "replace").rstrip("\r\n"))
+        self.codigo = self.proc.wait()
+        self.fim = True
+
+
+class Estado:
+    def __init__(self, projeto_inicial=None):
+        self.token = secrets.token_urlsafe(18)
+        self.tarefas = {}
+        self.ultimo_ping = time.time()
+        self.projeto_inicial = projeto_inicial
+
+
+def criar_handler(estado):
+    class Handler(BaseHTTPRequestHandler):
+        server_version = f"Prumo/{VERSAO}"
+
+        def log_message(self, *a):  # silencioso
+            pass
+
+        def _responder(self, status, corpo, tipo="application/json; charset=utf-8"):
+            dados = corpo if isinstance(corpo, bytes) else json.dumps(corpo, ensure_ascii=False).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", tipo)
+            self.send_header("Content-Length", str(len(dados)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            self.wfile.write(dados)
+
+        def _autorizado(self):
+            return secrets.compare_digest(self.headers.get("X-Prumo-Token", ""), estado.token)
+
+        def _corpo(self):
+            tamanho = int(self.headers.get("Content-Length") or 0)
+            if tamanho > 2_000_000:
+                return {}
+            try:
+                return json.loads(self.rfile.read(tamanho).decode("utf-8") or "{}")
+            except json.JSONDecodeError:
+                return {}
+
+        def do_GET(self):
+            url = urlparse(self.path)
+            if url.path == "/":
+                if not secrets.compare_digest((parse_qs(url.query).get("t") or [""])[0], estado.token):
+                    return self._responder(HTTPStatus.FORBIDDEN, b"Acesso negado.", "text/plain; charset=utf-8")
+                html = PAGINA.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(html)))
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Content-Security-Policy",
+                                 "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:")
+                self.end_headers()
+                return self.wfile.write(html)
+            if not self._autorizado():
+                return self._responder(HTTPStatus.FORBIDDEN, {"erro": "token inválido"})
+            if url.path == "/api/ping":
+                estado.ultimo_ping = time.time()
+                return self._responder(200, {"ok": True, "versao": VERSAO, "projeto_inicial": estado.projeto_inicial})
+            if url.path.startswith("/api/tarefas/"):
+                tarefa = estado.tarefas.get(url.path.rsplit("/", 1)[-1])
+                if not tarefa:
+                    return self._responder(404, {"erro": "tarefa não encontrada"})
+                desde = int((parse_qs(url.query).get("desde") or ["0"])[0])
+                return self._responder(200, {"linhas": tarefa.linhas[desde:], "total": len(tarefa.linhas),
+                                             "fim": tarefa.fim, "codigo": tarefa.codigo})
+            return self._responder(404, {"erro": "não encontrado"})
+
+        def do_POST(self):
+            if not self._autorizado():
+                return self._responder(HTTPStatus.FORBIDDEN, {"erro": "token inválido"})
+            corpo = self._corpo()
+            rota = urlparse(self.path).path
+            try:
+                if rota == "/api/executar":
+                    return self._responder(200, executar(corpo))
+                if rota == "/api/tarefas":
+                    args = [str(a) for a in corpo.get("args") or []]
+                    if not args or args[0] != "claude":
+                        return self._responder(400, {"erro": "somente tarefas do Claude"})
+                    pasta = corpo.get("projeto")
+                    if pasta:
+                        args = ["--projeto", pasta] + args
+                    ident = secrets.token_hex(6)
+                    estado.tarefas[ident] = Tarefa(args, pasta or str(Path.home()))
+                    return self._responder(200, {"id": ident})
+                if rota.startswith("/api/tarefas/") and rota.endswith("/parar"):
+                    tarefa = estado.tarefas.get(rota.split("/")[3])
+                    if tarefa and not tarefa.fim:
+                        tarefa.proc.terminate()
+                    return self._responder(200, {"ok": True})
+                if rota == "/api/ler":
+                    return self._responder(200, ler_arquivo(corpo))
+                if rota == "/api/abrir":
+                    return self._responder(200, abrir(corpo))
+                if rota == "/api/escolher-pasta":
+                    r = subprocess.run(comando_base() + ["_escolher-pasta"], capture_output=True, env=_env(),
+                                       timeout=600, **_flags_sem_janela())
+                    try:
+                        return self._responder(200, json.loads(r.stdout.decode("utf-8") or "{}"))
+                    except json.JSONDecodeError:
+                        return self._responder(200, {"pasta": ""})
+            except Exception as e:  # erro inesperado vira mensagem para a interface
+                return self._responder(500, {"erro": str(e)})
+            return self._responder(404, {"erro": "rota desconhecida"})
+
+    return Handler
+
+
+def executar(corpo):
+    args = [str(a) for a in corpo.get("args") or []]
+    if not args or args[0] not in PERMITIDOS:
+        return {"codigo": 2, "dados": {"erro": "comando não permitido pela interface"}}
+    base = ["--json"] + (["--projeto", corpo["projeto"]] if corpo.get("projeto") else [])
+    r = subprocess.run(comando_base() + base + args, capture_output=True, env=_env(), timeout=900,
+                       cwd=corpo.get("projeto") or None, **_flags_sem_janela())
+    texto = r.stdout.decode("utf-8", "replace")
+    try:
+        dados = json.loads(texto) if texto.strip() else None
+    except json.JSONDecodeError:
+        dados = None
+    return {"codigo": r.returncode, "dados": dados, "saida": texto[-20000:] if dados is None else "",
+            "stderr": r.stderr.decode("utf-8", "replace")[-4000:]}
+
+
+def _dentro(projeto, arquivo):
+    raiz = Path(projeto).resolve()
+    alvo = (raiz / arquivo).resolve()
+    try:
+        alvo.relative_to(raiz)
+    except ValueError:
+        raise ValueError("arquivo fora da pasta do projeto") from None
+    return alvo
+
+
+def ler_arquivo(corpo):
+    alvo = _dentro(corpo["projeto"], corpo["arquivo"])
+    if alvo.suffix.lower() not in EXT_LEITURA or alvo.name.startswith(".env"):
+        return {"erro": "tipo de arquivo não permitido"}
+    return {"texto": alvo.read_text(encoding="utf-8", errors="replace")[:400_000]}
+
+
+def _abrir_no_sistema(caminho):
+    if os.name == "nt":
+        os.startfile(str(caminho))  # noqa
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", str(caminho)])
+    else:
+        subprocess.Popen(["xdg-open", str(caminho)])
+
+
+def abrir(corpo):
+    projeto = Path(corpo["projeto"]).resolve()
+    alvo = corpo.get("alvo", "pasta")
+    if alvo == "pasta":
+        _abrir_no_sistema(projeto)
+    elif alvo == "arquivo":
+        _abrir_no_sistema(_dentro(projeto, corpo["arquivo"]))
+    elif alvo == "vscode":
+        code = shutil.which("code")
+        if not code:
+            return {"erro": "VS Code (comando 'code') não encontrado no PATH"}
+        subprocess.Popen([code, str(projeto)], **_flags_sem_janela())
+    elif alvo == "claude":
+        if os.name == "nt":
+            terminal = shutil.which("wt")
+            ps = shutil.which("pwsh") or "powershell"
+            cmd = [ps, "-NoExit", "-Command", f"Set-Location -LiteralPath '{projeto}'; claude"]
+            if terminal:
+                subprocess.Popen([terminal, "-d", str(projeto)] + cmd)
+            else:
+                subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+        elif sys.platform == "darwin":
+            subprocess.Popen(["osascript", "-e", f'tell app "Terminal" to do script "cd {projeto} && claude"'])
+        else:
+            term = shutil.which("x-terminal-emulator") or shutil.which("gnome-terminal")
+            if not term:
+                return {"erro": "nenhum terminal encontrado"}
+            subprocess.Popen([term, "--", "sh", "-c", f'cd "{projeto}" && claude; exec sh'])
+    return {"ok": True}
+
+
+def _navegador_app():
+    """Edge ou Chrome em modo aplicativo (janela própria, sem barra do navegador)."""
+    candidatos = []
+    if os.name == "nt":
+        for base in (os.environ.get("ProgramFiles(x86)"), os.environ.get("ProgramFiles"), os.environ.get("LOCALAPPDATA")):
+            if base:
+                candidatos += [Path(base) / "Microsoft/Edge/Application/msedge.exe",
+                               Path(base) / "Google/Chrome/Application/chrome.exe"]
+    else:
+        for nome in ("microsoft-edge", "google-chrome", "chromium", "chromium-browser"):
+            if shutil.which(nome):
+                candidatos.append(Path(shutil.which(nome)))
+        candidatos.append(Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"))
+        candidatos.append(Path("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"))
+    return next((c for c in candidatos if c.exists()), None)
+
+
+def iniciar(porta=0, abrir_janela=True, projeto_inicial=None):
+    estado = Estado(str(Path(projeto_inicial).resolve()) if projeto_inicial else None)
+    servidor = ThreadingHTTPServer(("127.0.0.1", porta), criar_handler(estado))
+    endereco = f"http://127.0.0.1:{servidor.server_address[1]}/?t={estado.token}"
+    progresso(f"Prumo {VERSAO} — interface em {endereco}")
+    if abrir_janela:
+        navegador = _navegador_app()
+        perfil = RAIZ_KIT / "config" / ".janela"
+        if navegador:
+            subprocess.Popen([str(navegador), f"--app={endereco}", f"--user-data-dir={perfil}",
+                              "--window-size=1200,800", "--no-first-run", "--no-default-browser-check"])
+        else:
+            webbrowser.open(endereco)
+
+        def vigiar():
+            while True:
+                time.sleep(10)
+                ocupado = any(not t.fim for t in estado.tarefas.values())
+                if not ocupado and time.time() - estado.ultimo_ping > 60:
+                    servidor.shutdown()
+                    return
+        threading.Thread(target=vigiar, daemon=True).start()
+    else:
+        progresso("Ctrl+C para encerrar.")
+    try:
+        servidor.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        servidor.server_close()
+    return 0

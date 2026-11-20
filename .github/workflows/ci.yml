@@ -1,0 +1,85 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  testes:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Configurar git
+        run: |
+          git config --global user.name "CI"
+          git config --global user.email "ci@example.com"
+      - name: Testes
+        run: python -m unittest discover -s tests -v
+
+  powershell:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Módulo no PowerShell 7
+        shell: pwsh
+        run: ./tests/powershell.ps1
+      - name: Módulo no Windows PowerShell 5.1
+        shell: powershell
+        run: ./tests/powershell.ps1
+
+  executavel:
+    needs: [testes, powershell]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Gerar executáveis
+        shell: pwsh
+        run: ./build.ps1 -SoDist
+      - name: Testar o executável
+        shell: pwsh
+        run: |
+          git config --global user.name "CI"; git config --global user.email "ci@example.com"
+          ./dist/prumo.exe --versao
+          ./dist/prumo.exe novo "$env:RUNNER_TEMP\demo" --perfil api-rest --nome "Teste" --cliente "Cliente"
+          if ($LASTEXITCODE -ne 0) { throw 'novo falhou' }
+          ./dist/prumo.exe --projeto "$env:RUNNER_TEMP\demo" validar
+          ./dist/prumo.exe --projeto "$env:RUNNER_TEMP\demo" rastreabilidade
+          if ($LASTEXITCODE -ne 0) { throw 'rastreabilidade falhou' }
+          $env:CLAUDE_PROJECT_DIR = "$env:RUNNER_TEMP\demo"
+          '{"tool_input":{"command":"rm -rf /"}}' | ./dist/prumo.exe hook guarda_comandos
+          if ($LASTEXITCODE -ne 2) { throw "hook deveria bloquear (saiu $LASTEXITCODE)" }
+          '{"tool_input":{"command":"ls"}}' | ./dist/prumo.exe hook guarda_comandos
+          if ($LASTEXITCODE -ne 0) { throw 'hook deveria liberar' }
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prumo-windows
+          path: |
+            dist/prumo.exe
+            dist/prumo-app.exe
+      - name: Publicar release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/prumo.exe
+            dist/prumo-app.exe
