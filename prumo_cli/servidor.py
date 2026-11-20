@@ -90,13 +90,17 @@ def criar_handler(estado):
         def _autorizado(self):
             return secrets.compare_digest(self.headers.get("X-Prumo-Token", ""), estado.token)
 
-        def _corpo(self):
+        def _ler_corpo(self):
             tamanho = int(self.headers.get("Content-Length") or 0)
             if tamanho > 2_000_000:
-                return {}
+                return b""
+            return self.rfile.read(tamanho)
+
+        @staticmethod
+        def _json(bruto):
             try:
-                return json.loads(self.rfile.read(tamanho).decode("utf-8") or "{}")
-            except json.JSONDecodeError:
+                return json.loads(bruto.decode("utf-8") or "{}")
+            except (json.JSONDecodeError, UnicodeDecodeError):
                 return {}
 
         def do_GET(self):
@@ -128,9 +132,12 @@ def criar_handler(estado):
             return self._responder(404, {"erro": "não encontrado"})
 
         def do_POST(self):
+            # Lê o corpo antes de recusar: no Windows, fechar o socket com dados não lidos
+            # envia RST e o cliente recebe "conexão redefinida" em vez da resposta 403.
+            bruto = self._ler_corpo()
             if not self._autorizado():
                 return self._responder(HTTPStatus.FORBIDDEN, {"erro": "token inválido"})
-            corpo = self._corpo()
+            corpo = self._json(bruto)
             rota = urlparse(self.path).path
             try:
                 if rota == "/api/executar":
