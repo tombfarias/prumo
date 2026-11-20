@@ -397,7 +397,7 @@ class TestHooks(unittest.TestCase):
 
 FALSO_CLAUDE = r'''
 import json, sys
-prompt = sys.stdin.read()
+prompt = sys.stdin.buffer.read().decode("utf-8")  # como o Claude Code real: entrada em UTF-8
 args = sys.argv[1:]
 print(json.dumps({"type": "system", "subtype": "init", "session_id": "sess-123", "model": "falso"}))
 print(json.dumps({"type": "assistant", "message": {"content": [{"type": "text", "text": "Trabalhando"},
