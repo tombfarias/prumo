@@ -61,4 +61,4 @@ Requisitos: Python 3.9+ (ou o executável), Git e, para as tarefas com IA, o [Cl
 
 ## Licença
 
-Uso pessoal do autor. Defina uma licença antes de tornar o repositório público.
+Ainda sem licença definida: por padrão, todos os direitos ficam com o autor. Para permitir reuso, adicione um arquivo `LICENSE` (por exemplo, MIT).
