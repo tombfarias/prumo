@@ -26,8 +26,8 @@ O nome vem do fio de prumo, a ferramenta que mantém a obra alinhada. No Prumo, 
 ## Começo rápido
 
 ```powershell
-git clone https://github.com/tombfarias/prumo D:\SistemaCodigo
-cd D:\SistemaCodigo
+git clone https://github.com/tombfarias/prumo C:\Prumo
+cd C:\Prumo
 powershell -ExecutionPolicy Bypass -File .\powershell\instalar.ps1 -AdicionarAoPath   # opcional
 
 prumo novo D:\Projetos\loja-da-ana --perfil web-fullstack --nome "Loja da Ana" --cliente "Ana Doces"
@@ -61,4 +61,19 @@ Requisitos: Python 3.9+ (ou o executável), Git e, para as tarefas com IA, o [Cl
 
 ## Licença
 
-Ainda sem licença definida: por padrão, todos os direitos ficam com o autor. Para permitir reuso, adicione um arquivo `LICENSE` (por exemplo, MIT).
+[MIT](LICENSE): use, copie, modifique e distribua, mantendo o aviso de copyright e a licença.
+
+## Contribuir
+
+O repositório é público. Antes do primeiro commit, ative o guarda de privacidade, que impede que dados pessoais ou da
+sua máquina cheguem ao GitHub:
+
+```bash
+python .githooks/privacidade.py instalar
+git config user.name "<login-do-github>"
+git config user.email "<id>+<login-do-github>@users.noreply.github.com"
+python .githooks/privacidade.py tudo
+```
+
+Termos pessoais que a máquina não revela sozinha (nome completo, telefone, clientes) vão em `~/.prumo/privado.txt`,
+fora do repositório. Detalhes em [Arquitetura do Prumo](docs/arquitetura-do-prumo.md#repositório-público-e-privacidade).

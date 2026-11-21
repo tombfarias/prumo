@@ -6,7 +6,7 @@ description: Opera o Prumo, o sistema do usuário para projetos freelance (espec
 # Usar o Prumo
 
 O Prumo cria projetos com `docs/` (especificação), `AGENTS.md`/`CLAUDE.md`, skills, subagentes e hooks do Claude Code,
-e mantém tudo rastreável por IDs. Repositório: https://github.com/tombfarias/prumo · instalação local típica: `D:\SistemaCodigo`.
+e mantém tudo rastreável por IDs. Repositório: https://github.com/tombfarias/prumo · instalação local: a pasta deste repositório (ou a pasta do `prumo.exe` no PATH).
 
 ## Como chamar
 

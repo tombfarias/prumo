@@ -11,3 +11,13 @@ config/freelancer.json
 config/projetos.json
 config/.janela/
 .prumo/
+# nunca versionar: dados locais e segredos (o repositório é público)
+CLAUDE.local.md
+.claude/settings.local.json
+.env
+.env.*
+!.env.example
+!.env.exemplo
+*.pem
+*.key
+*.log
