@@ -1,0 +1,26 @@
+{
+  "descricao": "Tipos de campo das entidades (passo Dados). 'diagrama' é o tipo usado nos diagramas ER e de classes; 'pessoal' marca dado pessoal para a seção de LGPD.",
+  "itens": [
+    {"id": "texto", "nome": "Texto curto", "diagrama": "string", "pessoal": false},
+    {"id": "texto-longo", "nome": "Texto longo", "diagrama": "text", "pessoal": false},
+    {"id": "inteiro", "nome": "Número inteiro", "diagrama": "int", "pessoal": false},
+    {"id": "decimal", "nome": "Número decimal", "diagrama": "decimal", "pessoal": false},
+    {"id": "dinheiro", "nome": "Valor em dinheiro", "diagrama": "decimal", "pessoal": false},
+    {"id": "booleano", "nome": "Sim ou não", "diagrama": "boolean", "pessoal": false},
+    {"id": "data", "nome": "Data", "diagrama": "date", "pessoal": false},
+    {"id": "data-hora", "nome": "Data e hora", "diagrama": "datetime", "pessoal": false},
+    {"id": "opcoes", "nome": "Lista de opções", "diagrama": "string", "pessoal": false},
+    {"id": "email", "nome": "E-mail", "diagrama": "string", "pessoal": true},
+    {"id": "telefone", "nome": "Telefone", "diagrama": "string", "pessoal": true},
+    {"id": "cpf", "nome": "CPF", "diagrama": "string", "pessoal": true},
+    {"id": "cnpj", "nome": "CNPJ", "diagrama": "string", "pessoal": false},
+    {"id": "endereco", "nome": "Endereço", "diagrama": "string", "pessoal": true},
+    {"id": "cep", "nome": "CEP", "diagrama": "string", "pessoal": true},
+    {"id": "nascimento", "nome": "Data de nascimento", "diagrama": "date", "pessoal": true},
+    {"id": "senha", "nome": "Senha (guardada só como hash)", "diagrama": "string", "pessoal": false},
+    {"id": "arquivo", "nome": "Arquivo", "diagrama": "string", "pessoal": false},
+    {"id": "imagem", "nome": "Imagem", "diagrama": "string", "pessoal": false},
+    {"id": "url", "nome": "Endereço web (URL)", "diagrama": "string", "pessoal": false},
+    {"id": "json", "nome": "Dados estruturados (JSON)", "diagrama": "json", "pessoal": false}
+  ]
+}

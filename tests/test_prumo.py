@@ -16,7 +16,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
-from prumo_cli import claude, figma, gestao, projeto as mp, rastreio, seguranca, validacao  # noqa: E402
+from prumo_cli import claude, figma, formulario, gestao, projeto as mp, rastreio, seguranca, validacao  # noqa: E402
 from prumo_cli.cli import main  # noqa: E402
 from prumo_cli.util import ErroPrumo, gravar, ler  # noqa: E402
 
@@ -440,6 +440,130 @@ class TestClaude(unittest.TestCase):
             self.assertEqual(etapas, ["requisitos", "arquitetura", "backlog", "testes", "proposta"])
             with self.assertRaises(ErroPrumo):
                 claude.montar_prompt(p, "livre", texto="  ")
+
+
+FORMULARIO = {
+    "versao": 1,
+    "contato": {"nome": "Ana", "email": "contato@exemplo.com"},
+    "negocio": {"contexto": "Doceria com encomendas pelo WhatsApp.", "proposito": "Vender encomendas pela internet.",
+                "objetivos": [{"descricao": "Reduzir pedidos perdidos", "medida": "pedidos sem registro", "meta": "zero"}]},
+    "atores": [{"nome": "Cliente", "tipo": "humano"}, {"nome": "Administrador", "tipo": "humano"}],
+    "funcionalidades": [
+        {"acao": "cadastrar produtos", "ator": "Administrador", "grupo": "Catálogo", "prioridade": "Must", "tamanho": "M"},
+        {"acao": "pagar o pedido por Pix", "ator": "Cliente", "prioridade": "must", "tamanho": "g", "regras": ["rn-001"]},
+        {"acao": "emitir nota fiscal", "ator": "Administrador", "prioridade": "won't"},
+    ],
+    "regras": [{"id": "RN-001", "regra": "Encomendas só com 48h de antecedência"}],
+    "glossario": [{"termo": "Encomenda", "definicao": "Pedido com retirada futura"}],
+    "perguntas": [{"pergunta": "Haverá entrega?", "bloqueia": True}],
+    "casos_de_uso": [{"nome": "Fazer encomenda", "ator": "Cliente", "requisitos": ["RF-002"], "telas": ["TL-002"]}],
+    "entidades": [
+        {"nome": "Produto", "campos": [{"nome": "nome", "tipo": "texto", "obrigatorio": True},
+                                       {"nome": "preco", "tipo": "dinheiro"}],
+         "relacoes": [{"com": "Categoria", "cardinalidade": "N:1", "verbo": "pertence a"}]},
+        {"nome": "Categoria", "campos": [{"nome": "nome", "tipo": "texto"}]},
+    ],
+    "interface": {"telas": [{"id": "TL-001", "nome": "Cardápio", "ator": "Cliente", "atende": ["RF-001"], "vai_para": ["TL-002"]},
+                            {"id": "TL-002", "nome": "Checkout", "ator": "Cliente", "atende": ["RF-002"]}]},
+    "tecnico": {"stack": {"frontend": "nextjs", "backend": "nextjs", "banco": "postgresql", "orm": "prisma"},
+                "login": "email-senha", "perfis_acesso": ["Administrador", "Cliente"],
+                "integracoes": ["pagamento-pix"], "rnf": ["responsivo", "lgpd"]},
+    "comercial": {"validade_dias": 15, "marcos": [{"conteudo": "Catálogo", "percentual": 40},
+                                                  {"conteudo": "Pedidos", "percentual": 60}]},
+}
+
+
+class TestFormulario(unittest.TestCase):
+    def test_catalogos_e_stack_padrao_dos_perfis(self):
+        self.assertEqual(formulario.problemas_catalogos(), [])
+        stacks = formulario.indice(formulario.carregar_catalogos(), "stacks")
+        for perfil in mp.listar_perfis():
+            with self.subTest(perfil=perfil["id"]):
+                self.assertIsInstance(perfil.get("stack_padrao"), dict)
+                for camada, ident in perfil["stack_padrao"].items():
+                    self.assertIn(ident, stacks)
+                    self.assertIn(camada, stacks[ident]["camadas"])
+
+    def test_formulario_completo_valido_e_normalizado(self):
+        dados = formulario.normalizar(FORMULARIO)
+        self.assertEqual([f.get("prioridade") for f in dados["funcionalidades"]], ["Must", "Must", "Won't"])
+        self.assertEqual(dados["funcionalidades"][1]["tamanho"], "G")
+        self.assertEqual(dados["funcionalidades"][1]["regras"], ["RN-001"])
+        self.assertEqual(formulario.atribuir_ids(dados), ["RF-001", "RF-002", "RF-003", "UC-001", "M1", "M2"])
+        self.assertEqual(formulario.validar(dados), [])
+        self.assertEqual(formulario.validar(formulario.vazio()), [])
+
+    def test_referencias_soltas_e_valores_fora_do_catalogo(self):
+        dados = formulario.normalizar(FORMULARIO)
+        formulario.atribuir_ids(dados)
+        dados["funcionalidades"][0].update(ator="Gerente", prioridade="Talvez", regras=["RN-009"])
+        dados["casos_de_uso"][0]["telas"] = ["TL-005"]
+        dados["entidades"][0]["campos"][1]["tipo"] = "moeda"
+        dados["entidades"].append({"nome": "produto"})
+        dados["tecnico"].update(integracoes=["pombo-correio"], login="biometria")
+        dados["tecnico"]["stack"]["orm"] = "nextjs"
+        dados["atores"][0]["apelido"] = "x"
+        problemas = formulario.validar(dados, ids_documentos={"RN-009"})
+        erros = "\n".join(m for g, m in problemas if g == "erro")
+        avisos = "\n".join(m for g, m in problemas if g == "aviso")
+        for trecho in ("ator 'Gerente'", "prioridade 'Talvez'", "TL-005 não existe", "tipo 'moeda'",
+                       "'produto' aparece duas vezes", "'pombo-correio'", "login 'biometria'"):
+            self.assertIn(trecho, erros)
+        for trecho in ("RN-009 existe só nos documentos", "não é da camada orm", "campo desconhecido 'apelido'"):
+            self.assertIn(trecho, avisos)
+
+    def test_estrutura_invalida_nao_grava(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "minimo")
+            for ruim in ({"atores": "Cliente"}, {"regras": [{"id": "RN-001", "regra": "a"}, {"id": "RN-001", "regra": "b"}]},
+                         {"funcionalidades": [{"id": "XX-1", "acao": "a"}]}, {"versao": 99}):
+                with self.subTest(ruim=ruim), self.assertRaises(ErroPrumo):
+                    formulario.salvar(p, ruim)
+            self.assertFalse((p.raiz / formulario.ARQUIVO).exists())
+
+    def test_ids_sem_colisao_com_os_documentos(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "web-fullstack")
+            r = formulario.salvar(p, {"funcionalidades": [{"acao": "a"}, {"acao": ""}]})
+            self.assertEqual(r["ids_criados"], ["RF-001"])  # os exemplos [PREENCHER] dos modelos não contam
+            req = p.docs / "02-requisitos.md"
+            gravar(req, ler(req) + "\n| ID | Descrição | Prioridade | Origem |\n|---|---|---|---|\n"
+                                   "| RF-007 | O sistema deve exportar pedidos | Should | Reunião |\n")
+            dados, _ = formulario.carregar(p)
+            dados["funcionalidades"][1]["acao"] = "b"
+            dados["funcionalidades"].append({"acao": "c"})
+            self.assertEqual(formulario.salvar(p, dados)["ids_criados"], ["RF-008", "RF-009"])
+            dados, _ = formulario.carregar(p)
+            self.assertEqual(formulario.salvar(p, dados)["ids_criados"], [])  # salvar de novo não muda nada
+            self.assertEqual([f["id"] for f in formulario.carregar(p)[0]["funcionalidades"]], ["RF-001", "RF-008", "RF-009"])
+            dados["funcionalidades"] = dados["funcionalidades"][:1] + [{"acao": "d"}]  # apagar deixa buraco
+            self.assertEqual(formulario.salvar(p, dados)["ids_criados"], ["RF-010"])
+
+    def test_cli_formulario(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "web-fullstack")
+            entrada = Path(tmp) / "formulario.json"
+            gravar(entrada, json.dumps(FORMULARIO, ensure_ascii=False))
+
+            def rodar(*args):
+                buf = io.StringIO()
+                with redirect_stdout(buf):
+                    codigo = main(["formulario", *args, "--json", "--projeto", str(p.raiz)])
+                return codigo, json.loads(buf.getvalue())
+
+            codigo, r = rodar("salvar", str(entrada))
+            self.assertEqual((codigo, r["erros"]), (0, []))
+            self.assertIn("RF-003", r["ids_criados"])
+            self.assertEqual(rodar("validar")[0], 0)
+            codigo, r = rodar()
+            self.assertTrue(r["existe"])
+            self.assertEqual(set(r["catalogos"]), set(formulario.CATALOGOS))
+            self.assertEqual(r["itens"]["funcionalidades"], 3)
+            self.assertIn("telas", [x["id"] for x in r["passos"]])
+            dados = json.loads(ler(p.raiz / formulario.ARQUIVO))
+            dados["casos_de_uso"][0]["requisitos"] = ["RF-050"]
+            gravar(p.raiz / formulario.ARQUIVO, json.dumps(dados))
+            self.assertEqual(rodar("validar")[0], 1)
 
 
 class TestCliEServidor(unittest.TestCase):

@@ -3,5 +3,6 @@
   "email": "",
   "valor_hora": 0,
   "moeda": "BRL",
-  "contingencia_percentual": 20
+  "contingencia_percentual": 20,
+  "tamanhos": {"P": 4, "M": 12, "G": 32}
 }

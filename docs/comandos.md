@@ -37,6 +37,13 @@ Documentos com lacunas e estado (em andamento, completo, aprovado, aprovado ALTE
 ### `prumo doc [ID] [--listar]`
 Sem ID ou com `--listar`: catálogo de documentos e quais o projeto tem. Com ID (ex.: `03-casos-de-uso`, `04-uml/estados`): adiciona o documento ao projeto.
 
+### `prumo formulario [salvar ARQUIVO | validar]`
+Formulário de especificação em `especificacao.prumo.json` (veja [Formulário de especificação](formulario-de-especificacao.md)).
+Sem ação: preenchimento por passo e quantidade de itens; com `--json`, também o formulário, os catálogos de
+`templates/catalogos/` e as opções fixas (é o que a interface usa). `salvar ARQUIVO`: normaliza, atribui os IDs que
+faltam (RF, RN, UC, TL, marcos) sem colidir com os documentos e grava; só erro de estrutura impede a gravação.
+`validar`: referências soltas, IDs repetidos, campos obrigatórios e valores fora dos catálogos (sai com código 1 se houver erro).
+
 ## Qualidade da especificação
 
 ### `prumo validar [--estrito] [--mmdc]`

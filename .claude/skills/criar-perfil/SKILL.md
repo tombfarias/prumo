@@ -8,6 +8,8 @@ description: Cria um novo perfil de projeto (template comum) no Prumo, com docum
 1. Copie um perfil parecido de `templates/perfis/<id>.json` para `templates/perfis/<novo-id>.json` (id em kebab-case).
 2. Ajuste os campos:
    - `nome`, `descricao` (uma frase: para que tipo de cliente/projeto serve), `stack` (com alternativa);
+   - `stack_padrao`: camada → id de `templates/catalogos/stacks.json` (pré-marca o passo Técnico do formulário;
+     `{}` se não houver padrão). Tecnologia que falta no catálogo: acrescente-a lá primeiro;
    - `documentos`: ids de `templates/documentos/` (sem `.md`; UML como `04-uml/classes`). Mantenha sempre
      `00-briefing`, `01-visao`, `02-requisitos`, `08-backlog` e `12-seguranca`;
    - `pastas`: pastas de código (entram em `pastas_codigo` e na varredura de rastreabilidade e segurança);

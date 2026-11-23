@@ -7,7 +7,7 @@ import runpy
 import sys
 from pathlib import Path
 
-from . import claude, figma, gestao, projeto as mod_projeto, rastreio, seguranca, validacao
+from . import claude, figma, formulario, gestao, projeto as mod_projeto, rastreio, seguranca, validacao
 from .util import (
     CONGELADO, RAIZ_KIT, VERSAO, ErroPrumo, configurar_console, formatar_horas, formatar_moeda, info,
     ler, ler_json, gravar_json, tabela_console, agora_iso,
@@ -100,6 +100,56 @@ def cmd_validar(args):
     texto.append(f"\n{len(erros)} erro(s), {len(avisos)} aviso(s).")
     saida({"erros": erros, "avisos": avisos}, "\n".join(texto))
     return 1 if erros else 0
+
+
+def _separar(problemas):
+    return ([m for g, m in problemas if g == "erro"], [m for g, m in problemas if g == "aviso"])
+
+
+def _texto_problemas(erros, avisos):
+    return [f"erro:  {m}" for m in erros] + [f"aviso: {m}" for m in avisos]
+
+
+def cmd_formulario(args):
+    p = abrir_projeto(args)
+    if args.acao == "salvar":
+        if not args.arquivo:
+            raise ErroPrumo("Informe o arquivo: prumo formulario salvar <arquivo.json>")
+        dados = ler_json(args.arquivo, None)
+        if dados is None:
+            raise ErroPrumo(f"Arquivo não encontrado: {args.arquivo}")
+        r = formulario.salvar(p, dados)
+        erros, avisos = _separar(r.pop("problemas"))
+        texto = [f"Formulário gravado em {r['arquivo']}."]
+        if r["ids_criados"]:
+            texto.append("IDs criados: " + ", ".join(r["ids_criados"]))
+        texto += _texto_problemas(erros, avisos)
+        if erros or avisos:
+            texto.append(f"{len(erros)} erro(s), {len(avisos)} aviso(s).")
+        saida(dict(r, erros=erros, avisos=avisos), "\n".join(texto))
+        return 0
+    if args.acao == "validar":
+        dados, existe = formulario.carregar(p)
+        erros, avisos = _separar(formulario.validar(dados, ids_documentos=formulario.ids_dos_documentos(p),
+                                                    documentos=p.config.get("documentos")))
+        texto = _texto_problemas(erros, avisos) + [f"\n{len(erros)} erro(s), {len(avisos)} aviso(s)."]
+        if not existe:
+            texto = [f"{formulario.ARQUIVO} ainda não existe (preencha o formulário na interface)."]
+        saida({"existe": existe, "erros": erros, "avisos": avisos}, "\n".join(texto))
+        return 1 if erros else 0
+    r = formulario.resumo(p)
+    erros, avisos = _separar(r.pop("problemas"))
+    estado = "" if r["existe"] else " (ainda não existe)"
+    texto = [f"Formulário: {r['arquivo']}{estado}", "",
+             tabela_console(["Passo", "Preenchido"], [[f"{n}. {x['titulo']}", f"{x['preenchidos']}/{x['total']}"]
+                                                      for n, x in enumerate(r["passos"], 1)])]
+    itens = {k: v for k, v in r["itens"].items() if v}
+    if itens:
+        texto += ["", "Itens: " + ", ".join(f"{formulario.LISTAS[k].rotulo.lower()} {v}" for k, v in itens.items())]
+    if erros or avisos:
+        texto += ["", f"{len(erros)} erro(s), {len(avisos)} aviso(s): veja com `prumo formulario validar`."]
+    saida(dict(r, erros=erros, avisos=avisos), "\n".join(texto))
+    return 0
 
 
 def cmd_rastreabilidade(args):
@@ -340,6 +390,9 @@ def montar_parser():
     s = novo("validar", cmd_validar, "verifica lacunas, Mermaid, IDs e documentos aprovados")
     s.add_argument("--estrito", action="store_true", help="avisos também contam como erro")
     s.add_argument("--mmdc", action="store_true", help="valida os diagramas com o mermaid-cli, se instalado")
+    s = novo("formulario", cmd_formulario, "formulário de especificação (especificacao.prumo.json)")
+    s.add_argument("acao", nargs="?", default="mostrar", choices=["mostrar", "salvar", "validar"])
+    s.add_argument("arquivo", nargs="?", help="em salvar: JSON com o formulário")
     novo("rastreabilidade", cmd_rastreabilidade, "gera docs/rastreabilidade.md")
     s = novo("contexto", cmd_contexto, "imprime só a trilha ligada a um ou mais IDs (economiza tokens)")
     s.add_argument("ids", nargs="+")
