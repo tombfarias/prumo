@@ -21,3 +21,9 @@ CLAUDE.local.md
 *.pem
 *.key
 *.log
+# cópias locais das instruções para o Codex e script de instalação de uso único
+# (com a barra inicial: templates/agentes/AGENTS.md continua versionado)
+/AGENTS.md
+/.agents/
+/.codex/
+/concluir-instalacao.ps1
