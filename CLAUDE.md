@@ -8,11 +8,11 @@ rastreabilidade e um kit de agentes (skills, subagentes, hooks) para o Claude Co
 - `prumo_cli/` — CLI (`cli.py`), criação de projetos (`projeto.py`), rastreabilidade (`rastreio.py`), validação e
   contexto (`validacao.py`), avisos de estilo (`estilo.py`, regras em `docs/guia-de-escrita.md`), projetos existentes e stacks fora dos perfis (`mapear.py`),
   orçamento/horas/exportação (`gestao.py`), Figma (`figma.py`), segurança (`seguranca.py`),
-  formulário de especificação (`formulario.py`, desenho em `docs/formulario-de-especificacao.md`) e geração dos documentos a partir dele (`geracao.py`: marcadores, hash e mesclagem; `geradores.py`: conteúdo de cada bloco),
+  formulário de especificação (`formulario.py`, desenho em `docs/formulario-de-especificacao.md`), entrevista guiada (`entrevista.py`) e geração dos documentos a partir dele (`geracao.py`: marcadores, hash e mesclagem; `geradores.py`: conteúdo de cada bloco),
   ponte com o Claude Code (`claude.py`), servidor da interface (`servidor.py`) e a interface (`gui/index.html`, HTML/CSS/JS puro,
   com o `mermaid.min.js` embutido para desenhar diagramas).
 - `templates/documentos/` — modelos de especificação; `templates/perfis/` — perfis e convenções por stack;
-  `templates/catalogos/` — opções do formulário (stacks, integrações, logins, RNFs, tipos de campo) e o que cada uma implica,
+  `templates/catalogos/` — opções do formulário (stacks, integrações, logins, RNFs, tipos de campo) e o que cada uma implica, as perguntas da entrevista (`entrevista.json`)
   e `ferramentas.json` (comandos e convenções por linguagem, usados por `prumo mapear` e `--stack`);
   `templates/agentes/` — AGENTS.md, CLAUDE.md, skills, subagentes, hooks e settings copiados para cada projeto.
 - `.githooks/` — guarda de privacidade (`privacidade.py`) usado pelos hooks do git (instalados em `.git/hooks`), pelo hook do Claude (`.claude/settings.json`) e pelo CI.

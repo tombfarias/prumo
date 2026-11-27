@@ -7,7 +7,7 @@ import runpy
 import sys
 from pathlib import Path
 
-from . import claude, figma, geracao, mapear, formulario, gestao, projeto as mod_projeto, rastreio, seguranca, validacao
+from . import claude, entrevista, figma, geracao, mapear, formulario, gestao, projeto as mod_projeto, rastreio, seguranca, validacao
 from .util import (
     CONGELADO, RAIZ_KIT, VERSAO, ErroPrumo, configurar_console, formatar_horas, formatar_moeda, info,
     config_freelancer, ler, ler_json, gravar_json, tabela_console, agora_iso,
@@ -239,6 +239,70 @@ def cmd_gerar(args):
     p = abrir_projeto(args)
     r = geracao.gerar(p, simular=args.simular, sobrescrever=args.sobrescrever or ())
     saida(r, "\n".join(_texto_geracao(r)))
+    return 0
+
+
+def _texto_pergunta(r):
+    q = r["pergunta"]
+    if not q:
+        return [f"Entrevista concluída ({r['feitas']} resposta(s)). Próximo passo: prumo gerar."]
+    linhas = [f"[{r['feitas'] + 1}/{r['total']}] {q['pergunta']}  ({q['id']})"]
+    if q.get("ajuda"):
+        linhas.append(f"  {q['ajuda']}")
+    for n, o in enumerate(q.get("opcoes", []), 1):
+        linhas.append(f"  {n}. {o['rotulo']}")
+    dica = {"sim-nao": "sim ou não", "lista": "uma por linha; linha vazia termina", "numero": "número",
+            "multipla": "números separados por vírgula"}.get(q["tipo"])
+    if dica:
+        linhas.append(f"  ({dica})")
+    return linhas
+
+
+def _ler_resposta(q):
+    if q["tipo"] in ("lista", "area"):
+        linhas = []
+        while True:
+            linha = input("> ")
+            if not linha.strip():
+                return "\n".join(linhas)
+            linhas.append(linha)
+    valor = input("> ")
+    return valor.replace(",", "\n") if q["tipo"] == "multipla" else valor
+
+
+def cmd_entrevista(args):
+    p = abrir_projeto(args)
+    if args.acao == "responder":
+        if not args.id:
+            raise ErroPrumo("Use: prumo entrevista responder <id> <resposta>")
+        r = entrevista.responder(p, args.id, entrevista.valor_de_texto(" ".join(args.valor)))
+    elif args.acao == "pular":
+        if not args.id:
+            raise ErroPrumo("Use: prumo entrevista pular <id>")
+        r = entrevista.pular(p, args.id)
+    elif args.acao == "reiniciar":
+        r = entrevista.reiniciar(p)
+    else:
+        r = entrevista.proxima(p)
+        if args.acao == "perguntar" and not JSON and sys.stdin.isatty():
+            info("Entrevista guiada: Enter vazio pula a pergunta; Ctrl+C para (o que já respondeu fica gravado).")
+            try:
+                while r["pergunta"]:
+                    q = r["pergunta"]
+                    info("\n" + "\n".join(_texto_pergunta(r)))
+                    valor = _ler_resposta(q)
+                    try:
+                        r = entrevista.responder(p, q["id"], valor) if valor.strip() else entrevista.pular(p, q["id"])
+                    except ErroPrumo as e:
+                        info(str(e))
+                        continue
+                    for item in r["aplicado"]:
+                        info(f"  + {item}")
+            except (KeyboardInterrupt, EOFError):
+                info("\nEntrevista pausada. Continue com: prumo entrevista")
+                return 0
+    texto = [f"  + {x}" for x in r.get("aplicado", [])] + _texto_pergunta(r)
+    saida(r, "\n".join(texto))
     return 0
 
 
@@ -644,6 +708,10 @@ def montar_parser():
     s.add_argument("--simular", action="store_true", help="só mostra o que mudaria")
     s.add_argument("--sobrescrever", action="append", metavar="DOC:BLOCO",
                    help="reescreve o bloco mesmo editado (ex.: docs/02-requisitos.md:rf); pode repetir")
+    s = novo("entrevista", cmd_entrevista, "perguntas padronizadas, uma por vez, que completam o formulário")
+    s.add_argument("acao", nargs="?", default="perguntar", choices=["perguntar", "proxima", "responder", "pular", "reiniciar"])
+    s.add_argument("id", nargs="?", help="em responder e pular: id da pergunta")
+    s.add_argument("valor", nargs="*", help="em responder: a resposta (lista: uma por linha ou JSON)")
     novo("rastreabilidade", cmd_rastreabilidade, "gera docs/rastreabilidade.md")
     s = novo("contexto", cmd_contexto, "imprime só a trilha ligada a um ou mais IDs (economiza tokens)")
     s.add_argument("ids", nargs="+")

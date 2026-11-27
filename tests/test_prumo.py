@@ -20,7 +20,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
-from prumo_cli import claude, estilo, figma, formulario, geracao, gestao, mapear, projeto as mp, rastreio, seguranca, validacao  # noqa: E402
+from prumo_cli import claude, entrevista, estilo, figma, formulario, geracao, gestao, mapear, projeto as mp, rastreio, seguranca, validacao  # noqa: E402
 from prumo_cli.cli import main  # noqa: E402
 from prumo_cli.util import ErroPrumo, gravar, ler  # noqa: E402
 
@@ -1323,6 +1323,64 @@ class TestGeracao(unittest.TestCase):
         self.assertIn("Texto colado do cliente.", novo)
         self.assertIn("- https://a.exemplo", novo)
         self.assertNotIn("[PREENCHER]", novo)
+
+
+class TestEntrevista(unittest.TestCase):
+    def test_catalogo_da_entrevista(self):
+        self.assertEqual(entrevista.problemas_entrevista(), [])
+        ruim = [{"id": "x", "passo": "negocio", "tipo": "sim-nao", "pergunta": "?", "se": ["nao-existe=sim"],
+                 "se_sim": [{"marcar": "tecnico.integracoes", "valor": "fax"}]}]
+        self.assertEqual(len(entrevista.problemas_entrevista(ruim)), 2)
+
+    def test_perguntas_completam_o_formulario(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "web-fullstack")
+            self.assertEqual(entrevista.proxima(p)["pergunta"]["id"], "contexto")
+            entrevista.responder(p, "contexto", "Salão de beleza")
+            entrevista.responder(p, "atores", ["Cliente", "Atendente"])
+            entrevista.responder(p, "tem-login", "sim")
+            with self.assertRaises(ErroPrumo):
+                entrevista.responder(p, "tipo-login", "7")
+            entrevista.responder(p, "tipo-login", "1")  # número da opção
+            entrevista.responder(p, "cadastro-aberto", "não")
+            entrevista.responder(p, "recuperar-senha", "s")
+            entrevista.responder(p, "funcionalidades", "agendar um serviço\n- cancelar um agendamento")
+            r = entrevista.responder(p, "pagamento", "pix")
+            self.assertIn("Funcionalidade: pagar por Pix", r["aplicado"])
+            entrevista.responder(p, "validade", "15")
+            dados, _ = formulario.carregar(p)
+            self.assertEqual(dados["negocio"]["contexto"], "Salão de beleza")
+            self.assertEqual([a["nome"] for a in dados["atores"]], ["Cliente", "Atendente", "Administrador"])
+            self.assertEqual(dados["tecnico"]["login"], "email-senha")
+            self.assertEqual(dados["tecnico"]["integracoes"], ["email-transacional", "pagamento-pix"])
+            self.assertEqual([f["acao"] for f in dados["funcionalidades"]],
+                             ["convidar usuários por e-mail", "recuperar a senha por e-mail", "agendar um serviço",
+                              "cancelar um agendamento", "pagar por Pix"])
+            self.assertTrue(all(f.get("id") for f in dados["funcionalidades"]))  # IDs atribuídos ao gravar
+            self.assertEqual(dados["comercial"]["validade_dias"], 15)
+            self.assertEqual([m for g, m in formulario.validar(dados) if g == "erro"], [])
+            # não repete o que já foi respondido nem o que o formulário já tem; perfil filtra
+            ids = [q["id"] for q in entrevista.pendentes(dados, "web-fullstack")]
+            self.assertNotIn("tipo-login", ids)
+            self.assertNotIn("contexto", ids)
+            self.assertNotIn("offline", ids)  # só app-mobile
+            self.assertIn("funcionalidades", [q["id"] for q in entrevista.pendentes(
+                dict(dados, entrevista={"respostas": {}}), "web-fullstack")])  # lista que acumula
+            # sem login: as perguntas de acesso somem
+            entrevista.reiniciar(p)
+            dados, _ = formulario.carregar(p)
+            dados["tecnico"]["login"] = ""
+            formulario.salvar(p, dados)
+            entrevista.responder(p, "tem-login", "nao")
+            dados, _ = formulario.carregar(p)
+            self.assertEqual(dados["tecnico"]["login"], "nenhum")
+            ids = [q["id"] for q in entrevista.pendentes(dados, "web-fullstack")]
+            self.assertFalse({"tipo-login", "cadastro-aberto", "perfis-acesso"} & set(ids))
+            # pular e a linha de comando
+            entrevista.pular(p, "problema")
+            with redirect_stdout(io.StringIO()) as out:
+                main(["--json", "--projeto", str(p.raiz), "entrevista", "responder", "regras", '["Sem dois horários iguais"]'])
+            self.assertEqual(json.loads(out.getvalue())["ids_criados"], ["RN-001"])
 
 
 class TestCliEServidor(unittest.TestCase):

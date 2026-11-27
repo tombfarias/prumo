@@ -63,7 +63,7 @@ claude                        # no Claude Code, rode /especificar-projeto
 prumo status                  # prontidão dos documentos
 ```
 
-Antes, preencha a aba **Formulário** da interface (e clique em **Gerar documentos**) ou cole o que o cliente disse em `docs/00-briefing.md`. Passo a passo completo em [Guia rápido](docs/guia-rapido.md); instalação detalhada em [Instalação](docs/instalacao.md).
+Antes, responda a **Entrevista guiada** (ou `prumo entrevista`) e preencha a aba **Formulário** da interface (e clique em **Gerar documentos**) ou cole o que o cliente disse em `docs/00-briefing.md`. Passo a passo completo em [Guia rápido](docs/guia-rapido.md); instalação detalhada em [Instalação](docs/instalacao.md).
 
 ## Documentação
 

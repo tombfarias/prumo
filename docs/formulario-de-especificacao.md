@@ -2,7 +2,7 @@
 
 **Status:** fases 1, 2 e 4 implementadas. Dados e catálogos em `prumo_cli/formulario.py` e `templates/catalogos/`;
 `prumo gerar` (`prumo_cli/geracao.py` + `prumo_cli/geradores.py`) preenche todos os blocos da seção 5.2; a aba
-**Formulário** tem os passos 1 a 8 da seção 3 mais Perguntas, e a prévia antes de gravar. Ainda são desenho: o passo
+**Formulário** tem os passos 1 a 8 da seção 3 mais Perguntas, a prévia antes de gravar e a entrevista guiada (3.1). Ainda são desenho: o passo
 Kit (9), a fase 3 (kit derivado) e o status por bloco na aba Documentos.
 
 ## Objetivo
@@ -143,6 +143,22 @@ retomado e alterado a qualquer momento.
 | 10. Revisão | prévia do `prumo gerar --simular`: blocos que mudam, IDs criados, lacunas restantes por documento | — |
 
 Perguntas em aberto (P-xx) podem ser digitadas em qualquer passo; os catálogos também sugerem perguntas.
+
+### 3.1 Entrevista guiada
+
+Para quem prefere responder a preencher tabelas: `prumo entrevista` (terminal) ou o botão **Entrevista guiada** da aba
+Formulário faz perguntas padronizadas, uma por vez, e grava cada resposta no formulário. Não usa IA nem tokens.
+
+- **Catálogo:** `templates/catalogos/entrevista.json`. Cada pergunta tem `id`, `passo`, `tipo` (texto, area, lista,
+  numero, sim-nao, escolha, multipla), `campo` (onde a resposta vai), `se` (condições) e ações (`se_sim`, `se_nao`,
+  `acoes` por opção ou da lista): `acrescentar` um item numa lista (sem repetir pelo campo principal), `marcar` um
+  valor numa lista de textos, `definir` um campo. Acrescentar uma pergunta é editar o JSON; o teste
+  `test_catalogo_da_entrevista` confere ids, campos, listas e valores dos catálogos.
+- **Condições:** `<id>=<valor>` (resposta anterior), `campo:<caminho>=<valor>` ou `!=`, `perfil:<id>|<id>`.
+- **Não repete:** pergunta respondida (ou pulada), com o campo já preenchido (exceto `acumula`, das listas que as
+  outras respostas também alimentam) ou fora do perfil não é feita. As respostas ficam em `entrevista.respostas`.
+- **Requisitos padrão:** sim/não e escolhas acrescentam funcionalidades com prioridade e tamanho (ex.: cadastro
+  fechado → "convidar usuários por e-mail", ator Administrador), integrações e RNFs do catálogo; os IDs saem ao gravar.
 
 ## 4. Catálogos
 
