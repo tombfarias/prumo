@@ -169,6 +169,14 @@ class TestServidorInterface(unittest.TestCase):
         self.assertEqual(r["codigo"], 2)
 
 
+    def test_formulario_recusa_sem_projeto_ou_sem_dados(self):
+        self.assertTrue({"formulario", "gerar"} <= servidor.PERMITIDOS)
+        r = self.post("/api/formulario", {"projeto": self._tmp.name, "formulario": {}})
+        self.assertEqual(r["codigo"], 2)
+        r = self.post("/api/formulario", {"projeto": str(self.p.raiz), "formulario": "x"})
+        self.assertIn("ausente", r["dados"]["erro"])
+
+
 class TestAgentesListarCli(KitIsolado):
     def test_listar_pela_cli(self):
         p = criar(self.tmp)

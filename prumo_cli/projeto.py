@@ -624,7 +624,7 @@ def instrucoes_iniciais(projeto):
     info("")
     info("Próximos passos:")
     info(f"  1. cd \"{projeto.raiz}\"")
-    info("  2. Cole as anotações do cliente em docs/00-briefing.md (ou peça ao Claude para fazer isso).")
+    info("  2. Preencha a aba Formulário da interface (ou cole as anotações do cliente em docs/00-briefing.md).")
     info("  3. Abra o Claude Code na pasta (`claude`) e rode /especificar-projeto")
     info(f"     ou, pelo terminal/PowerShell: {p} claude especificar")
     info(f"  4. Acompanhe com `{p} status` e `{p} validar`.")

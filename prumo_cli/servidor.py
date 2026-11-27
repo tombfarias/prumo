@@ -24,7 +24,7 @@ from .util import CONGELADO, RAIZ_KIT, VERSAO, executavel_console, progresso
 PAGINA = Path(__file__).resolve().parent / "gui" / "index.html"
 PERMITIDOS = {"perfis", "projetos", "novo", "mapear", "ferramentas", "status", "validar", "rastreabilidade", "contexto", "aprovar",
               "desaprovar", "adr", "mudanca", "doc", "agentes", "orcamento", "horas", "seguranca", "diagramas",
-              "figma", "versao", "config"}
+              "figma", "versao", "config", "formulario", "gerar"}
 LIMITE_CORPO = 2_000_000  # bytes aceitos no corpo de um POST
 DESCARTE_MAXIMO = 16_000_000  # acima disso a conexão fecha sem ler o resto
 EXT_LEITURA = {".md", ".json", ".txt", ".mmd", ".log", ".py"}
@@ -206,6 +206,8 @@ def criar_handler(estado):
                     return self._responder(200, ler_arquivo(corpo))
                 if rota == "/api/salvar":
                     return self._responder(200, salvar_arquivo(corpo))
+                if rota == "/api/formulario":
+                    return self._responder(200, salvar_formulario(corpo))
                 if rota == "/api/abrir":
                     return self._responder(200, abrir(corpo))
                 if rota == "/api/escolher-pasta":
@@ -277,6 +279,22 @@ def salvar_arquivo(corpo):
     with open(alvo, "w", encoding="utf-8", newline="\n") as f:
         f.write(texto.replace("\r\n", "\n"))
     return {"ok": True, "versao": alvo.stat().st_mtime_ns}
+
+
+def salvar_formulario(corpo):
+    """Grava o formulário da interface: o CLI roda com a entrada padrão fechada, então o corpo vai para
+    .prumo/formulario-recebido.json e `prumo formulario salvar` valida, atribui IDs e grava especificacao.prumo.json.
+    Com "gerar", preenche em seguida os documentos (prumo gerar)."""
+    raiz = Path(corpo["projeto"]).resolve()
+    if not (raiz / "projeto.prumo.json").is_file():
+        return {"codigo": 2, "dados": {"erro": "pasta sem projeto do Prumo"}}
+    if not isinstance(corpo.get("formulario"), dict):
+        return {"codigo": 2, "dados": {"erro": "formulário ausente"}}
+    temp = raiz / ".prumo" / "formulario-recebido.json"
+    temp.parent.mkdir(parents=True, exist_ok=True)
+    temp.write_text(json.dumps(corpo["formulario"], ensure_ascii=False), encoding="utf-8")
+    args = ["formulario", "salvar", str(temp)] + (["--gerar"] if corpo.get("gerar") else [])
+    return executar({"args": args, "projeto": str(raiz)})
 
 
 def _abrir_no_sistema(caminho):

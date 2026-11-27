@@ -278,10 +278,20 @@ textarea{resize:vertical;min-height:92px}
 .form-sec .larga{grid-column:1/-1}
 .sujo::after{content:"•";color:var(--terra);margin-left:4px}
 
+.form-esp{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px;align-items:start}
+.form-esp .lateral-docs{padding:8px}
+.tab-form{width:100%;border-collapse:collapse;font-size:13px}
+.tab-form th{color:var(--suave);font-weight:550;font-size:12px;text-align:left;padding:4px 4px 6px}
+.tab-form td{padding:3px 4px;vertical-align:middle}
+.tab-form input[type=text],.tab-form select{width:100%;min-width:90px;padding:6px 8px}
+.tab-form .col-id{width:64px;white-space:nowrap}
+.tab-form .col-pri input{min-width:240px}
+.caixas{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px 18px}
+
 /* ------------------------------------------------------------------ responsivo */
 @media (max-width:1100px){.etapas{grid-template-columns:repeat(3,minmax(0,1fr))}.doc-corpo.com-toc{grid-template-columns:1fr}.toc{display:none}}
 @media (max-width:960px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g2{grid-template-columns:1fr}.docs{grid-template-columns:1fr}
-  .lateral-docs{position:static;max-height:none}.heroi{grid-template-columns:1fr}}
+  .lateral-docs{position:static;max-height:none}.heroi{grid-template-columns:1fr}.form-esp{grid-template-columns:1fr}}
 @media (max-width:760px){
   body{grid-template-columns:1fr}
   aside{position:fixed;inset:0 auto 0 0;width:280px;z-index:25;transform:translateX(-105%);transition:transform var(--t)}
@@ -338,6 +348,7 @@ const ICONES = {
   terminal: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/>', x: '<path d="M6 6l12 12M18 6 6 18"/>',
   menu: '<path d="M4 6h16M4 12h16M4 18h16"/>', salvar: '<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/>',
   seta: '<path d="M5 12h14M13 6l6 6-6 6"/>', alvo: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
+  form: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/>',
   atualizar: '<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>', exportar: '<path d="M12 3v12M7 8l5-5 5 5M5 21h14"/>',
 };
 const ic = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONES[n] || ""}</svg>`;
@@ -501,6 +512,7 @@ function telaVazia() {
 }
 
 async function abrirProjeto(caminho, aba) {
+  if (E.formPend) await gravarForm(false);
   if (E.sujo && !await confirmar("Descartar alterações?", "Há edições não salvas no documento aberto.", "Descartar", true)) return;
   E.sujo = false; E.projeto = caminho; E.docSel = null; E.kit = null; E.kitSel = null; E.validacao = null; if (aba) E.aba = aba;
   document.body.classList.remove("menu-aberto");
@@ -511,7 +523,7 @@ async function abrirProjeto(caminho, aba) {
 }
 async function atualizarStatus() { E.status = await prumo(["status"], E.projeto); }
 
-const ABAS = [["geral", "Visão geral", "geral"], ["docs", "Documentos", "doc"], ["kit", "Kit do Claude", "kit"], ["claude", "Executar com o Claude", "claude"],
+const ABAS = [["geral", "Visão geral", "geral"], ["form", "Formulário", "form"], ["docs", "Documentos", "doc"], ["kit", "Kit do Claude", "kit"], ["claude", "Executar com o Claude", "claude"],
               ["qualidade", "Qualidade", "qualidade"], ["gestao", "Gestão", "gestao"], ["config", "Configurações", "config"]];
 function irPara(aba, extra = {}) { Object.assign(E, extra); E.aba = aba; guardar("aba", aba); desenharProjeto(); $("#principal").scrollTop = 0; }
 
@@ -529,10 +541,10 @@ async function desenharProjeto() {
     <div id="painel"></div>`;
   $$(".aba").forEach(b => b.onclick = async () => {
     if (E.sujo && !await confirmar("Descartar alterações?", "Há edições não salvas no documento aberto.", "Descartar", true)) return;
-    E.sujo = false; irPara(b.dataset.a);
+    E.sujo = false; if (E.formPend) await gravarForm(false); irPara(b.dataset.a);
   });
   $$("[data-abrir]").forEach(b => b.onclick = () => abrirNo(b.dataset.abrir));
-  ({geral: painelGeral, docs: painelDocs, kit: painelKit, claude: painelClaude, qualidade: painelQualidade, gestao: painelGestao, config: painelConfig})[E.aba]();
+  ({geral: painelGeral, form: painelForm, docs: painelDocs, kit: painelKit, claude: painelClaude, qualidade: painelQualidade, gestao: painelGestao, config: painelConfig})[E.aba]();
 }
 
 /* ------------------------------------------------------------------ visão geral: a jornada */
@@ -564,7 +576,9 @@ async function painelGeral() {
     botoes = `<button class="btn pri" id="h-map">${ic("claude")}Mapear com o Claude</button><button class="btn" id="h-mapa">Ver o mapa do código</button>`;
   } else if (prox) {
     titulo = "Complete a especificação"; texto = `Falta completar <b>${esc(prox.documento.replace(/^docs\//, ""))}</b> (${prox.lacunas} lacuna${prox.lacunas === 1 ? "" : "s"}). Quanto mais decidido aqui, menos o Claude precisa pensar depois.`;
-    botoes = `<button class="btn pri" id="h-esp">${ic("claude")}Especificar com o Claude</button><button class="btn" id="h-doc">Editar eu mesmo</button>`;
+    botoes = prox.documento.endsWith("00-briefing.md")
+      ? `<button class="btn pri" id="h-form">${ic("form")}Preencher o formulário</button><button class="btn" id="h-esp">${ic("claude")}Especificar com o Claude</button><button class="btn fan" id="h-doc">Editar eu mesmo</button>`
+      : `<button class="btn pri" id="h-esp">${ic("claude")}Especificar com o Claude</button><button class="btn" id="h-doc">Editar eu mesmo</button>`;
   } else if (r.valOk === 0) {
     titulo = "Corrija o que a validação apontou"; texto = "A especificação está sem lacunas, mas há IDs ou diagramas com problema.";
     botoes = `<button class="btn pri" id="h-val">Ver problemas</button>`;
@@ -602,7 +616,7 @@ async function painelGeral() {
   requestAnimationFrame(() => { const f = $(".anel .frente"); if (f) f.style.strokeDashoffset = C * (1 - r.pct / 100); });
   $$(".etapa").forEach(b => b.onclick = () => etapas[+b.dataset.e].ir());
   const liga = (id, fn) => { const b = $("#" + id); if (b) b.onclick = fn; };
-  liga("h-esp", () => irPara("claude", {tarefa: "especificar"})); liga("h-map", () => irPara("claude", {tarefa: "mapear"}));
+  liga("h-form", () => irPara("form")); liga("h-esp", () => irPara("claude", {tarefa: "especificar"})); liga("h-map", () => irPara("claude", {tarefa: "mapear"}));
   liga("h-mapa", () => irPara("docs", {docSel: "docs/00-mapa-do-codigo.md", modoDoc: "ver"})); liga("h-doc", () => irPara("docs", {docSel: prox.documento, modoDoc: "editar"}));
   liga("h-val", () => irPara("qualidade")); liga("h-apr", () => irPara("docs", {docSel: r.docs.find(d => !d.estado.startsWith("aprovado"))?.documento}));
   liga("h-prop", () => irPara("claude", {tarefa: "proposta"})); liga("h-impl", () => irPara("claude", {tarefa: "implementar"}));
@@ -929,6 +943,165 @@ async function rodarFigma() {
   catch (e) { $("#fig").className = "legenda"; $("#fig").textContent = ""; falhou(e); }
 }
 async function ativarFigma() { try { await prumo(["figma", "ativar"], E.projeto); await atualizarStatus(); E.kit = null; toast("Figma ativado."); desenharProjeto(); } catch (e) { falhou(e); } }
+
+/* ------------------------------------------------------------------ formulário de especificação */
+// Campos: [caminho, rótulo, tipo, ajuda | colunas]. Tipos: texto, area, lista (uma por linha), sel, caixas, tabela.
+// Colunas de tabela: [chave, rótulo, tipo, opções]. Tipos: texto, sel, bool, csv (lista separada por vírgula), id (só leitura).
+const PASSOS_FORM = [
+  {id: "negocio", t: "Negócio", d: "O que o cliente faz, o problema e o que espera. Use as palavras dele.", campos: [
+    ["contato.nome", "Contato principal", "texto"], ["contato.email", "E-mail do contato", "texto"], ["contato.telefone", "Telefone", "texto"],
+    ["negocio.contexto", "Contexto do negócio", "area", "o que a empresa faz, porte, como trabalha hoje, sistemas que já usa"],
+    ["negocio.problema.problema", "Problema", "texto", "ex.: pedidos anotados à mão"], ["negocio.problema.afeta", "Quem é afetado", "texto"],
+    ["negocio.problema.impacto", "Impacto", "texto", "ex.: pedidos perdidos no fim de semana"], ["negocio.problema.solucao", "Solução esperada", "texto"],
+    ["negocio.proposito", "Propósito do sistema", "texto", "uma frase"],
+    ["negocio.objetivos", "Objetivos", "tabela", [["descricao", "Objetivo"], ["medida", "Como medir"], ["meta", "Meta"]]],
+    ["restricoes.prazo", "Prazo", "texto"], ["restricoes.orcamento_cliente", "Orçamento do cliente", "texto", "faixa informada, se houver"],
+    ["restricoes.tecnologia", "Restrições de tecnologia", "texto", "hospedagem, linguagem ou fornecedor impostos"],
+    ["restricoes.legal", "Legal / LGPD", "texto", "dados pessoais, consentimento, retenção"],
+    ["negocio.referencias", "Referências (uma por linha)", "lista", "sites, apps ou concorrentes que o cliente gosta"]]},
+  {id: "usuarios", t: "Usuários", d: "Quem usa o sistema e quais sistemas externos conversam com ele.", campos: [
+    ["atores", "Atores", "tabela", [["nome", "Nome"], ["tipo", "Tipo", "sel", () => E.formOpc.tipos_ator], ["descricao", "Descrição"], ["dispositivos", "Dispositivos", "csv"]]],
+    ["tecnico.perfis_acesso", "Perfis de acesso (um por linha)", "lista", "ex.: Administrador, Atendente"]]},
+  {id: "funcionalidades", t: "Funcionalidades", d: "Uma ação por linha, no infinitivo (\"cadastrar produtos com foto\"). Os IDs saem ao gravar.", campos: [
+    ["funcionalidades", "Funcionalidades", "tabela", [["id", "ID", "id"], ["acao", "Ação"], ["ator", "Ator", "ator"], ["beneficio", "Para quê"], ["grupo", "Grupo"],
+      ["prioridade", "Prioridade", "sel", () => E.formOpc.prioridades], ["tamanho", "Tamanho", "sel", () => Object.keys(E.formOpc.tamanhos)]]],
+    ["regras", "Regras de negócio", "tabela", [["id", "ID", "id"], ["regra", "Regra"], ["exemplo", "Exemplo"]]],
+    ["fora_do_escopo", "Fora do escopo (um por linha)", "lista", "o que o cliente pode presumir que está incluído e não está"],
+    ["glossario", "Termos do cliente", "tabela", [["termo", "Termo"], ["definicao", "Definição"]]]]},
+  {id: "tecnico", t: "Integrações", d: "Cada escolha traz perguntas, requisitos de segurança e variáveis de ambiente do catálogo.", campos: [
+    ["tecnico.login", "Login", "sel", () => E.formCat.logins], ["tecnico.integracoes", "Integrações", "caixas", () => E.formCat.integracoes],
+    ["tecnico.rnf", "Requisitos não funcionais", "caixas", () => E.formCat.rnf]]},
+  {id: "perguntas", t: "Perguntas", d: "Dúvidas para o cliente. As das integrações escolhidas entram sozinhas no briefing.", campos: [
+    ["perguntas", "Perguntas em aberto", "tabela", [["pergunta", "Pergunta"], ["bloqueia", "Bloqueia preço ou escopo", "bool"], ["impacta", "Impacta"]]]]}];
+const pegar = (o, c) => c.split(".").reduce((a, k) => a == null ? a : a[k], o);
+function por(o, c, v) { const k = c.split("."), u = k.pop(); k.reduce((a, x) => a[x] ??= {}, o)[u] = v; }
+const cheio = v => Array.isArray(v) ? v.length > 0 : v != null && String(v).trim() !== "";
+const opcoesDe = f => (typeof f === "function" ? f() : f) || [];
+function preenchidos(p) { const c = p.campos.filter(f => cheio(pegar(E.form, f[0]))).length; return [c, p.campos.length]; }
+
+async function painelForm() {
+  $("#painel").innerHTML = `<div class="painel"><div class="carregando">Lendo o formulário…</div></div>`;
+  let r; try { r = await prumo(["formulario"], E.projeto); } catch (e) { return falhou(e); }
+  E.form = r.formulario; E.formOpc = r.opcoes; E.formCat = r.catalogos; E.formProb = {erros: r.erros, avisos: r.avisos};
+  if (!PASSOS_FORM.some(p => p.id === E.formPasso)) E.formPasso = "negocio";
+  desenharForm();
+}
+function desenharForm() {
+  const p = PASSOS_FORM.find(x => x.id === E.formPasso);
+  $("#painel").innerHTML = `<div class="painel grade">
+    <div class="cartao"><div class="linha-acao"><div style="flex:1;min-width:220px"><b>Formulário de especificação</b>
+      <div class="legenda">Grava sozinho em especificacao.prumo.json. "Gravar no briefing" preenche docs/00-briefing.md sem apagar o que você ou o Claude escreveram.</div></div>
+      <span class="legenda" id="f-est">${E.formPend ? "Alterações não gravadas" : "Gravado"}</span>
+      <button class="btn pri" id="f-ger">${ic("salvar")}Gravar no briefing</button><button class="btn" id="f-cla">${ic("claude")}Especificar com o Claude</button></div>
+      <div id="f-res"></div></div>
+    <div class="form-esp"><nav class="cartao lateral-docs linhas" aria-label="Passos">${PASSOS_FORM.map((x, i) => { const [c, t] = preenchidos(x);
+      return `<button class="linha clic ${x.id === p.id ? "sel" : ""}" data-p="${x.id}" style="border:0;background:none;text-align:left;font:inherit;color:inherit">
+        <span class="ponto ${c === t ? "ok" : c ? "and" : ""}"></span><span class="nome">${i + 1}. ${esc(x.t)}</span><span class="legenda" data-cont="${x.id}">${c}/${t}</span></button>`; }).join("")}</nav>
+      <div class="cartao"><h3>${esc(p.t)}</h3><p class="legenda" style="margin-top:-6px">${esc(p.d)}</p>
+        <div class="form-sec">${p.campos.map(campoForm).join("")}</div>
+        <div class="linha-acao" style="margin-top:6px">${PASSOS_FORM.indexOf(p) < PASSOS_FORM.length - 1 ? `<button class="btn" id="f-prox">Próximo passo ${ic("seta")}</button>` : ""}</div></div></div>
+    ${problemasForm()}</div>`;
+  $$("[data-p]").forEach(b => b.onclick = () => { E.formPasso = b.dataset.p; desenharForm(); });
+  const prox = $("#f-prox"); if (prox) prox.onclick = () => { E.formPasso = PASSOS_FORM[PASSOS_FORM.indexOf(p) + 1].id; desenharForm(); $("#principal").scrollTop = 0; };
+  $("#f-ger").onclick = () => gravarForm(true);
+  $("#f-cla").onclick = async () => { await gravarForm(false); irPara("claude", {tarefa: "especificar"}); };
+  ligarForm($("#painel"));
+}
+function campoForm([c, rot, tipo, extra]) {
+  const v = pegar(E.form, c), id = "f-" + c.replace(/\./g, "_"), aj = typeof extra === "string" ? `<span class="ajuda">${esc(extra)}</span>` : "";
+  if (tipo === "area") return `<div class="campo larga"><label for="${id}">${esc(rot)}</label><textarea id="${id}" data-c="${c}">${esc(v)}</textarea>${aj}</div>`;
+  if (tipo === "lista") return `<div class="campo larga"><label for="${id}">${esc(rot)}</label><textarea id="${id}" data-c="${c}" data-t="lista" style="min-height:70px">${esc((v || []).join("\n"))}</textarea>${aj}</div>`;
+  if (tipo === "sel") return `<div class="campo"><label for="${id}">${esc(rot)}</label><select id="${id}" data-c="${c}"><option value="">—</option>
+    ${opcoesDe(extra).map(o => `<option value="${esc(o.id)}" ${o.id === v ? "selected" : ""}>${esc(o.nome)}</option>`).join("")}</select></div>`;
+  if (tipo === "caixas") return `<div class="campo larga"><label>${esc(rot)}</label><div class="caixas">${opcoesDe(extra).map(o => `<label class="troca" title="${esc(o.metrica ? `${o.categoria}: ${o.metrica}` : o.ator || "")}">
+    <input type="checkbox" data-c="${c}" data-t="caixa" value="${esc(o.id)}" ${(v || []).includes(o.id) ? "checked" : ""}><i></i>${esc(o.nome || o.descricao)}</label>`).join("")}</div></div>`;
+  if (tipo === "tabela") return `<div class="campo larga"><label>${esc(rot)}</label>${tabelaForm(c, extra, v || [])}</div>`;
+  return `<div class="campo"><label for="${id}">${esc(rot)}</label><input type="text" id="${id}" data-c="${c}" value="${esc(v)}">${aj}</div>`;
+}
+const PRINCIPAIS = ["acao", "regra", "pergunta", "descricao", "definicao"];
+function tabelaForm(c, cols, itens) {
+  const atores = (E.form.atores || []).map(a => a.nome).filter(Boolean);
+  const cel = (k, t, op, it, i) => {
+    const v = it[k], d = `data-l="${c}" data-i="${i}" data-k="${k}"`;
+    if (t === "id") return `<span class="mono" data-idcel="${c}:${i}">${esc(v || "")}</span>`;
+    if (t === "bool") return `<label class="troca"><input type="checkbox" ${d} data-t="bool" ${v ? "checked" : ""}><i></i></label>`;
+    if (t === "sel") return `<select ${d}><option value=""></option>${opcoesDe(op).map(o => `<option ${o === v ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
+    if (t === "csv") return `<input type="text" ${d} data-t="csv" value="${esc((v || []).join(", "))}">`;
+    return `<input type="text" ${d} value="${esc(v)}" ${t === "ator" ? 'list="f-atores"' : ""}>`;
+  };
+  return `<datalist id="f-atores">${atores.map(a => `<option value="${esc(a)}">`).join("")}</datalist>
+    <div style="overflow-x:auto"><table class="tab-form"><thead><tr>${cols.map(([, r, t]) => `<th class="${t === "id" ? "col-id" : ""}">${esc(r)}</th>`).join("")}<th></th></tr></thead>
+    <tbody>${itens.map((it, i) => `<tr>${cols.map(([k, , t, op]) => `<td class="${t === "id" ? "col-id" : PRINCIPAIS.includes(k) ? "col-pri" : ""}">${cel(k, t, op, it, i)}</td>`).join("")}
+      <td><button class="btn fan peq" data-rem="${c}" data-i="${i}" aria-label="Remover linha">${ic("x")}</button></td></tr>`).join("")}</tbody></table></div>
+    <button class="btn fan peq" data-add="${c}" style="align-self:flex-start">＋ Adicionar</button>`;
+}
+function ligarForm(raiz) {
+  $$("[data-c]", raiz).forEach(el => el.addEventListener(el.tagName === "SELECT" || el.type === "checkbox" ? "change" : "input", () => {
+    const c = el.dataset.c;
+    if (el.dataset.t === "caixa") por(E.form, c, $$(`[data-c="${c}"]:checked`, raiz).map(x => x.value));
+    else if (el.dataset.t === "lista") por(E.form, c, el.value.split("\n").map(s => s.trim()).filter(Boolean));
+    else por(E.form, c, el.value);
+    agendarForm();
+  }));
+  $$("[data-l]", raiz).forEach(el => el.addEventListener(el.tagName === "SELECT" || el.type === "checkbox" ? "change" : "input", () => {
+    const it = pegar(E.form, el.dataset.l)[+el.dataset.i], k = el.dataset.k, t = el.dataset.t;
+    it[k] = t === "bool" ? el.checked : t === "csv" ? el.value.split(",").map(s => s.trim()).filter(Boolean) : el.value;
+    agendarForm();
+  }));
+  $$("[data-add]", raiz).forEach(b => b.onclick = () => { const l = pegar(E.form, b.dataset.add); l.push({}); desenharForm();
+    const ult = $$(`[data-l="${b.dataset.add}"][data-i="${l.length - 1}"]`).find(x => x.tagName !== "SPAN"); if (ult) ult.focus(); });
+  $$("[data-rem]", raiz).forEach(b => b.onclick = () => { pegar(E.form, b.dataset.rem).splice(+b.dataset.i, 1); agendarForm(); desenharForm(); });
+}
+function problemasForm() {
+  const {erros = [], avisos = []} = E.formProb || {};
+  if (!erros.length && !avisos.length) return "";
+  return `<details class="cartao"><summary class="legenda" style="cursor:pointer">${erros.length} erro(s), ${avisos.length} aviso(s) no formulário</summary>
+    <ul class="legenda">${[...erros.map(m => `<li style="color:var(--verm)">${esc(m)}</li>`), ...avisos.map(m => `<li>${esc(m)}</li>`)].join("")}</ul></details>`;
+}
+function agendarForm() {
+  E.formPend = true; const st = $("#f-est"); if (st) st.textContent = "Alterações não gravadas";
+  for (const p of PASSOS_FORM) { const el = $(`[data-cont="${p.id}"]`); if (!el) continue; const [c, t] = preenchidos(p);
+    el.textContent = `${c}/${t}`; el.parentElement.querySelector(".ponto").className = `ponto ${c === t ? "ok" : c ? "and" : ""}`; }
+  clearTimeout(E.formTimer); E.formTimer = setTimeout(() => gravarForm(false), 900);
+}
+async function gravarForm(gerar) {
+  clearTimeout(E.formTimer);
+  if (!gerar && !E.formPend) return;
+  const projeto = E.projeto, st = () => $("#f-est");
+  E.formPend = false; if (st()) st().textContent = "Gravando…";
+  try {
+    const r = await api("/api/formulario", {projeto, formulario: E.form, gerar});
+    if (r.dados && r.dados.erro) throw new Error(r.dados.erro);
+    if (!r.dados) throw new Error((r.stderr || r.saida || "falha ao gravar").trim().split("\n").pop());
+    if (E.projeto !== projeto || E.aba !== "form") return;
+    E.formProb = {erros: r.dados.erros, avisos: r.dados.avisos};
+    if (st()) st().textContent = "Gravado";
+    if (r.dados.ids_criados.length) await copiarIds();
+    if (gerar) mostrarGeracao(r.dados.geracao);
+  } catch (e) { E.formPend = true; if (st()) st().textContent = "Não gravado"; falhou(e); }
+}
+async function copiarIds() {  // os IDs são atribuídos pelo CLI: copia para o formulário aberto sem redesenhar (não perde o foco)
+  const r = await prumo(["formulario"], E.projeto);
+  for (const p of PASSOS_FORM) for (const [c, , t, cols] of p.campos) {
+    if (t !== "tabela" || !cols.some(x => x[2] === "id")) continue;
+    (pegar(r.formulario, c) || []).forEach((it, i) => { const local = (pegar(E.form, c) || [])[i]; if (local && it.id && !local.id) {
+      local.id = it.id; const el = $(`[data-idcel="${c}:${i}"]`); if (el) el.textContent = it.id; } });
+  }
+}
+const ESTADOS_GER = {gerado: ["preenchido agora", ""], atualizado: ["atualizado", ""], igual: ["sem mudança", "cinza"], limpo: ["voltou a ser lacuna", "ambar"],
+  editado: ["editado no documento, mantido", "azul"], vazio: ["sem dados", "cinza"], aprovado: ["aprovado, não tocado", "azul"]};
+const BLOCOS_BRIEFING = {contato: "Contato", contexto: "Contexto", problema: "Problema", objetivos: "Objetivos", usuarios: "Usuários",
+  funcionalidades: "Funcionalidades", restricoes: "Restrições", integracoes: "Integrações", referencias: "Referências", perguntas: "Perguntas", documento: "Documento"};
+async function mostrarGeracao(g) {
+  const el = $("#f-res"); if (!el || !g) return;
+  const blocos = Object.entries(g.documentos["docs/00-briefing.md"] || {});
+  el.innerHTML = `<div class="linha-acao" style="margin-top:12px">${blocos.map(([b, e]) => { const [t, cl] = ESTADOS_GER[e] || [e, "cinza"];
+    return `<span class="chip ${cl}">${esc(BLOCOS_BRIEFING[b] || b)}: ${esc(t)}</span>`; }).join("")}
+    <button class="btn fan peq" id="f-ver">ver o briefing</button></div>`;
+  $("#f-ver").onclick = () => irPara("docs", {docSel: "docs/00-briefing.md", modoDoc: "ver"});
+  toast(g.alterados.length ? "Briefing atualizado." : "Nada mudou no briefing.");
+  await atualizarStatus();
+}
 
 /* ------------------------------------------------------------------ configurações */
 const CAMPOS_FREELANCER = [["nome", "Seu nome", "text", "vira o autor dos documentos"], ["email", "E-mail", "email", ""],

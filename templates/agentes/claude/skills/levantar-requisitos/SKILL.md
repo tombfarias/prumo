@@ -8,6 +8,7 @@ description: Transforma o briefing e as anotações do cliente no Documento de V
 ## Entradas
 
 - `docs/00-briefing.md` (obrigatório) e qualquer material que o usuário colar na conversa.
+- `especificacao.prumo.json`, se existir: o formulário que o usuário preencheu na interface. Use os mesmos IDs das funcionalidades (RF-xxx) e regras (RN-xxx), a prioridade, o ator e os RNFs marcados; não os renumere.
 - Se o usuário trouxer material novo do cliente, **primeiro** registre-o no briefing (seção 10, reunião do dia), com as palavras do cliente.
 
 ## Procedimento
