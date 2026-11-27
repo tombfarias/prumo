@@ -15,8 +15,8 @@ O Prumo roda de duas formas: com o **Python** (código-fonte) ou pelo **executá
 ## Opção 1: código-fonte (Python)
 
 ```powershell
-git clone https://github.com/tombfarias/prumo D:\SistemaCodigo
-cd D:\SistemaCodigo
+git clone https://github.com/tombfarias/prumo C:\Prumo
+cd C:\Prumo
 python prumo.py --versao
 ```
 
@@ -25,7 +25,7 @@ No Windows, `prumo.bat` permite chamar só `prumo` quando a pasta está no PATH.
 ## Opção 2: executável (Windows)
 
 1. Baixe `prumo.exe` e `prumo-app.exe` da página de *Releases* do repositório (ou gere-os: veja [Executável](executavel.md)).
-2. Coloque os dois na pasta do Prumo (por exemplo `D:\SistemaCodigo`). A pasta `config\` é criada ao lado deles.
+2. Coloque os dois na pasta do Prumo (por exemplo `C:\Prumo`). A pasta `config\` é criada ao lado deles.
 3. `prumo.exe --versao` no terminal; duplo clique em `prumo-app.exe` abre a interface.
 
 O executável já contém os templates e a interface. Projetos criados em máquinas sem Python passam a rodar os hooks pelo próprio `prumo.exe` (`hooks_via: "prumo"`).
@@ -33,7 +33,7 @@ O executável já contém os templates e a interface. Projetos criados em máqui
 ## PowerShell
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File D:\SistemaCodigo\powershell\instalar.ps1 -AdicionarAoPath
+powershell -ExecutionPolicy Bypass -File C:\Prumo\powershell\instalar.ps1 -AdicionarAoPath
 ```
 
 O instalador adiciona `Import-Module ...\Prumo.psm1` ao seu perfil do PowerShell e, com `-AdicionarAoPath`, coloca a pasta do Prumo no PATH do usuário. Abra um novo terminal e teste:

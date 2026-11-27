@@ -57,7 +57,7 @@ Exemplo de `comandos` para Node.js:
 |---|---|
 | Padrão | `python "$CLAUDE_PROJECT_DIR/.claude/hooks/<hook>.py"` (portátil: funciona em qualquer máquina com Python) |
 | `--hooks-absolutos` | `python "D:/Projetos/x/.claude/hooks/<hook>.py"` |
-| `hooks_via: "prumo"` (padrão do `.exe` em máquinas sem Python) | `"D:/SistemaCodigo/prumo.exe" hook <hook>` |
+| `hooks_via: "prumo"` (padrão do `.exe` em máquinas sem Python) | `"C:/Prumo/prumo.exe" hook <hook>` |
 
 Para mudar depois: ajuste os campos em `projeto.prumo.json` e rode `prumo agentes atualizar --incluir-settings`.
 

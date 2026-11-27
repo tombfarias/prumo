@@ -3,6 +3,7 @@
   "nome": "Sistema de gestão (CRUD / painel administrativo)",
   "descricao": "Cadastros, perfis de acesso, relatórios e auditoria: ERP leve, controle de estoque, agenda, financeiro.",
   "stack": "React + Vite + TypeScript + shadcn/ui (frontend) e NestJS + Prisma + PostgreSQL (backend). Alternativas: Laravel + Filament; Django + Django Admin",
+  "stack_padrao": {"frontend": "react-vite", "backend": "nestjs", "banco": "postgresql", "orm": "prisma", "testes": "vitest"},
   "documentos": [
     "00-briefing",
     "01-visao",

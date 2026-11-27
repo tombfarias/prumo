@@ -4,6 +4,8 @@
 Histórias de usuário (HU-001...) agrupadas em épicos (EP-01...).
 No bloco de cada história, cite os casos de uso (UC) e requisitos (RF) atendidos.
 A estimativa em horas alimenta `prumo orcamento`; use o formato "**Estimativa:** 6h".
+Prioridade Must/Should = escopo base; Could = opcional, somado à parte pelo `prumo orcamento`
+(fica fora do total); Won't não entra no orçamento.
 Estados: a fazer, em andamento, em revisão, concluída.
 -->
 

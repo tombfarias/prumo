@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          { "type": "command", "command": "[ ! -f \"$CLAUDE_PROJECT_DIR/.githooks/privacidade.py\" ] || python \"$CLAUDE_PROJECT_DIR/.githooks/privacidade.py\" claude", "timeout": 30 }
+        ]
+      }
+    ]
+  }
+}

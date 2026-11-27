@@ -3,6 +3,7 @@
   "nome": "API REST / Backend",
   "descricao": "Serviço backend com API HTTP/JSON, banco relacional e autenticação. Sem interface própria.",
   "stack": "Node.js 22 LTS + TypeScript + Fastify + Prisma + PostgreSQL (alternativa: Python 3.12 + FastAPI + SQLAlchemy/Alembic)",
+  "stack_padrao": {"backend": "fastify", "banco": "postgresql", "orm": "prisma", "testes": "vitest"},
   "documentos": [
     "00-briefing",
     "01-visao",

@@ -3,6 +3,7 @@
   "nome": "Aplicativo mobile",
   "descricao": "App Android/iOS com backend próprio ou BaaS, login, notificações e publicação nas lojas.",
   "stack": "React Native + Expo + TypeScript (alternativa: Flutter). Backend: ver perfil api-rest ou Supabase/Firebase",
+  "stack_padrao": {"mobile": "expo", "hospedagem": "eas", "testes": "jest"},
   "documentos": [
     "00-briefing",
     "01-visao",

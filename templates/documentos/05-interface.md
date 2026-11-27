@@ -31,15 +31,27 @@ para ler o design de cada tela.
 
 ## 3. Mapa de navegação
 
+<!-- Substitua pelo mapa real: um nó por tela do inventário e as entradas externas (anúncio, link, e-mail). -->
+
 ```mermaid
 flowchart LR
-    login["Login"] --> painel["Painel"]
-    painel --> lista["Listagem"]
-    lista --> detalhe["Detalhe"]
-    lista --> form["Formulário"]
+    entrada(["[PREENCHER: de onde o usuário chega]"]) --> tl1["TL-001 [PREENCHER: tela inicial]"]
+    tl1 --> prox["[PREENCHER: próxima tela]"]
 ```
 
-## 4. Diretrizes
+## 4. Telas
+
+<!-- Uma subseção por tela, com título "### Tela TL-00N — Nome" (o ID é definido no inventário acima). -->
+
+### Tela TL-001 — [PREENCHER: nome]
+
+- **Objetivo:** [PREENCHER]
+- **Conteúdo, na ordem:** [PREENCHER: blocos da tela]
+- **Ações:** [PREENCHER: botões e formulários e para onde levam]
+- **Estados:** [PREENCHER: vazio, carregando, erro, sucesso, quando se aplicam]
+- **Atende:** [PREENCHER: RF/RNF/UC]
+
+## 5. Diretrizes
 
 - **Acessibilidade:** [PREENCHER: contraste WCAG AA, navegação por teclado, rótulos em formulários]
 - **Responsividade:** [PREENCHER: dispositivos prioritários]

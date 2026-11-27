@@ -1,0 +1,83 @@
+{
+  "descricao": "Requisitos não funcionais que o formulário oferece como caixas de marcar. Cada um vira um RNF com categoria, descrição e métrica; as perguntas vão para o briefing.",
+  "itens": [
+    {
+      "id": "responsivo", "categoria": "Usabilidade",
+      "descricao": "Interface utilizável em celular, tablet e computador",
+      "metrica": "nenhuma tela com rolagem horizontal de 360 px a 1920 px de largura"
+    },
+    {
+      "id": "acessibilidade-aa", "categoria": "Acessibilidade",
+      "descricao": "Conformidade com a WCAG 2.2, nível AA",
+      "metrica": "nenhuma violação grave no axe nas telas principais; navegação completa pelo teclado"
+    },
+    {
+      "id": "desempenho-web", "categoria": "Desempenho",
+      "descricao": "Páginas principais rápidas em rede móvel",
+      "metrica": "LCP até 2,5 s e INP até 200 ms no percentil 75"
+    },
+    {
+      "id": "tempo-resposta-api", "categoria": "Desempenho",
+      "descricao": "Respostas rápidas da API",
+      "metrica": "p95 até 500 ms nas rotas principais com a carga esperada"
+    },
+    {
+      "id": "disponibilidade", "categoria": "Disponibilidade",
+      "descricao": "Sistema no ar durante o uso do cliente",
+      "metrica": "99,5% ou mais por mês, fora as janelas de manutenção combinadas",
+      "perguntas": [{"pergunta": "Há horários em que o sistema não pode parar (vendas, plantão)?", "bloqueia": false}]
+    },
+    {
+      "id": "backup", "categoria": "Confiabilidade",
+      "descricao": "Backup automático do banco de dados",
+      "metrica": "backup diário com retenção de 30 dias e restauração testada antes da entrega",
+      "perguntas": [{"pergunta": "Quanto tempo de dados o cliente aceita perder em uma falha grave?", "bloqueia": false}]
+    },
+    {
+      "id": "lgpd", "categoria": "Privacidade",
+      "descricao": "Tratamento de dados pessoais conforme a LGPD",
+      "metrica": "base legal registrada para cada dado pessoal; pedidos de acesso e exclusão atendidos em até 15 dias",
+      "perguntas": [
+        {"pergunta": "Quem é o encarregado (DPO) do cliente para assuntos de dados pessoais?", "bloqueia": false},
+        {"pergunta": "Qual a base legal para cada dado pessoal coletado (consentimento, contrato, obrigação legal)?", "bloqueia": false}
+      ]
+    },
+    {
+      "id": "seguranca-owasp", "categoria": "Segurança",
+      "descricao": "Proteção contra as falhas do OWASP Top 10",
+      "metrica": "nenhum achado Crítico ou Alto aberto na entrega"
+    },
+    {
+      "id": "https", "categoria": "Segurança",
+      "descricao": "Todo o tráfego por HTTPS",
+      "metrica": "HTTP redireciona para HTTPS e o cabeçalho HSTS está ativo"
+    },
+    {
+      "id": "auditoria", "categoria": "Segurança",
+      "descricao": "Registro de quem alterou o quê",
+      "metrica": "criação, edição e exclusão de registros importantes guardam usuário, data e valor anterior"
+    },
+    {
+      "id": "seo", "categoria": "Visibilidade",
+      "descricao": "Páginas públicas encontradas pelos buscadores",
+      "metrica": "título, descrição e sitemap em todas as páginas públicas; Lighthouse SEO 90 ou mais"
+    },
+    {
+      "id": "navegadores", "categoria": "Compatibilidade",
+      "descricao": "Funciona nos navegadores atuais",
+      "metrica": "duas últimas versões de Chrome, Edge, Firefox e Safari"
+    },
+    {
+      "id": "offline", "categoria": "Disponibilidade",
+      "descricao": "Telas principais funcionam sem internet e sincronizam depois",
+      "metrica": "registros feitos sem conexão enviados sem perda quando a conexão volta",
+      "perguntas": [{"pergunta": "Quais telas precisam funcionar sem internet?", "bloqueia": true}]
+    },
+    {
+      "id": "idiomas", "categoria": "Usabilidade",
+      "descricao": "Interface em mais de um idioma",
+      "metrica": "todos os textos da interface traduzidos; nenhum texto fixo no código",
+      "perguntas": [{"pergunta": "Quais idiomas, e quem traduz os textos?", "bloqueia": true}]
+    }
+  ]
+}

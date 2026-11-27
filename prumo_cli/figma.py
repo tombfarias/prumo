@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -66,6 +67,11 @@ def link_do_no(chave, node_id):
 
 def _linhas_existentes(texto):
     """TL -> célula 'Casos de uso' já preenchida (é preservada nas sincronizações)."""
+    return {tl: dados["ucs"] for tl, dados in _telas_do_inventario(texto).items()}
+
+
+def _telas_do_inventario(texto):
+    """TL -> {'nome', 'ucs'} das linhas já escritas no inventário (manuais ou de sincronizações anteriores)."""
     if INICIO not in texto or FIM not in texto:
         return {}
     trecho = texto.split(INICIO, 1)[1].split(FIM, 1)[0]
@@ -73,8 +79,13 @@ def _linhas_existentes(texto):
     for linha in trecho.splitlines():
         celulas = [c.strip() for c in linha.strip().strip("|").split("|")]
         if len(celulas) >= 5 and re.fullmatch(r"TL-\d+", celulas[0]) and "[PREENCHER" not in celulas[1]:
-            saida[celulas[0]] = celulas[4]
+            saida[celulas[0]] = {"nome": celulas[1], "ucs": celulas[4]}
     return saida
+
+
+def _normalizar_nome(nome):
+    sem_acento = "".join(c for c in unicodedata.normalize("NFKD", nome) if not unicodedata.combining(c))
+    return re.sub(r"[^a-z0-9]+", " ", sem_acento.lower()).strip()
 
 
 def sincronizar_telas(projeto, url=None, token=None, imagens=False, escala=1, abrir=urllib.request.urlopen):
@@ -96,15 +107,24 @@ def sincronizar_telas(projeto, url=None, token=None, imagens=False, escala=1, ab
         from .projeto import adicionar_documento
         adicionar_documento(projeto, "05-interface")
     texto = ler(doc)
-    ucs = _linhas_existentes(texto)
+    existentes = _telas_do_inventario(texto)
+    ucs = {tl: dados["ucs"] for tl, dados in existentes.items()}
 
     mapa = figma.setdefault("telas", {})  # node_id -> TL-xxx (IDs estáveis entre sincronizações)
-    usados = [int(v.split("-")[1]) for v in mapa.values()]
+    # Telas escritas à mão (ex.: pela etapa de interface) mantêm o ID: um frame com o mesmo nome assume a TL existente,
+    # e os frames novos recebem números que ainda não foram usados.
+    manuais = {tl: d for tl, d in existentes.items() if tl not in mapa.values()}
+    por_nome = {_normalizar_nome(d["nome"]): tl for tl, d in manuais.items()}
+    usados = [int(v.split("-")[1]) for v in mapa.values()] + [int(tl.split("-")[1]) for tl in existentes]
     proximo = max(usados, default=0) + 1
     for tela in telas:
-        if tela["id"] not in mapa:
-            mapa[tela["id"]] = f"TL-{proximo:03d}"
+        if tela["id"] in mapa:
+            continue
+        tl = por_nome.pop(_normalizar_nome(tela["nome"]), None)
+        if tl is None:
+            tl = f"TL-{proximo:03d}"
             proximo += 1
+        mapa[tela["id"]] = tl
 
     arquivos_imagem = {}
     if imagens and telas:
@@ -122,7 +142,10 @@ def sincronizar_telas(projeto, url=None, token=None, imagens=False, escala=1, ab
                       f"{ucs.get(tl, '[PREENCHER: UC-xxx]')} | {img} |")
     for node_id, tl in sorted(mapa.items(), key=lambda kv: kv[1]):
         if tl not in vistos:
+            vistos.add(tl)
             linhas.append(f"| {tl} | (não encontrada no Figma) | — | — | {ucs.get(tl, '—')} | — |")
+    for tl in sorted(t for t in manuais if t not in vistos):
+        linhas.append(f"| {tl} | {manuais[tl]['nome']} | (sem frame no Figma) | — | {manuais[tl]['ucs']} | — |")
     tabela = "\n".join(linhas)
 
     if INICIO in texto and FIM in texto:

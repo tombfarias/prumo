@@ -19,8 +19,8 @@ Você conduz a especificação de `{{projeto}}` em etapas. Cada etapa tem uma sk
 |---|---|---|---|
 | 1 | Visão e requisitos | `levantar-requisitos` | 01-visao.md, 02-requisitos.md |
 | 2 | Casos de uso | `especificar-casos-de-uso` | 03-casos-de-uso.md |
-| 3 | Modelagem UML | `modelar-uml` | 04-uml/*.md |
-| 4 | Interface (se houver) | `implementar-tela-figma` (só o inventário) | 05-interface.md |
+| 3 | Interface (se houver) | `especificar-interface` | 05-interface.md |
+| 4 | Modelagem UML | `modelar-uml` | 04-uml/*.md |
 | 5 | Banco de dados | `modelar-banco` | 06-banco-de-dados.md |
 | 6 | Arquitetura | `planejar-arquitetura` | 07-arquitetura.md, docs/adr/ |
 | 7 | Backlog e estimativas | `gerar-backlog` | 08-backlog.md |

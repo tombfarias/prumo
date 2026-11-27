@@ -1,0 +1,103 @@
+{
+  "descricao": "Formas de login do passo Técnico. Mesmo formato das integrações: o que cada escolha acrescenta em RNFs, ameaças, superfície de ataque, caminhos sensíveis e perguntas.",
+  "itens": [
+    {
+      "id": "nenhum",
+      "nome": "Sem login",
+      "perguntas": []
+    },
+    {
+      "id": "email-senha",
+      "nome": "E-mail e senha",
+      "rnf": [
+        {"categoria": "Segurança", "descricao": "Senhas guardadas só como hash forte",
+         "metrica": "Argon2id ou bcrypt (custo 12 ou mais); nenhuma senha em texto puro ou em log"},
+        {"categoria": "Segurança", "descricao": "Proteção contra tentativa e erro no login",
+         "metrica": "até 5 tentativas por conta a cada 15 minutos, com espera crescente"}
+      ],
+      "ameacas": [
+        {"ameaca": "Força bruta e reaproveitamento de senhas vazadas",
+         "controle": "Limite de tentativas por conta e por IP; senha mínima de 8 caracteres conferida contra listas de senhas vazadas"},
+        {"ameaca": "Sessão roubada",
+         "controle": "Cookie HttpOnly, Secure e SameSite; sessão renovada no login e invalidada no logout"},
+        {"ameaca": "Recuperação de senha usada para tomar a conta",
+         "controle": "Token de uso único com validade curta; mesma resposta para e-mail existente ou não"}
+      ],
+      "superficie": [
+        {"ponto": "Login", "exposicao": "internet", "autenticacao": "pública"},
+        {"ponto": "Cadastro", "exposicao": "internet", "autenticacao": "pública"},
+        {"ponto": "Recuperação de senha", "exposicao": "internet", "autenticacao": "token por e-mail"}
+      ],
+      "caminhos_sensiveis": ["**/auth*/**", "**/login*/**", "**/sess*/**", "**/senha*/**", "**/password*/**"],
+      "skills": ["implementar-login"],
+      "perguntas": [
+        {"pergunta": "Qualquer pessoa pode se cadastrar ou só quem o administrador convidar?", "bloqueia": true}
+      ]
+    },
+    {
+      "id": "link-magico",
+      "nome": "Link de acesso por e-mail (sem senha)",
+      "variaveis": [],
+      "rnf": [
+        {"categoria": "Segurança", "descricao": "Links de acesso de uso único e validade curta",
+         "metrica": "link expira em até 15 minutos e não funciona uma segunda vez"}
+      ],
+      "ameacas": [
+        {"ameaca": "Link de acesso interceptado ou reenviado",
+         "controle": "Token de uso único, validade curta e vinculado ao e-mail solicitado"}
+      ],
+      "superficie": [
+        {"ponto": "Pedido de link de acesso", "exposicao": "internet", "autenticacao": "pública"}
+      ],
+      "caminhos_sensiveis": ["**/auth*/**", "**/login*/**", "**/sess*/**"],
+      "skills": ["implementar-login"],
+      "perguntas": []
+    },
+    {
+      "id": "social",
+      "nome": "Login social (Google, Apple...)",
+      "ator": "Provedor de identidade",
+      "variaveis": ["AUTH_GOOGLE_ID", "AUTH_GOOGLE_SECRET"],
+      "rnf": [
+        {"categoria": "Segurança", "descricao": "Fluxo OAuth com state e PKCE",
+         "metrica": "retornos sem state válido rejeitados"}
+      ],
+      "ameacas": [
+        {"ameaca": "Conta tomada por e-mail não verificado no provedor",
+         "controle": "Vincular contas só quando o provedor confirma o e-mail como verificado"},
+        {"ameaca": "Redirecionamento aberto no retorno do login",
+         "controle": "URLs de retorno fixas e cadastradas no provedor"}
+      ],
+      "superficie": [
+        {"ponto": "Retorno do login social (callback)", "exposicao": "internet", "autenticacao": "OAuth (state e PKCE)"}
+      ],
+      "caminhos_sensiveis": ["**/auth*/**", "**/login*/**", "**/callback*/**"],
+      "skills": ["implementar-login"],
+      "perguntas": [
+        {"pergunta": "Quais provedores (Google, Apple, Microsoft)? Para publicar na App Store, o login da Apple é obrigatório quando há outro login social.", "bloqueia": false}
+      ]
+    },
+    {
+      "id": "sso",
+      "nome": "Login corporativo (SSO: Microsoft Entra ID, Google Workspace)",
+      "ator": "Provedor de identidade corporativo",
+      "variaveis": ["SSO_CLIENT_ID", "SSO_CLIENT_SECRET", "SSO_TENANT"],
+      "rnf": [
+        {"categoria": "Segurança", "descricao": "Acesso revogado quando o usuário sai da empresa",
+         "metrica": "usuário desativado no provedor perde o acesso em até 1 hora"}
+      ],
+      "ameacas": [
+        {"ameaca": "Usuário de outra organização entra pelo mesmo provedor",
+         "controle": "Aceitar só o tenant ou domínio do cliente"}
+      ],
+      "superficie": [
+        {"ponto": "Retorno do SSO (callback)", "exposicao": "internet", "autenticacao": "OpenID Connect"}
+      ],
+      "caminhos_sensiveis": ["**/auth*/**", "**/login*/**", "**/callback*/**"],
+      "skills": ["implementar-login"],
+      "perguntas": [
+        {"pergunta": "Qual provedor a empresa usa e quem pode cadastrar o aplicativo nele?", "bloqueia": true}
+      ]
+    }
+  ]
+}

@@ -13,7 +13,8 @@ Todo projeto do Prumo é configurado para gastar o mínimo de tokens sem sacrifi
 | **Saídas de ferramentas truncadas** | hooks de lint e testes | Só as últimas 40 a 60 linhas de erro voltam ao Claude |
 | **Regras no AGENTS.md** | seção "Economia de tokens" | Não reler arquivos, ler por trechos, editar pontualmente, delegar varreduras longas a subagentes, respostas finais curtas |
 | **Subagentes** | `.claude/agents/` | Revisões e análises longas rodam em contexto separado e devolvem só a conclusão |
-| **Uma sessão por etapa** | `prumo claude especificar` | Cada etapa começa limpa e lê do disco o que precisa, sem arrastar o histórico das anteriores |
+| **Etapas agrupadas em poucas sessões** | `prumo claude especificar` | As etapas rodam em 3 sessões (análise, solução, planejamento), com o texto das skills já no prompt. Cada sessão nova paga de novo o contexto fixo e relê os documentos; em testes com projetos reais, uma sessão por etapa custou de 2 a 5 vezes mais. Use `--sessoes etapa` para o modo antigo |
+| **Proporcionalidade** | prompt da especificação e skills | O tamanho da especificação acompanha o pedido; sugestões que o cliente não pediu entram como Could (opcionais, fora do total do orçamento) |
 | **Skills sob demanda** | `.claude/skills/` | O corpo de uma skill só entra no contexto quando ela é usada |
 | **Convenções enxutas** | `templates/perfis/convencoes/` | O texto que entra no AGENTS.md (lido em toda sessão) é curto e objetivo |
 

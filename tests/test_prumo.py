@@ -16,7 +16,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
-from prumo_cli import claude, figma, gestao, projeto as mp, rastreio, seguranca, validacao  # noqa: E402
+from prumo_cli import claude, figma, formulario, gestao, projeto as mp, rastreio, seguranca, validacao  # noqa: E402
 from prumo_cli.cli import main  # noqa: E402
 from prumo_cli.util import ErroPrumo, gravar, ler  # noqa: E402
 
@@ -173,7 +173,79 @@ class TestRastreio(unittest.TestCase):
             self.assertTrue(any(m.startswith("HU-002 não tem caso de teste") for m in msgs))
             destino, _ = rastreio.gerar_matriz(p)
             matriz = ler(destino)
-            self.assertIn("| RF-001 | O sistema deve cadastrar clientes | UC-001 | HU-001 | CT-001 |", matriz)
+            self.assertIn("| RF-001 | O sistema deve cadastrar clientes | UC-001 | — | HU-001 | CT-001 |", matriz)
+
+    def test_matriz_sem_heranca_pelo_caso_de_uso(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = projeto_com_espec(tmp)
+            gravar(p.docs / "extra.md", textwrap.dedent("""\
+                | RF-010 | O sistema deve A | Must | Pedido |
+                | RF-011 | O sistema deve B | Must | Pedido |
+
+                ### UC-005 — Fazer A e B
+
+                Requisitos atendidos: RF-010, RF-011
+
+                ### HU-010 — Fazer A
+
+                Casos de uso: UC-005 · Requisitos: RF-010
+
+                ### HU-011 — Fazer B
+
+                Casos de uso: UC-005 · Requisitos: RF-011
+
+                ### HU-012 — Só pelo caso de uso
+
+                Casos de uso: UC-005
+                """))
+            destino, _ = rastreio.gerar_matriz(p)
+            matriz = ler(destino)
+            self.assertIn("| RF-010 | O sistema deve A | UC-005 | — | HU-010 | — |", matriz)
+            self.assertIn("| RF-011 | O sistema deve B | UC-005 | — | HU-011 | — |", matriz)
+
+    def test_detalhe_de_tela_telas_do_caso_de_uso_e_opcionais(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = projeto_com_espec(tmp)
+            gravar(p.docs / "extra.md", textwrap.dedent("""\
+                | RF-020 | O sistema deve C | Must | Pedido |
+
+                ### UC-020 — Fazer C
+
+                Requisitos atendidos: RF-020 · Telas: TL-020
+
+                | TL-020 | Tela C | — | — | — | — |
+
+                ### Tela TL-020 — Tela C
+
+                - **Atende:** RF-020, UC-020
+
+                ### HU-020 — Fazer C
+
+                Casos de uso: UC-020 · Requisitos: RF-020 · **Estimativa:** 3h · **Prioridade:** Must
+
+                ### HU-021 — Extra
+
+                Requisitos: RF-020 · **Estimativa:** 2h · **Prioridade:** Could · **Status:** a fazer
+                Premissas da estimativa: texto que não pode vazar para a coluna Status.
+
+                ### CT-020 — Verifica C
+
+                **Verifica:** HU-020
+
+                ### CT-021 — Verifica C direto
+
+                **Verifica:** RF-020
+                """))
+            a = rastreio.analisar_projeto(p)
+            self.assertIn("RF-020", a.itens["TL-020"].refs)  # o bloco "Tela TL-020" soma ao item da tabela
+            self.assertFalse(any(d[0] == "TL-020" for d in a.duplicados))
+            msgs = [m for _, m in rastreio.problemas(a, p)]
+            self.assertFalse(any(m.startswith("HU-021 não tem caso de teste") for m in msgs))  # Could
+            destino, _ = rastreio.gerar_matriz(p)
+            matriz = ler(destino)
+            self.assertIn("| RF-020 | O sistema deve C | UC-020 | TL-020 | HU-020, HU-021 | CT-020, CT-021 |", matriz)
+            self.assertIn("| HU-021 | Extra | a fazer |", matriz)
+            self.assertNotIn("Premissas da estimativa", matriz)
 
     def test_duplicado(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -232,6 +304,29 @@ class TestGestao(unittest.TestCase):
             self.assertAlmostEqual(o["valor_total"], 1980.0)
             self.assertEqual(o["sem_estimativa"], ["HU-003"])
             self.assertIn("R$ 1.980,00", ler(p.docs / "orcamento.md"))
+
+    def test_orcamento_separa_opcionais(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = projeto_com_espec(tmp)
+            gravar(p.docs / "extra.md", textwrap.dedent("""\
+                ### HU-008 — Exportar PDF
+
+                **Épico:** EP-01
+
+                **Estimativa:** 5h · **Prioridade:** Could · **Status:** a fazer
+
+                ### HU-009 — Integração futura
+
+                **Estimativa:** 40h · **Prioridade:** Won't
+                """))
+            o = gestao.orcamento(p, valor_hora=100, contingencia=10)
+            self.assertEqual(o["horas_base"], 18.0)  # Could e Won't ficam fora do total
+            self.assertEqual(o["horas_opcionais"], 5.0)
+            self.assertEqual(o["opcionais"], ["HU-008"])
+            self.assertEqual(o["fora"], ["HU-009"])
+            texto = ler(p.docs / "orcamento.md")
+            self.assertIn("## Opcionais (prioridade Could, fora do total)", texto)
+            self.assertIn("R$ 550,00", texto)  # 5h + 10% x R$ 100
 
     def test_horas(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -310,6 +405,25 @@ class TestFigma(unittest.TestCase):
             self.assertIn("node-id=1-2) | UC-001 |", doc)  # coluna preservada
             self.assertIn("| TL-002 | (não encontrada no Figma) |", doc)  # ID estável
             self.assertIn("| TL-003 | Pedidos / Lista |", doc)
+
+    def test_sincronizar_preserva_telas_escritas_a_mao(self):
+        self.remover = False
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "web-fullstack")
+            doc = ler(p.docs / "05-interface.md")
+            manual = ("| TL-001 | Painel | — | — | UC-002 | — |\n"
+                      "| TL-002 | Relatórios | — | — | UC-003 | — |")
+            inicio, fim = doc.index(figma.INICIO), doc.index(figma.FIM)
+            cabecalho = doc[inicio:fim].splitlines()[1:3]
+            gravar(p.docs / "05-interface.md",
+                   doc[:inicio] + figma.INICIO + "\n" + "\n".join(cabecalho) + "\n" + manual + "\n" + doc[fim:])
+            figma.sincronizar_telas(p, "https://www.figma.com/design/AbC123xyz9/Loja", token="t", abrir=self.falso_urlopen)
+            doc = ler(p.docs / "05-interface.md")
+            self.assertIn("| TL-001 | Painel | Telas | [abrir](https://www.figma.com/design/AbC123xyz9/?node-id=1-3) | UC-002 |",
+                          doc)  # o frame com o mesmo nome assume a TL manual
+            self.assertIn("| TL-002 | Relatórios | (sem frame no Figma) | — | UC-003 | — |", doc)  # não some
+            self.assertIn("| TL-003 | Login |", doc)  # frames novos recebem números livres
+            self.assertIn("| TL-004 | Pedidos / Lista |", doc)
 
 
 class TestHooks(unittest.TestCase):
@@ -403,7 +517,24 @@ print(json.dumps({"type": "system", "subtype": "init", "session_id": "sess-123",
 print(json.dumps({"type": "assistant", "message": {"content": [{"type": "text", "text": "Trabalhando"},
       {"type": "tool_use", "name": "Edit", "input": {"file_path": "docs/02-requisitos.md"}}]}}))
 print(json.dumps({"type": "result", "subtype": "success", "is_error": False, "session_id": "sess-123",
-      "result": "Feito. args=" + " ".join(args) + " | prompt=" + prompt[:4000], "total_cost_usd": 0.01, "num_turns": 2}))
+      "result": "Feito. args=" + " ".join(args) + " | prompt=" + prompt[:4000], "total_cost_usd": 0.01, "num_turns": 2,
+      "modelUsage": {"claude-x": {"inputTokens": 10, "outputTokens": 20, "cacheReadInputTokens": 30,
+                                  "cacheCreationInputTokens": 40}}}))
+'''
+
+
+FALSO_CLAUDE_OK_COM_LIMITE = r'''import json, sys
+sys.stdin.buffer.read()
+print(json.dumps({"type": "result", "subtype": "success", "is_error": False, "session_id": "s-ok",
+                  "result": "Feito. Pergunta P-03: qual o limite de uso diário do app? You have hit your limit of 3 telas.",
+                  "total_cost_usd": 0.01, "num_turns": 1}))
+'''
+
+FALSO_CLAUDE_LIMITE = r'''import json, sys
+sys.stdin.buffer.read()
+print(json.dumps({"type": "result", "subtype": "success", "is_error": True,
+                  "result": "You've hit your 5-hour limit", "total_cost_usd": 0, "num_turns": 1}))
+sys.exit(1)
 '''
 
 
@@ -425,9 +556,30 @@ class TestClaude(unittest.TestCase):
                 self.assertTrue(any("→ Edit docs/02-requisitos.md" in e for e in eventos))
                 self.assertTrue((p.raiz / r["log"]).exists())
                 self.assertEqual(claude.ultima_sessao(p), "sess-123")
+                self.assertEqual(r["tokens"]["total"], 100)
+                self.assertEqual(r["tokens"]["saida"], 20)
                 r2 = claude.executar(p, "livre", texto="olá", continuar=True, ao_evento=eventos.append)
                 self.assertIn("--resume sess-123", r2["resumo"])
                 self.assertEqual(len(claude.historico(p)), 2)
+                # sessão retomada: o dublê repete o acumulado; o histórico guarda só a diferença
+                self.assertEqual(r2["custo_usd"], 0)
+                self.assertEqual(r2["custo_usd_sessao"], 0.01)
+                self.assertEqual(r2["tokens"]["total"], 0)
+            finally:
+                del os.environ["PRUMO_CLAUDE"]
+
+    def test_limite_de_uso_interrompe_especificacao(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = projeto_com_espec(tmp)
+            falso = Path(tmp) / "claude_limite.py"
+            falso.write_text(FALSO_CLAUDE_LIMITE, encoding="utf-8")
+            os.environ["PRUMO_CLAUDE"] = str(falso)
+            try:
+                eventos = []
+                rs = claude.especificar(p, pausar=False, ao_evento=eventos.append)
+                self.assertEqual(len(rs), 1)
+                self.assertTrue(rs[0]["limite_atingido"])
+                self.assertTrue(any("--de requisitos" in e for e in eventos), eventos)
             finally:
                 del os.environ["PRUMO_CLAUDE"]
 
@@ -437,9 +589,197 @@ class TestClaude(unittest.TestCase):
             r = claude.executar(p, "requisitos", simular=True)
             self.assertIn("levantar-requisitos", r["prompt"])
             etapas = [e for e in claude.ETAPAS_ESPECIFICACAO if claude.etapa_existe(p, e)]
-            self.assertEqual(etapas, ["requisitos", "arquitetura", "backlog", "testes", "proposta"])
+            self.assertEqual(etapas, ["requisitos", "interface", "arquitetura", "backlog", "testes", "proposta"])
             with self.assertRaises(ErroPrumo):
                 claude.montar_prompt(p, "livre", texto="  ")
+
+    def test_sessoes_da_especificacao(self):
+        etapas = ["requisitos", "interface", "arquitetura", "backlog", "testes", "proposta"]
+        # a proposta fica sempre numa sessão própria, depois de o Prumo gerar o orçamento
+        self.assertEqual(claude.planejar_sessoes(etapas, "grupos"),
+                         [["requisitos", "interface"], ["arquitetura"], ["backlog", "testes"], ["proposta"]])
+        self.assertEqual(claude.planejar_sessoes(etapas, "unica"), [etapas[:-1], ["proposta"]])
+        self.assertEqual(claude.planejar_sessoes(etapas, "etapa"), [[e] for e in etapas])
+        self.assertEqual(claude.planejar_sessoes(["proposta"], "unica"), [["proposta"]])
+        with self.assertRaises(ErroPrumo):
+            claude.planejar_sessoes(etapas, "outro")
+
+    def test_de_e_ate_com_etapa_fora_do_perfil(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "site-institucional")  # não tem casos de uso, UML nem banco
+            self.assertEqual(claude.etapas_do_projeto(p, de="uml"), ["arquitetura", "backlog", "testes", "proposta"])
+            self.assertEqual(claude.etapas_do_projeto(p, ate="banco"), ["requisitos", "interface"])
+            with self.assertRaises(ErroPrumo):
+                claude.etapas_do_projeto(p, de="xyz")
+
+    def test_limite_so_quando_a_execucao_falha(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = projeto_com_espec(tmp)
+            falso = Path(tmp) / "claude_ok.py"
+            falso.write_text(FALSO_CLAUDE_OK_COM_LIMITE, encoding="utf-8")
+            os.environ["PRUMO_CLAUDE"] = str(falso)
+            try:
+                r = claude.executar(p, "livre", texto="resuma", ao_evento=lambda _l: None)
+                self.assertFalse(r.get("erro"), r)
+                self.assertNotIn("limite_atingido", r)
+            finally:
+                del os.environ["PRUMO_CLAUDE"]
+
+    def test_prompt_transcreve_as_skills(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "site-institucional")
+            prompt = claude.montar_prompt_etapas(p, ["requisitos", "interface"])
+            self.assertIn("Etapa 1 de 2: Visão e requisitos", prompt)
+            self.assertIn("Etapa 2 de 2: Interface e telas", prompt)
+            self.assertIn("Inventário de telas", prompt)  # corpo da skill especificar-interface
+            self.assertNotIn("name: levantar-requisitos", prompt)  # sem o frontmatter
+            self.assertNotIn("leia .claude/skills", prompt)
+            self.assertIn("Proporcionalidade", prompt)
+            r = claude.executar(p, "requisitos", simular=True, etapas=["requisitos", "interface"])
+            self.assertEqual(r["tarefa"], "requisitos+interface")
+
+    def test_especificar_em_grupos_com_duble(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "site-institucional")
+            falso = Path(tmp) / "claude_falso.py"
+            falso.write_text(FALSO_CLAUDE, encoding="utf-8")
+            os.environ["PRUMO_CLAUDE"] = str(falso)
+            try:
+                eventos = []
+                rs = claude.especificar(p, pausar=False, ao_evento=eventos.append, corrigir=False)
+                self.assertEqual([r["tarefa"] for r in rs],
+                                 ["requisitos+interface", "arquitetura", "backlog+testes", "proposta"])
+                self.assertIn("Etapa 1 de 2: Backlog", rs[2]["resumo"])
+                self.assertTrue(any("Sessão 4/4" in e for e in eventos))
+                rs = claude.especificar(p, pausar=False, ao_evento=eventos.append, corrigir=False, sessoes="etapa",
+                                        de="backlog")
+                self.assertEqual([r["tarefa"] for r in rs], ["backlog", "testes", "proposta"])
+            finally:
+                del os.environ["PRUMO_CLAUDE"]
+
+
+FORMULARIO = {
+    "versao": 1,
+    "contato": {"nome": "Ana", "email": "contato@exemplo.com"},
+    "negocio": {"contexto": "Doceria com encomendas pelo WhatsApp.", "proposito": "Vender encomendas pela internet.",
+                "objetivos": [{"descricao": "Reduzir pedidos perdidos", "medida": "pedidos sem registro", "meta": "zero"}]},
+    "atores": [{"nome": "Cliente", "tipo": "humano"}, {"nome": "Administrador", "tipo": "humano"}],
+    "funcionalidades": [
+        {"acao": "cadastrar produtos", "ator": "Administrador", "grupo": "Catálogo", "prioridade": "Must", "tamanho": "M"},
+        {"acao": "pagar o pedido por Pix", "ator": "Cliente", "prioridade": "must", "tamanho": "g", "regras": ["rn-001"]},
+        {"acao": "emitir nota fiscal", "ator": "Administrador", "prioridade": "won't"},
+    ],
+    "regras": [{"id": "RN-001", "regra": "Encomendas só com 48h de antecedência"}],
+    "glossario": [{"termo": "Encomenda", "definicao": "Pedido com retirada futura"}],
+    "perguntas": [{"pergunta": "Haverá entrega?", "bloqueia": True}],
+    "casos_de_uso": [{"nome": "Fazer encomenda", "ator": "Cliente", "requisitos": ["RF-002"], "telas": ["TL-002"]}],
+    "entidades": [
+        {"nome": "Produto", "campos": [{"nome": "nome", "tipo": "texto", "obrigatorio": True},
+                                       {"nome": "preco", "tipo": "dinheiro"}],
+         "relacoes": [{"com": "Categoria", "cardinalidade": "N:1", "verbo": "pertence a"}]},
+        {"nome": "Categoria", "campos": [{"nome": "nome", "tipo": "texto"}]},
+    ],
+    "interface": {"telas": [{"id": "TL-001", "nome": "Cardápio", "ator": "Cliente", "atende": ["RF-001"], "vai_para": ["TL-002"]},
+                            {"id": "TL-002", "nome": "Checkout", "ator": "Cliente", "atende": ["RF-002"]}]},
+    "tecnico": {"stack": {"frontend": "nextjs", "backend": "nextjs", "banco": "postgresql", "orm": "prisma"},
+                "login": "email-senha", "perfis_acesso": ["Administrador", "Cliente"],
+                "integracoes": ["pagamento-pix"], "rnf": ["responsivo", "lgpd"]},
+    "comercial": {"validade_dias": 15, "marcos": [{"conteudo": "Catálogo", "percentual": 40},
+                                                  {"conteudo": "Pedidos", "percentual": 60}]},
+}
+
+
+class TestFormulario(unittest.TestCase):
+    def test_catalogos_e_stack_padrao_dos_perfis(self):
+        self.assertEqual(formulario.problemas_catalogos(), [])
+        stacks = formulario.indice(formulario.carregar_catalogos(), "stacks")
+        for perfil in mp.listar_perfis():
+            with self.subTest(perfil=perfil["id"]):
+                self.assertIsInstance(perfil.get("stack_padrao"), dict)
+                for camada, ident in perfil["stack_padrao"].items():
+                    self.assertIn(ident, stacks)
+                    self.assertIn(camada, stacks[ident]["camadas"])
+
+    def test_formulario_completo_valido_e_normalizado(self):
+        dados = formulario.normalizar(FORMULARIO)
+        self.assertEqual([f.get("prioridade") for f in dados["funcionalidades"]], ["Must", "Must", "Won't"])
+        self.assertEqual(dados["funcionalidades"][1]["tamanho"], "G")
+        self.assertEqual(dados["funcionalidades"][1]["regras"], ["RN-001"])
+        self.assertEqual(formulario.atribuir_ids(dados), ["RF-001", "RF-002", "RF-003", "UC-001", "M1", "M2"])
+        self.assertEqual(formulario.validar(dados), [])
+        self.assertEqual(formulario.validar(formulario.vazio()), [])
+
+    def test_referencias_soltas_e_valores_fora_do_catalogo(self):
+        dados = formulario.normalizar(FORMULARIO)
+        formulario.atribuir_ids(dados)
+        dados["funcionalidades"][0].update(ator="Gerente", prioridade="Talvez", regras=["RN-009"])
+        dados["casos_de_uso"][0]["telas"] = ["TL-005"]
+        dados["entidades"][0]["campos"][1]["tipo"] = "moeda"
+        dados["entidades"].append({"nome": "produto"})
+        dados["tecnico"].update(integracoes=["pombo-correio"], login="biometria")
+        dados["tecnico"]["stack"]["orm"] = "nextjs"
+        dados["atores"][0]["apelido"] = "x"
+        problemas = formulario.validar(dados, ids_documentos={"RN-009"})
+        erros = "\n".join(m for g, m in problemas if g == "erro")
+        avisos = "\n".join(m for g, m in problemas if g == "aviso")
+        for trecho in ("ator 'Gerente'", "prioridade 'Talvez'", "TL-005 não existe", "tipo 'moeda'",
+                       "'produto' aparece duas vezes", "'pombo-correio'", "login 'biometria'"):
+            self.assertIn(trecho, erros)
+        for trecho in ("RN-009 existe só nos documentos", "não é da camada orm", "campo desconhecido 'apelido'"):
+            self.assertIn(trecho, avisos)
+
+    def test_estrutura_invalida_nao_grava(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "minimo")
+            for ruim in ({"atores": "Cliente"}, {"regras": [{"id": "RN-001", "regra": "a"}, {"id": "RN-001", "regra": "b"}]},
+                         {"funcionalidades": [{"id": "XX-1", "acao": "a"}]}, {"versao": 99}):
+                with self.subTest(ruim=ruim), self.assertRaises(ErroPrumo):
+                    formulario.salvar(p, ruim)
+            self.assertFalse((p.raiz / formulario.ARQUIVO).exists())
+
+    def test_ids_sem_colisao_com_os_documentos(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "web-fullstack")
+            r = formulario.salvar(p, {"funcionalidades": [{"acao": "a"}, {"acao": ""}]})
+            self.assertEqual(r["ids_criados"], ["RF-001"])  # os exemplos [PREENCHER] dos modelos não contam
+            req = p.docs / "02-requisitos.md"
+            gravar(req, ler(req) + "\n| ID | Descrição | Prioridade | Origem |\n|---|---|---|---|\n"
+                                   "| RF-007 | O sistema deve exportar pedidos | Should | Reunião |\n")
+            dados, _ = formulario.carregar(p)
+            dados["funcionalidades"][1]["acao"] = "b"
+            dados["funcionalidades"].append({"acao": "c"})
+            self.assertEqual(formulario.salvar(p, dados)["ids_criados"], ["RF-008", "RF-009"])
+            dados, _ = formulario.carregar(p)
+            self.assertEqual(formulario.salvar(p, dados)["ids_criados"], [])  # salvar de novo não muda nada
+            self.assertEqual([f["id"] for f in formulario.carregar(p)[0]["funcionalidades"]], ["RF-001", "RF-008", "RF-009"])
+            dados["funcionalidades"] = dados["funcionalidades"][:1] + [{"acao": "d"}]  # apagar deixa buraco
+            self.assertEqual(formulario.salvar(p, dados)["ids_criados"], ["RF-010"])
+
+    def test_cli_formulario(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "web-fullstack")
+            entrada = Path(tmp) / "formulario.json"
+            gravar(entrada, json.dumps(FORMULARIO, ensure_ascii=False))
+
+            def rodar(*args):
+                buf = io.StringIO()
+                with redirect_stdout(buf):
+                    codigo = main(["formulario", *args, "--json", "--projeto", str(p.raiz)])
+                return codigo, json.loads(buf.getvalue())
+
+            codigo, r = rodar("salvar", str(entrada))
+            self.assertEqual((codigo, r["erros"]), (0, []))
+            self.assertIn("RF-003", r["ids_criados"])
+            self.assertEqual(rodar("validar")[0], 0)
+            codigo, r = rodar()
+            self.assertTrue(r["existe"])
+            self.assertEqual(set(r["catalogos"]), set(formulario.CATALOGOS))
+            self.assertEqual(r["itens"]["funcionalidades"], 3)
+            self.assertIn("telas", [x["id"] for x in r["passos"]])
+            dados = json.loads(ler(p.raiz / formulario.ARQUIVO))
+            dados["casos_de_uso"][0]["requisitos"] = ["RF-050"]
+            gravar(p.raiz / formulario.ARQUIVO, json.dumps(dados))
+            self.assertEqual(rodar("validar")[0], 1)
 
 
 class TestCliEServidor(unittest.TestCase):

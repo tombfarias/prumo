@@ -12,6 +12,9 @@ PADRAO_ID = re.compile(r"\b(" + "|".join(PREFIXOS) + r")-(\d{2,4})\b")
 TITULO = re.compile(r"^(#{1,6})\s+(.*)$")
 CERCA = re.compile(r"^\s*(```|~~~)")
 ID_SOZINHO = re.compile(r"^[*_`\s]*((?:" + "|".join(PREFIXOS) + r")-\d{2,4})[*_`\s]*(.*)$")
+# Título que detalha um item já definido em outro lugar: uma palavra e o ID ("### Tela TL-001 — Home",
+# "## Épico EP-01 — Cadastro"). O bloco soma texto e referências ao item, sem redefini-lo.
+ID_DETALHADO = re.compile(r"^[*_`\s]*[^\W\d_]+\s+((?:" + "|".join(PREFIXOS) + r")-\d{2,4})\b")
 NOMES = {
     "RF": "Requisito funcional", "RNF": "Requisito não funcional", "RN": "Regra de negócio",
     "UC": "Caso de uso", "HU": "História", "CT": "Caso de teste", "TL": "Tela", "EP": "Épico",
@@ -108,6 +111,9 @@ def analisar_arquivo(analise, caminho, rel):
                 pilha.pop()
             mid = ID_SOZINHO.match(m.group(2))
             item = definir(mid.group(1), mid.group(2), num) if mid else None
+            if item is None and not mid:
+                detalhe = ID_DETALHADO.match(m.group(2))
+                item = analise.itens.get(detalhe.group(1)) if detalhe else None
             pilha.append((nivel, item))
             if item:
                 item.texto.append(linha)
@@ -166,6 +172,15 @@ def _wont(item):
     return bool(re.search(r"\bWon'?t\b", " ".join(item.texto), re.I))
 
 
+_PRIORIDADE = re.compile(r"Prioridade\W{0,4}\s*(Must|Should|Could|Won'?t)\b", re.I)
+
+
+def prioridade(item):
+    """Prioridade MoSCoW declarada no bloco (`**Prioridade:** Could`): 'must', 'should', 'could', 'wont' ou None."""
+    m = _PRIORIDADE.search(" ".join(item.texto))
+    return m.group(1).lower().replace("'", "") if m else None
+
+
 def problemas(analise, projeto):
     """Lista de (gravidade, mensagem). gravidade: 'erro' ou 'aviso'."""
     saida = []
@@ -190,6 +205,8 @@ def problemas(analise, projeto):
                 saida.append(("aviso", f"{uc.id} não tem história no backlog"))
     if tem_hu and tem_ct:
         for hu in analise.do_tipo("HU"):
+            if prioridade(hu) in ("could", "wont"):  # opcionais e fora da entrega só ganham CT se entrarem no escopo
+                continue
             if not analise.citam([hu.id], "CT"):
                 saida.append(("aviso", f"{hu.id} não tem caso de teste"))
     if tem_tl and tem_uc:
@@ -235,13 +252,18 @@ def gerar_matriz(projeto, analise=None):
     linhas = []
     for req in analise.do_tipo("RF", "RNF"):
         ucs = analise.citam([req.id], "UC")
-        hus = analise.citam([req.id] + list(ucs), "HU")
-        cts = analise.citam([req.id] + list(ucs) + list(hus), "CT")
+        telas = analise.citam([req.id] + list(ucs), "TL") | {
+            r for i in [req.id, *ucs] for r in analise.itens[i].refs if tipo_de(r) == "TL"}
+        # Ligações diretas primeiro; o caminho pelo caso de uso só entra quando nenhuma história cita o requisito.
+        # Sem isso, toda história de um UC herdaria todos os requisitos dele e a matriz viraria ruído.
+        hus = analise.citam([req.id], "HU") or analise.citam(list(ucs), "HU")
+        cts = analise.citam([req.id] + list(hus), "CT")
         codigo = _codigo_de(analise, {req.id} | ucs | hus | cts)
-        linhas.append([req.id, req.titulo[:80], _lista(ucs), _lista(hus), _lista(cts), _arquivos(codigo)])
+        linhas.append([req.id, req.titulo[:80], _lista(ucs), _lista(telas), _lista(hus), _lista(cts), _arquivos(codigo)])
     if linhas:
-        partes += ["## Requisitos → casos de uso → histórias → testes → código", "",
-                   tabela_markdown(["Requisito", "Descrição", "Casos de uso", "Histórias", "Testes", "Código"], linhas), ""]
+        partes += ["## Requisitos → casos de uso → telas → histórias → testes → código", "",
+                   tabela_markdown(["Requisito", "Descrição", "Casos de uso", "Telas", "Histórias", "Testes", "Código"],
+                                   linhas), ""]
 
     linhas = []
     for rn in analise.do_tipo("RN"):
@@ -262,7 +284,7 @@ def gerar_matriz(projeto, analise=None):
 
     linhas = []
     for hu in analise.do_tipo("HU"):
-        status = re.search(r"Status:\**\s*([^·|\n]+)", " ".join(hu.texto))
+        status = re.search(r"Status:\**\s*([^·|\n]+)", "\n".join(hu.texto))  # por linha: o texto seguinte não vaza
         horas = estimativa_horas(hu)
         cts = analise.citam([hu.id], "CT")
         linhas.append([hu.id, hu.titulo[:60], status.group(1).strip() if status else "—",

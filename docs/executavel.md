@@ -17,7 +17,7 @@ Cada push na branch `main` publica (ou atualiza) a *Release* da versão definida
 - https://github.com/tombfarias/prumo/releases/latest/download/prumo-app.exe
 
 ```powershell
-cd D:\SistemaCodigo
+cd C:\Prumo
 Invoke-WebRequest https://github.com/tombfarias/prumo/releases/latest/download/prumo.exe -OutFile prumo.exe
 Invoke-WebRequest https://github.com/tombfarias/prumo/releases/latest/download/prumo-app.exe -OutFile prumo-app.exe
 ```
@@ -27,7 +27,7 @@ Os executáveis também ficam como artefato `prumo-windows` de cada execução d
 ## Gerar na sua máquina
 
 ```powershell
-cd D:\SistemaCodigo
+cd C:\Prumo
 powershell -ExecutionPolicy Bypass -File .\build.ps1          # gera em dist\ e copia para a raiz
 powershell -ExecutionPolicy Bypass -File .\build.ps1 -SoDist  # só gera em dist\
 ```

@@ -3,6 +3,7 @@
   "nome": "Aplicação web full-stack",
   "descricao": "Aplicação web com frontend e backend no mesmo projeto, banco de dados e login.",
   "stack": "Next.js (App Router) + TypeScript + Tailwind CSS + Prisma + PostgreSQL + Auth.js",
+  "stack_padrao": {"frontend": "nextjs", "backend": "nextjs", "banco": "postgresql", "orm": "prisma", "autenticacao": "authjs", "hospedagem": "vercel", "testes": "vitest"},
   "documentos": [
     "00-briefing",
     "01-visao",

@@ -3,6 +3,7 @@
   "nome": "Automação, integração ou bot",
   "descricao": "Scripts agendados, integrações entre sistemas, ETL, raspagem autorizada de dados, bots de Telegram/WhatsApp/Discord.",
   "stack": "Python 3.12 + httpx + Playwright (quando precisar de navegador) + APScheduler/cron + SQLite ou PostgreSQL",
+  "stack_padrao": {"backend": "python-script", "banco": "sqlite", "testes": "pytest"},
   "documentos": [
     "00-briefing",
     "01-visao",

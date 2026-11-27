@@ -3,6 +3,7 @@
   "nome": "Mínimo (projeto pequeno ou exploratório)",
   "descricao": "Só o essencial: briefing, visão, requisitos e backlog. Bom para orçamentos rápidos e pequenos ajustes.",
   "stack": "[PREENCHER: definir com o cliente]",
+  "stack_padrao": {},
   "documentos": [
     "00-briefing",
     "01-visao",

@@ -1,0 +1,226 @@
+{
+  "descricao": "Opções de stack por camada para o passo Técnico do formulário. Cada entrada traz o que a escolha implica nos comandos dos hooks, nas permissões do Claude Code, nas pastas e nas variáveis de ambiente.",
+  "itens": [
+    {
+      "id": "nextjs", "nome": "Next.js (App Router) + TypeScript", "camadas": ["frontend", "backend"],
+      "extensoes": [".ts", ".tsx", ".js", ".jsx", ".css"],
+      "comandos": {"formatar": "npx prettier --write {arquivo}", "lint": "npx eslint {arquivo}"},
+      "permissoes": ["Bash(npx prettier:*)", "Bash(npx eslint:*)", "Bash(npm run lint:*)", "Bash(npm run build:*)"],
+      "pastas": ["src", "tests"],
+      "convencao": "Componentes de servidor por padrão; \"use client\" só quando houver estado ou eventos no navegador."
+    },
+    {
+      "id": "nuxt", "nome": "Nuxt (Vue) + TypeScript", "camadas": ["frontend", "backend"],
+      "extensoes": [".ts", ".vue", ".js", ".css"],
+      "comandos": {"formatar": "npx prettier --write {arquivo}", "lint": "npx eslint {arquivo}"},
+      "permissoes": ["Bash(npx prettier:*)", "Bash(npx eslint:*)", "Bash(npm run build:*)"],
+      "pastas": ["app", "server", "tests"]
+    },
+    {
+      "id": "react-vite", "nome": "React + Vite + TypeScript", "camadas": ["frontend"],
+      "extensoes": [".ts", ".tsx", ".css"],
+      "comandos": {"formatar": "npx prettier --write {arquivo}", "lint": "npx eslint {arquivo}"},
+      "permissoes": ["Bash(npx prettier:*)", "Bash(npx eslint:*)", "Bash(npm run build:*)"],
+      "pastas": ["src", "tests"]
+    },
+    {
+      "id": "astro", "nome": "Astro + Tailwind CSS", "camadas": ["frontend"],
+      "extensoes": [".astro", ".ts", ".js", ".css", ".md"],
+      "comandos": {"formatar": "npx prettier --write {arquivo}"},
+      "permissoes": ["Bash(npx prettier:*)", "Bash(npm run build:*)", "Bash(npx astro check:*)"],
+      "pastas": ["src", "public"]
+    },
+    {
+      "id": "html-css", "nome": "HTML, CSS e JavaScript", "camadas": ["frontend"],
+      "extensoes": [".html", ".css", ".js"],
+      "comandos": {"formatar": "npx prettier --write {arquivo}"},
+      "permissoes": ["Bash(npx prettier:*)"],
+      "pastas": ["src"]
+    },
+    {
+      "id": "wordpress", "nome": "WordPress (tema próprio)", "camadas": ["frontend", "backend"],
+      "extensoes": [".php", ".css", ".js"],
+      "pastas": ["wp-content/themes"],
+      "variaveis": ["WORDPRESS_DB_HOST", "WORDPRESS_DB_NAME", "WORDPRESS_DB_USER", "WORDPRESS_DB_PASSWORD"]
+    },
+    {
+      "id": "fastify", "nome": "Node.js + TypeScript + Fastify", "camadas": ["backend"],
+      "extensoes": [".ts", ".js"],
+      "comandos": {"formatar": "npx prettier --write {arquivo}", "lint": "npx eslint {arquivo}"},
+      "permissoes": ["Bash(npx prettier:*)", "Bash(npx eslint:*)", "Bash(npm run build:*)"],
+      "pastas": ["src", "tests"],
+      "variaveis": ["PORT"]
+    },
+    {
+      "id": "nestjs", "nome": "NestJS (Node.js + TypeScript)", "camadas": ["backend"],
+      "extensoes": [".ts"],
+      "comandos": {"formatar": "npx prettier --write {arquivo}", "lint": "npx eslint {arquivo}"},
+      "permissoes": ["Bash(npx prettier:*)", "Bash(npx eslint:*)", "Bash(npm run build:*)", "Bash(npx nest generate:*)"],
+      "pastas": ["src", "test"],
+      "variaveis": ["PORT"]
+    },
+    {
+      "id": "express", "nome": "Node.js + Express", "camadas": ["backend"],
+      "extensoes": [".ts", ".js"],
+      "comandos": {"formatar": "npx prettier --write {arquivo}", "lint": "npx eslint {arquivo}"},
+      "permissoes": ["Bash(npx prettier:*)", "Bash(npx eslint:*)"],
+      "pastas": ["src", "tests"],
+      "variaveis": ["PORT"]
+    },
+    {
+      "id": "fastapi", "nome": "Python + FastAPI", "camadas": ["backend"],
+      "extensoes": [".py"],
+      "comandos": {"formatar": "ruff format {arquivo}", "lint": "ruff check {arquivo}"},
+      "permissoes": ["Bash(ruff:*)"],
+      "pastas": ["app", "tests"]
+    },
+    {
+      "id": "django", "nome": "Python + Django", "camadas": ["backend", "frontend"],
+      "extensoes": [".py", ".html"],
+      "comandos": {"formatar": "ruff format {arquivo}", "lint": "ruff check {arquivo}", "testar": "python manage.py test"},
+      "permissoes": ["Bash(ruff:*)", "Bash(python manage.py makemigrations:*)", "Bash(python manage.py test:*)"],
+      "pastas": ["."],
+      "variaveis": ["DJANGO_SECRET_KEY", "DJANGO_DEBUG", "DATABASE_URL"]
+    },
+    {
+      "id": "laravel", "nome": "PHP + Laravel", "camadas": ["backend", "frontend"],
+      "extensoes": [".php"],
+      "comandos": {"formatar": "./vendor/bin/pint {arquivo}", "testar": "php artisan test"},
+      "permissoes": ["Bash(php artisan test:*)", "Bash(php artisan make:*)", "Bash(./vendor/bin/pint:*)"],
+      "pastas": ["app", "routes", "database", "tests"],
+      "variaveis": ["APP_KEY", "DB_CONNECTION", "DB_HOST", "DB_DATABASE", "DB_USERNAME", "DB_PASSWORD"]
+    },
+    {
+      "id": "python-script", "nome": "Python (scripts e automações)", "camadas": ["backend"],
+      "extensoes": [".py"],
+      "comandos": {"formatar": "ruff format {arquivo}", "lint": "ruff check {arquivo}"},
+      "permissoes": ["Bash(ruff:*)"],
+      "pastas": ["src", "tests"]
+    },
+    {
+      "id": "supabase", "nome": "Supabase (banco, API e autenticação gerenciados)", "camadas": ["backend", "banco", "autenticacao"],
+      "permissoes": ["Bash(npx supabase gen types:*)", "Bash(npx supabase migration new:*)"],
+      "variaveis": ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
+      "convencao": "Toda tabela com Row Level Security ligada; a chave service_role nunca vai para o cliente."
+    },
+    {
+      "id": "firebase", "nome": "Firebase (Firestore, Functions e Authentication)", "camadas": ["backend", "banco", "autenticacao"],
+      "variaveis": ["FIREBASE_PROJECT_ID"],
+      "convencao": "Regras de segurança do Firestore versionadas e testadas; nada de regras abertas."
+    },
+    {
+      "id": "expo", "nome": "React Native + Expo + TypeScript", "camadas": ["mobile"],
+      "extensoes": [".ts", ".tsx"],
+      "comandos": {"formatar": "npx prettier --write {arquivo}", "lint": "npx eslint {arquivo}"},
+      "permissoes": ["Bash(npx prettier:*)", "Bash(npx eslint:*)", "Bash(npx expo install:*)"],
+      "pastas": ["app", "src", "tests"]
+    },
+    {
+      "id": "flutter", "nome": "Flutter (Dart)", "camadas": ["mobile"],
+      "extensoes": [".dart"],
+      "comandos": {"formatar": "dart format {arquivo}", "lint": "dart analyze {arquivo}", "testar": "flutter test"},
+      "permissoes": ["Bash(dart format:*)", "Bash(dart analyze:*)", "Bash(flutter test:*)", "Bash(flutter pub get:*)"],
+      "pastas": ["lib", "test"]
+    },
+    {
+      "id": "postgresql", "nome": "PostgreSQL", "camadas": ["banco"],
+      "variaveis": ["DATABASE_URL"]
+    },
+    {
+      "id": "mysql", "nome": "MySQL / MariaDB", "camadas": ["banco"],
+      "variaveis": ["DATABASE_URL"]
+    },
+    {
+      "id": "sqlite", "nome": "SQLite", "camadas": ["banco"],
+      "variaveis": ["DATABASE_URL"]
+    },
+    {
+      "id": "mongodb", "nome": "MongoDB", "camadas": ["banco"],
+      "variaveis": ["MONGODB_URI"]
+    },
+    {
+      "id": "prisma", "nome": "Prisma", "camadas": ["orm"],
+      "extensoes": [".prisma"],
+      "permissoes": ["Bash(npx prisma generate:*)", "Bash(npx prisma format:*)", "Bash(npx prisma migrate dev:*)", "Bash(npx prisma validate:*)"],
+      "pastas": ["prisma"],
+      "convencao": "Migrações versionadas em prisma/migrations; nunca edite uma migração já aplicada."
+    },
+    {
+      "id": "drizzle", "nome": "Drizzle ORM", "camadas": ["orm"],
+      "permissoes": ["Bash(npx drizzle-kit generate:*)"],
+      "pastas": ["drizzle"]
+    },
+    {
+      "id": "sqlalchemy", "nome": "SQLAlchemy + Alembic", "camadas": ["orm"],
+      "permissoes": ["Bash(alembic revision:*)"],
+      "pastas": ["alembic"]
+    },
+    {
+      "id": "authjs", "nome": "Auth.js (NextAuth)", "camadas": ["autenticacao"],
+      "variaveis": ["AUTH_SECRET", "AUTH_URL"]
+    },
+    {
+      "id": "clerk", "nome": "Clerk", "camadas": ["autenticacao"],
+      "variaveis": ["CLERK_SECRET_KEY", "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"]
+    },
+    {
+      "id": "jwt-proprio", "nome": "JWT emitido pelo próprio backend", "camadas": ["autenticacao"],
+      "variaveis": ["JWT_SECRET"],
+      "convencao": "Tokens de acesso curtos (até 15 min) com refresh rotativo; algoritmo fixo na verificação."
+    },
+    {
+      "id": "vercel", "nome": "Vercel", "camadas": ["hospedagem"]
+    },
+    {
+      "id": "netlify", "nome": "Netlify", "camadas": ["hospedagem"]
+    },
+    {
+      "id": "cloudflare-pages", "nome": "Cloudflare Pages", "camadas": ["hospedagem"]
+    },
+    {
+      "id": "railway", "nome": "Railway", "camadas": ["hospedagem"]
+    },
+    {
+      "id": "render", "nome": "Render", "camadas": ["hospedagem"]
+    },
+    {
+      "id": "vps-docker", "nome": "VPS com Docker", "camadas": ["hospedagem"],
+      "extensoes": [".yml", ".yaml"],
+      "permissoes": ["Bash(docker compose config:*)", "Bash(docker build:*)"]
+    },
+    {
+      "id": "eas", "nome": "Expo EAS + lojas de aplicativos", "camadas": ["hospedagem"],
+      "permissoes": ["Bash(npx eas build:*)"]
+    },
+    {
+      "id": "vitest", "nome": "Vitest", "camadas": ["testes"],
+      "comandos": {"testar": "npx vitest run"},
+      "permissoes": ["Bash(npx vitest:*)", "Bash(npm test:*)"],
+      "pastas": ["tests"]
+    },
+    {
+      "id": "jest", "nome": "Jest", "camadas": ["testes"],
+      "comandos": {"testar": "npx jest"},
+      "permissoes": ["Bash(npx jest:*)", "Bash(npm test:*)"],
+      "pastas": ["tests"]
+    },
+    {
+      "id": "playwright", "nome": "Playwright (ponta a ponta)", "camadas": ["testes"],
+      "comandos": {"testar": "npx playwright test"},
+      "permissoes": ["Bash(npx playwright test:*)"],
+      "pastas": ["e2e"]
+    },
+    {
+      "id": "pytest", "nome": "pytest", "camadas": ["testes"],
+      "comandos": {"testar": "pytest -q"},
+      "permissoes": ["Bash(pytest:*)"],
+      "pastas": ["tests"]
+    },
+    {
+      "id": "phpunit", "nome": "PHPUnit / Pest", "camadas": ["testes"],
+      "comandos": {"testar": "php artisan test"},
+      "permissoes": ["Bash(php artisan test:*)"],
+      "pastas": ["tests"]
+    }
+  ]
+}

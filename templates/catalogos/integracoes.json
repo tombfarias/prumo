@@ -1,0 +1,131 @@
+{
+  "descricao": "Integrações externas do passo Técnico. Cada entrada traz o ator secundário, as variáveis de ambiente, os RNFs, as ameaças e controles, os pontos da superfície de ataque, os caminhos sensíveis para a revisão, as skills do kit e as perguntas para o cliente.",
+  "itens": [
+    {
+      "id": "pagamento-pix",
+      "nome": "Pagamento por Pix (gateway)",
+      "ator": "Gateway de pagamento",
+      "variaveis": ["PIX_CLIENT_ID", "PIX_CLIENT_SECRET", "PIX_WEBHOOK_SECRET"],
+      "rnf": [
+        {"categoria": "Segurança", "descricao": "Notificações de pagamento validadas por assinatura",
+         "metrica": "notificações sem assinatura válida rejeitadas"}
+      ],
+      "ameacas": [
+        {"ameaca": "Notificação de pagamento falsificada",
+         "controle": "Validar a assinatura e consultar o status na API antes de liberar o pedido"},
+        {"ameaca": "Pagamento processado duas vezes",
+         "controle": "Webhook idempotente (guarda o identificador da transação e ignora repetições)"}
+      ],
+      "superficie": [
+        {"ponto": "Webhook de pagamento", "exposicao": "internet", "autenticacao": "assinatura HMAC"}
+      ],
+      "caminhos_sensiveis": ["**/pagamento*/**", "**/payment*/**", "**/webhook*/**"],
+      "skills": ["integrar-pagamento"],
+      "perguntas": [
+        {"pergunta": "Qual gateway o cliente usa ou prefere? As taxas mudam o preço.", "bloqueia": true},
+        {"pergunta": "Quanto tempo o QR Code do Pix fica válido antes de o pedido expirar?", "bloqueia": false}
+      ]
+    },
+    {
+      "id": "pagamento-cartao",
+      "nome": "Pagamento com cartão (gateway)",
+      "ator": "Gateway de pagamento",
+      "variaveis": ["PAGAMENTO_CHAVE_PUBLICA", "PAGAMENTO_CHAVE_SECRETA", "PAGAMENTO_WEBHOOK_SECRET"],
+      "rnf": [
+        {"categoria": "Segurança", "descricao": "Dados do cartão nunca passam pelo servidor do sistema (tokenização no gateway)",
+         "metrica": "nenhum número de cartão em logs, banco ou requisições ao backend"}
+      ],
+      "ameacas": [
+        {"ameaca": "Vazamento de dados de cartão",
+         "controle": "Formulário ou checkout hospedado pelo gateway; o backend recebe só o token"},
+        {"ameaca": "Notificação de pagamento falsificada",
+         "controle": "Validar a assinatura do webhook e conferir o status na API do gateway"},
+        {"ameaca": "Teste de cartões roubados (card testing)",
+         "controle": "Limite de tentativas por IP e por conta, e antifraude do gateway ligado"}
+      ],
+      "superficie": [
+        {"ponto": "Webhook de pagamento", "exposicao": "internet", "autenticacao": "assinatura do gateway"},
+        {"ponto": "Criação do pagamento", "exposicao": "internet", "autenticacao": "sessão do usuário"}
+      ],
+      "caminhos_sensiveis": ["**/pagamento*/**", "**/payment*/**", "**/checkout*/**", "**/webhook*/**"],
+      "skills": ["integrar-pagamento"],
+      "perguntas": [
+        {"pergunta": "Qual gateway o cliente usa ou prefere? As taxas mudam o preço.", "bloqueia": true},
+        {"pergunta": "Haverá parcelamento? Com ou sem juros para o comprador?", "bloqueia": false},
+        {"pergunta": "Como funcionam estorno e cancelamento?", "bloqueia": false}
+      ]
+    },
+    {
+      "id": "email-transacional",
+      "nome": "E-mail transacional",
+      "ator": "Serviço de e-mail",
+      "variaveis": ["EMAIL_API_KEY", "EMAIL_REMETENTE"],
+      "rnf": [
+        {"categoria": "Confiabilidade", "descricao": "E-mails do sistema chegam à caixa de entrada",
+         "metrica": "domínio com SPF, DKIM e DMARC configurados; taxa de rejeição abaixo de 2%"}
+      ],
+      "ameacas": [
+        {"ameaca": "Envio em massa abusando de formulários públicos",
+         "controle": "Limite de envios por destinatário e por IP; captcha nos formulários abertos"},
+        {"ameaca": "Injeção de cabeçalhos ou HTML no e-mail",
+         "controle": "Modelos com escape de variáveis; destinatário nunca montado a partir de texto livre"}
+      ],
+      "superficie": [],
+      "caminhos_sensiveis": ["**/email*/**", "**/mail*/**"],
+      "skills": ["enviar-email"],
+      "perguntas": [
+        {"pergunta": "Qual domínio envia os e-mails? Quem tem acesso ao DNS para configurar SPF e DKIM?", "bloqueia": false}
+      ]
+    },
+    {
+      "id": "armazenamento-arquivos",
+      "nome": "Armazenamento de arquivos (S3 ou compatível)",
+      "ator": "Serviço de armazenamento",
+      "variaveis": ["STORAGE_BUCKET", "STORAGE_ACCESS_KEY", "STORAGE_SECRET_KEY", "STORAGE_ENDPOINT"],
+      "rnf": [
+        {"categoria": "Segurança", "descricao": "Uploads validados por tipo e tamanho",
+         "metrica": "arquivos fora da lista de tipos permitidos ou acima do limite rejeitados"}
+      ],
+      "ameacas": [
+        {"ameaca": "Upload de arquivo malicioso (script, executável, SVG com JavaScript)",
+         "controle": "Lista de tipos permitidos conferida pelo conteúdo, nome gerado pelo servidor, download com Content-Disposition"},
+        {"ameaca": "Arquivos privados acessíveis por link público",
+         "controle": "Bucket privado e URLs assinadas com validade curta"}
+      ],
+      "superficie": [
+        {"ponto": "Upload de arquivos", "exposicao": "internet", "autenticacao": "sessão do usuário"}
+      ],
+      "caminhos_sensiveis": ["**/upload*/**", "**/storage*/**", "**/arquivo*/**"],
+      "skills": ["armazenar-arquivos"],
+      "perguntas": [
+        {"pergunta": "Quais tipos de arquivo e qual tamanho máximo?", "bloqueia": false},
+        {"pergunta": "Os arquivos são públicos (fotos de produto) ou privados (documentos de clientes)?", "bloqueia": true}
+      ]
+    },
+    {
+      "id": "whatsapp",
+      "nome": "WhatsApp (API oficial do WhatsApp Business)",
+      "ator": "WhatsApp Business",
+      "variaveis": ["WHATSAPP_TOKEN", "WHATSAPP_PHONE_ID", "WHATSAPP_VERIFY_TOKEN", "WHATSAPP_APP_SECRET"],
+      "rnf": [
+        {"categoria": "Privacidade", "descricao": "Mensagens só para quem deu consentimento",
+         "metrica": "consentimento registrado com data para cada número que recebe mensagens"}
+      ],
+      "ameacas": [
+        {"ameaca": "Webhook do WhatsApp falsificado",
+         "controle": "Validar a assinatura X-Hub-Signature-256 com o segredo do aplicativo"},
+        {"ameaca": "Token de acesso exposto",
+         "controle": "Token só no servidor, em variável de ambiente, com permissões mínimas"}
+      ],
+      "superficie": [
+        {"ponto": "Webhook do WhatsApp", "exposicao": "internet", "autenticacao": "assinatura do aplicativo"}
+      ],
+      "caminhos_sensiveis": ["**/whatsapp*/**", "**/webhook*/**"],
+      "skills": ["integrar-whatsapp"],
+      "perguntas": [
+        {"pergunta": "O cliente já tem conta verificada no WhatsApp Business e um número dedicado?", "bloqueia": true},
+        {"pergunta": "Quais mensagens o sistema envia (modelos aprovados pela Meta) e quais recebe?", "bloqueia": false}
+      ]
+    }
+  ]
+}

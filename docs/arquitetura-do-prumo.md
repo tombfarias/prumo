@@ -70,4 +70,47 @@ flowchart TB
 
 ## Testes
 
-`python -m unittest discover -s tests -v`. Cobrem: criação de todos os perfis (sem marcadores sobrando, sem IDs órfãos, skills e settings válidos), rastreabilidade, contexto, validação de Mermaid e de aprovados (incluindo CRLF), registros, orçamento, horas, exportação, segurança, Figma (API simulada), todos os hooks (executados como processo, como no Claude Code), ponte com o Claude (com um dublê que emite `stream-json`), CLI JSON e servidor da interface. `tests/powershell.ps1` testa o módulo PowerShell no CI.
+`python -m unittest discover -s tests -v`. Cobrem: criação de todos os perfis (sem marcadores sobrando, sem IDs órfãos, skills e settings válidos), rastreabilidade, contexto, validação de Mermaid e de aprovados (incluindo CRLF), registros, orçamento, horas, exportação, segurança, Figma (API simulada), todos os hooks (executados como processo, como no Claude Code), ponte com o Claude (com um dublê que emite `stream-json`), CLI JSON, servidor da interface e o guarda de privacidade (`tests/test_privacidade.py`, que também confere que o próprio repositório não tem dados pessoais). `tests/powershell.ps1` testa o módulo PowerShell no CI.
+
+## Repositório público e privacidade
+
+O repositório é público (licença MIT), então nada pessoal do autor nem da máquina dele pode entrar em arquivos,
+commits, PRs, issues ou releases. O guarda fica em `.githooks/privacidade.py` (só biblioteca padrão, sem rede) e roda:
+
+| Onde | O que verifica |
+|---|---|
+| `pre-commit` | nome e conteúdo completo dos arquivos preparados e a identidade do commit (login do GitHub e e-mail noreply) |
+| `commit-msg` | a mensagem do commit, inclusive linhas com `#` |
+| `pre-push` | cada commit, tag e objeto que o remoto de destino ainda não tem (mesmo que outro remoto tenha): autor, committer, mensagem, nomes e conteúdo dos arquivos alterados |
+| Hook do Claude Code (`.claude/settings.json`) | bloqueia `--no-verify`, `git commit -n`, `-c core.hooksPath`/`alias.`, variáveis que desligam o guarda, mudanças em `core.hooksPath` e em `.git/hooks`; exige os hooks instalados; varre o que `gh pr/issue/release/gist/repo/api` vai publicar |
+| CI | `privacidade.py tudo --historico` com as regras genéricas |
+
+Decisões:
+- **Conteúdo completo, não o diff**: cada arquivo alterado é lido inteiro (dois processos `git cat-file` por varredura),
+  decodificado em UTF-8, UTF-16, CP1252 ou, em binários, pelo texto legível e pelo de dentro de ZIP (docx/xlsx),
+  PDF e PNG; escapes (`\u`, `%XX`, `&...;`) são desfeitos e termos de várias palavras são achados também com
+  hífen, sublinhado, sem espaço ou quebrados entre linhas. Assim `-diff`, UTF-16 (o `>` do
+  PowerShell 5.1) e linhas enormes não escapam.
+- **Hooks fora da árvore versionada**: `instalar` grava hooks pequenos em `.git/hooks` (compartilhado pelos
+  worktrees) que chamam o `.githooks/privacidade.py` do checkout atual. Num checkout sem o guarda (um branch
+  antigo, por exemplo) eles bloqueiam em vez de liberar em silêncio, o que aconteceria com `core.hooksPath`.
+- **Falha fechada**: se o git falhar, o hook bloqueia. Só o hook do Claude libera em caso de erro interno, porque os
+  hooks do git continuam valendo.
+- **Termos da máquina descobertos na hora**: usuário do sistema, pasta pessoal, nome do computador, pasta do clone,
+  e-mails e nome do git, `config/freelancer.json`, pastas de `config/projetos.json` e `~/.prumo/privado.txt`.
+  Nada disso fica gravado no repositório. No GitHub Actions eles ficam desligados; `PRUMO_PRIVACIDADE_AMBIENTE=0`
+  também desliga (para testes) e o hook avisa.
+- **Na dúvida, o hook do Claude confere**: comando com subshell, `popd`, `cd -`, variável ou pasta inexistente conta
+  como se fosse neste repositório.
+
+Configuração de cada clone (também na skill `projeto-publico`):
+
+```bash
+python .githooks/privacidade.py instalar
+git config user.name "<login-do-github>"
+git config user.email "<id>+<login-do-github>@users.noreply.github.com"
+python .githooks/privacidade.py tudo --historico
+```
+
+Falso positivo de regra genérica de conteúdo: `privacidade:ignorar` na linha. Regras de conteúdo e o que fazer se
+algo vazar: skill `projeto-publico`.
