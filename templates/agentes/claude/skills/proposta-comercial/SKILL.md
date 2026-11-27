@@ -18,7 +18,7 @@ description: Monta a proposta comercial (10-proposta-comercial.md) para o client
 5. **Investimento:** use os totais de `docs/orcamento.md` (escopo base com contingência; opcionais à parte). Não invente valores. Se o valor da hora não estiver configurado, deixe o cálculo indicado (`N h × valor da hora`).
 6. **Custos recorrentes do cliente** (hospedagem, APIs pagas, lojas de apps) vêm de `07-arquitetura.md`.
 7. **Perguntas bloqueantes:** liste, em linguagem simples, as perguntas da seção 9 do briefing marcadas como bloqueantes e diga o que pode mudar no preço conforme a resposta.
-8. **Garantia, suporte, mudanças de escopo e propriedade intelectual:** use as condições que o usuário informar. Na falta delas, proponha termos usuais de freelance marcados como proposta (ex.: 30 dias de correção de defeitos após a entrega; código e direitos transferidos após a quitação; mudanças de escopo orçadas à parte) e lembre o usuário de revisá-los (não é aconselhamento jurídico).
+8. **Garantia, suporte, mudanças de escopo e propriedade intelectual:** use as condições que o usuário informar. Na falta delas, proponha termos usuais de freelance, marcados como proposta: 30 dias de correção de defeitos após a entrega, código e direitos transferidos após a quitação, mudanças de escopo orçadas à parte. Lembre o usuário de revisá-los (não é aconselhamento jurídico).
 
 ## Saída
 

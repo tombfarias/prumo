@@ -6,7 +6,7 @@ rastreabilidade e um kit de agentes (skills, subagentes, hooks) para o Claude Co
 ## Mapa
 
 - `prumo_cli/` — CLI (`cli.py`), criação de projetos (`projeto.py`), rastreabilidade (`rastreio.py`), validação e
-  contexto (`validacao.py`), orçamento/horas/exportação (`gestao.py`), Figma (`figma.py`), segurança (`seguranca.py`),
+  contexto (`validacao.py`), avisos de estilo (`estilo.py`, regras em `docs/guia-de-escrita.md`), orçamento/horas/exportação (`gestao.py`), Figma (`figma.py`), segurança (`seguranca.py`),
   formulário de especificação (`formulario.py`, desenho em `docs/formulario-de-especificacao.md`),
   ponte com o Claude Code (`claude.py`), servidor da interface (`servidor.py`) e a interface (`gui/index.html`, HTML/CSS/JS puro).
 - `templates/documentos/` — modelos de especificação; `templates/perfis/` — perfis e convenções por stack;
@@ -19,7 +19,7 @@ rastreabilidade e um kit de agentes (skills, subagentes, hooks) para o Claude Co
 
 - **O repositório é público (licença MIT).** Nada pessoal do autor ou da máquina dele vai para o GitHub (arquivos, commits, PRs, issues, releases): siga a skill `projeto-publico`. Em cada clone, `python .githooks/privacidade.py instalar`; nunca use `--no-verify`.
 - Sem dependências externas no Prumo: só a biblioteca padrão (o executável empacota tudo).
-- Todo texto voltado ao usuário em português do Brasil.
+- Todo texto voltado ao usuário em português do Brasil, curto e exato: siga `docs/guia-de-escrita.md` em modelos, skills e convenções.
 - Mudou modelo, perfil, hook ou skill? Rode `python -m unittest discover -s tests -v` (os testes criam projetos de todos os perfis
   e validam que não sobram marcadores `{{...}}` nem IDs órfãos).
 - Hooks (`templates/agentes/claude/hooks/`) rodam no computador do usuário: só biblioteca padrão, nada de rede, rápidos e
