@@ -138,6 +138,7 @@ def cmd_status(args):
     docs, contagem = validacao.status(p)
     dados = {"projeto": p.config.get("projeto"), "cliente": p.config.get("cliente"), "perfil": p.config.get("perfil"),
              "caminho": str(p.raiz), "stack": p.config.get("stack"), "figma": p.figma_ativo(),
+             "existente": bool(p.config.get("existente")),
              "documentos": docs, "ids": contagem, "aprovados": p.config.get("aprovados") or {}}
     pendentes = sum(d["lacunas"] for d in docs)
     texto = [f"{dados['projeto']} · cliente: {dados['cliente']} · perfil: {dados['perfil']}", "",
