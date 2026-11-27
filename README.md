@@ -25,18 +25,44 @@ O nome vem do fio de prumo, a ferramenta que mantém a obra alinhada. No Prumo, 
 
 ## Começo rápido
 
+Requisitos: Python 3.9+, Git e o [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) com login feito (`claude` uma vez). Nada de `pip`: o Prumo usa só a biblioteca padrão e roda offline. Sem Python no Windows, baixe `prumo.exe` e `prumo-app.exe` da página de *Releases*.
+
+**1. Instale**
+
+Windows (PowerShell):
+
 ```powershell
 git clone https://github.com/tombfarias/prumo C:\Prumo
 cd C:\Prumo
-powershell -ExecutionPolicy Bypass -File .\powershell\instalar.ps1 -AdicionarAoPath   # opcional
-
-prumo novo D:\Projetos\loja-da-ana --perfil web-fullstack --nome "Loja da Ana" --cliente "Ana Doces"
-cd D:\Projetos\loja-da-ana
-prumo claude especificar        # ou abra o Claude Code e use /especificar-projeto
-prumo status
+powershell -ExecutionPolicy Bypass -File .\powershell\instalar.ps1 -AdicionarAoPath
 ```
 
-Requisitos: Python 3.9+ (ou o executável), Git e, para as tarefas com IA, o [Claude Code](https://docs.claude.com/en/docs/claude-code/overview).
+Abra **um terminal novo** (o PATH só vale nele). Sem o instalador, use `C:\Prumo\prumo.bat` no lugar de `prumo`.
+
+Linux/macOS:
+
+```bash
+git clone https://github.com/tombfarias/prumo ~/prumo
+~/prumo/prumo --versao        # use ~/prumo/prumo no lugar de prumo
+```
+
+**2. Crie o projeto**, pela interface ou pelo terminal:
+
+```powershell
+prumo gui                     # interface: Novo projeto, preencha nome, cliente, pasta e perfil
+prumo perfis                  # lista os perfis (api-rest, web-fullstack, sistema-gestao, ...)
+prumo novo D:\Projetos\loja-da-ana --perfil web-fullstack --nome "Loja da Ana" --cliente "Ana Doces"
+```
+
+**3. Especifique com o Claude**
+
+```powershell
+cd D:\Projetos\loja-da-ana
+claude                        # no Claude Code, rode /especificar-projeto
+prumo status                  # prontidão dos documentos
+```
+
+Cole antes o que o cliente disse em `docs/00-briefing.md`. Passo a passo completo em [Guia rápido](docs/guia-rapido.md); instalação detalhada em [Instalação](docs/instalacao.md).
 
 ## Documentação
 
