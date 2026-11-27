@@ -55,8 +55,8 @@ flowchart TB
 | `seguranca.py` | Regras da varredura estática e mascaramento de segredos |
 | `figma.py` | API REST do Figma: telas, IDs estáveis, preservação da coluna de casos de uso, imagens |
 | `claude.py` | Tarefas, prompts, ferramentas por tarefa, execução em `stream-json`, logs, histórico, especificação em etapas |
-| `servidor.py` | Servidor local da GUI: token, lista de comandos permitidos, tarefas longas, abrir pasta/arquivo/editor/terminal |
-| `cli.py` | Argumentos, saída texto/JSON, projetos recentes, `hook`, `gui`, `_escolher-pasta` |
+| `servidor.py` | Servidor local da GUI: token, lista de comandos permitidos, tarefas longas, ler e salvar documentos (com proteção de aprovados e de conflito), arquivos estáticos (Mermaid), abrir pasta/arquivo/editor/terminal |
+| `cli.py` | Argumentos, saída texto/JSON, projetos recentes, `config` (dados do freelancer e do projeto), `hook`, `gui`, `_escolher-pasta` |
 
 ## Decisões
 
@@ -70,7 +70,7 @@ flowchart TB
 
 ## Testes
 
-`python -m unittest discover -s tests -v`. Cobrem: criação de todos os perfis (sem marcadores sobrando, sem IDs órfãos, skills e settings válidos), rastreabilidade, contexto, validação de Mermaid e de aprovados (incluindo CRLF), registros, orçamento, horas, exportação, segurança, Figma (API simulada), todos os hooks (executados como processo, como no Claude Code), ponte com o Claude (com um dublê que emite `stream-json`), CLI JSON, servidor da interface e o guarda de privacidade (`tests/test_privacidade.py`, que também confere que o próprio repositório não tem dados pessoais). `tests/powershell.ps1` testa o módulo PowerShell no CI.
+`python -m unittest discover -s tests -v`. Cobrem: criação de todos os perfis (sem marcadores sobrando, sem IDs órfãos, skills e settings válidos), rastreabilidade, contexto, validação de Mermaid e de aprovados (incluindo CRLF), registros, orçamento, horas, exportação, segurança, Figma (API simulada), todos os hooks (executados como processo, como no Claude Code), ponte com o Claude (com um dublê que emite `stream-json`), CLI JSON, servidor da interface (`tests/test_interface.py`: salvar documento, configurações, kit do Claude, arquivos estáticos e a paleta de cores via `tools/cores.py`) e o guarda de privacidade (`tests/test_privacidade.py`, que também confere que o próprio repositório não tem dados pessoais). `tests/powershell.ps1` testa o módulo PowerShell no CI.
 
 ## Repositório público e privacidade
 
