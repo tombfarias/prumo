@@ -258,7 +258,7 @@ e módulos, plano de testes, entrega, critérios de aceite e textos de convencim
 
 ### 6.1 Quais skills instalar
 
-`templates/agentes/kit.json` substitui o `SKILLS_FIGMA` fixo no código:
+`templates/agentes/kit.json` substitui o `SKILLS_FIGMA` fixo no código. **Já existe** com as condições `figma` e `perfil:<id>` (usada por `desenvolver-wordpress`); as demais chegam na fase 3. Formato:
 
 ```json
 {

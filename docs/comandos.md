@@ -34,7 +34,7 @@ Cria um projeto completo.
 
 | Opção | Descrição |
 |---|---|
-| `--perfil, -p` | `api-rest`, `web-fullstack` (padrão), `sistema-gestao`, `site-institucional`, `automacao-bot`, `app-mobile`, `minimo` |
+| `--perfil, -p` | `api-rest`, `web-fullstack` (padrão), `sistema-gestao`, `site-institucional`, `wordpress`, `automacao-bot`, `app-mobile`, `minimo` |
 | `--nome`, `--cliente`, `--autor` | Metadados usados nos documentos (autor padrão: `config/freelancer.json` ou `git config user.name`) |
 | `--stack` | Substitui a stack sugerida do perfil. Linguagens fora dos perfis (Go, Rust, Elixir, Ruby, Java/Kotlin, .NET, Dart, Swift, C/C++, Deno, PHP) são reconhecidas no texto e trazem comandos sugeridos e convenções (catálogo `templates/catalogos/ferramentas.json`) |
 | `--comando USO=CMD` | Define direto um comando dos hooks (`formatar`, `lint`, `testar`; repetível). Ex.: `--comando testar="busted"`, `--comando formatar="stylua {arquivo}"` |
@@ -119,7 +119,7 @@ Horas por dia a partir de `.prumo/atividade.log`, que os hooks gravam a cada ped
 |---|---|
 | `prumo agentes listar` | Lista skills, subagentes, hooks, `CLAUDE.md`, `AGENTS.md` e `settings.json` do projeto, com descrição, eventos de cada hook e estado: igual ao kit, personalizado, próprio do projeto ou ausente |
 | `prumo agentes exportar [--alvos gemini,copilot,cursor]` | Gera `GEMINI.md`, `.github/copilot-instructions.md` e `.cursor/rules/prumo.mdc` a partir do `AGENTS.md` |
-| `prumo agentes atualizar [--incluir-settings]` | Recopia skills, subagentes e hooks da versão atual do Prumo para o projeto (o `settings.json` só com a opção) |
+| `prumo agentes atualizar [--incluir-settings] [--forcar]` | Recopia skills, subagentes e hooks da versão atual do Prumo (o `settings.json` só com a opção). Arquivos que você editou ficam; a versão nova vai para `.prumo/kit-novo/`. `--forcar` sobrescreve com cópia em `.prumo/backup/` |
 
 ## Claude Code
 

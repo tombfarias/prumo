@@ -2,7 +2,7 @@
 
 import sys
 
-from prumo_comum import carregar_config, contar_lacunas, documentos, escrever_stdout, raiz_projeto
+from prumo_comum import aprovados_do, carregar_config, chave, contar_lacunas, documentos, escrever_stdout, ler_texto, raiz_projeto
 
 
 def main():
@@ -10,14 +10,15 @@ def main():
     config = carregar_config(raiz)
     if not config:
         sys.exit(0)
-    aprovados = config.get("aprovados") or {}
+    aprovados = aprovados_do(config)
+    chaves_aprovadas = {chave(a) for a in aprovados}
     pendentes, completos = [], 0
     for doc in documentos(raiz):
         rel = doc.relative_to(raiz).as_posix()
-        if rel in aprovados:
+        if chave(rel) in chaves_aprovadas:
             continue
         try:
-            lacunas = contar_lacunas(doc.read_text(encoding="utf-8"))
+            lacunas = contar_lacunas(ler_texto(doc))
         except Exception:
             continue
         if lacunas:

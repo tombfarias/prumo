@@ -9,8 +9,8 @@ from pathlib import Path
 from . import mapear
 from .util import (
     ARQUIVO_PROJETO, CONGELADO, RAIZ_KIT, python_disponivel, TEMPLATES, URL_PRUMO, VERSAO, ErroPrumo, agora_iso, aviso,
-    comando_prumo, comando_python, config_freelancer, contar_lacunas, git_usuario, gravar,
-    gravar_json, hash_conteudo, hoje_br, info, ler, ler_json, renderizar, slug,
+    comando_prumo, comando_python, config_freelancer, contar_lacunas, git_usuario, gravar, gravar as _gravar,
+    carimbo, gravar_json, guardar_copia, hash_conteudo, hash_texto, hoje_br, info, ler, ler_json, renderizar, slug,
 )
 
 DESCRICOES = {
@@ -41,7 +41,6 @@ DESCRICOES = {
     "00-mapa-do-codigo": "Projeto existente: stack, comandos, estrutura e arquivos-chave detectados (gerado por `prumo mapear`)",
     "12-seguranca": "Superfície de ataque, ameaças, checklist OWASP, achados (SEG) e histórico de revisões",
 }
-SKILLS_FIGMA = {"implementar-tela-figma", "diagramas-figjam"}
 IGNORAR_DOCS = {"rastreabilidade.md", "orcamento.md"}
 
 
@@ -125,6 +124,7 @@ class Projeto:
         ctx = {
             "projeto": c["projeto"],
             "slug": c.get("slug", slug(c["projeto"])),
+            "prefixo": c.get("slug", slug(c["projeto"])).replace("-", "_"),
             "cliente": c.get("cliente", ""),
             "autor": c.get("autor", ""),
             "data": hoje_br(),
@@ -137,7 +137,7 @@ class Projeto:
         }
         ctx["projeto_existente"] = ("\n" + renderizar(mapear.BLOCO_AGENTES, dict(ctx, mapa=mapear.MAPA))) if c.get("existente") else ""
         ctx["lista_documentos"] = _lista_documentos(c.get("documentos") or [])
-        ctx["lista_skills"] = _lista_skills(figma)
+        ctx["lista_skills"] = _lista_skills(self.skills_do_kit())
         ctx["convencoes"] = renderizar(ler(TEMPLATES / "perfis" / "convencoes" / perfil["convencoes"]), ctx).strip()
         extras = mapear.convencoes_das_ferramentas(c.get("ferramentas") or [])
         if extras:
@@ -152,6 +152,13 @@ class Projeto:
             if figma else ""
         )
         return ctx
+
+    def skills_do_kit(self):
+        """Skills do kit que este projeto recebe, conforme as condições de templates/agentes/kit.json."""
+        regras = ler_json(TEMPLATES / "agentes" / "kit.json").get("skills", {})
+        fatos = {"figma": self.figma_ativo(), "perfil": self.config.get("perfil", "")}
+        return [d for d in sorted((TEMPLATES / "agentes" / "claude" / "skills").iterdir())
+                if d.is_dir() and condicao_kit(regras.get(d.name, ""), fatos)]
 
     def comando_hook(self, nome, args=""):
         """Linha de comando de um hook: Python (padrão, portátil) ou o próprio prumo.exe (sem Python instalado)."""
@@ -177,31 +184,70 @@ class Projeto:
 
     # ------------------------------------------------------------ kit de agentes
 
-    def instalar_kit_agentes(self, incluir_settings=True, sobrescrever=True):
-        """Copia skills, subagentes, hooks e instruções do kit para o projeto. Retorna os arquivos escritos."""
+    def instalar_kit_agentes(self, incluir_settings=True, sobrescrever=True, forcar=False):
+        """Copia skills, subagentes, hooks e instruções do kit para o projeto. Retorna os arquivos escritos.
+
+        Nunca perde trabalho do usuário: o Prumo guarda em .prumo/kit.json o hash do que gravou. Arquivo que o
+        usuário editou depois disso fica como está e a versão nova vai para .prumo/kit-novo/ (lista em
+        self.kit_preservados). Com forcar=True o arquivo é sobrescrito, mas antes copiado para .prumo/backup/.
+        """
         ctx = self.contexto()
         base = TEMPLATES / "agentes"
-        escritos = []
+        arquivo_manifesto = self.raiz / ".prumo" / "kit.json"
+        manifesto = ler_json(arquivo_manifesto, {}) if arquivo_manifesto.exists() else {}
+        if not isinstance(manifesto, dict):
+            manifesto = {}
+        escritos, self.kit_preservados, self.kit_backups = [], [], []
+        backup = f"backup/{carimbo()}"
 
-        def escrever(destino, texto, forcar=sobrescrever):
+        def escrever(destino, texto, forcar_escrita=sobrescrever):
+            rel = destino
             destino = self.raiz / destino
-            if destino.exists() and not forcar:
-                return
+            novo_hash = hash_texto(texto)
+            if destino.exists():
+                if not forcar_escrita:
+                    return
+                atual = hash_conteudo(destino)
+                if atual == novo_hash:
+                    manifesto[rel] = novo_hash
+                    return
+                if atual != manifesto.get(rel):  # editado pelo usuário (ou de antes do manifesto)
+                    if not forcar:
+                        gravar(self.raiz / ".prumo" / "kit-novo" / rel, texto)
+                        self.kit_preservados.append(rel)
+                        return
+                    self.kit_backups.append(guardar_copia(self.raiz, rel, backup))
             gravar(destino, texto)
-            escritos.append(self.rel(destino))
+            manifesto[rel] = novo_hash
+            escritos.append(rel)
 
-        for skill in sorted((base / "claude" / "skills").iterdir()):
-            if skill.name in SKILLS_FIGMA and not self.figma_ativo():
-                continue
+        for skill in self.skills_do_kit():
             escrever(f".claude/skills/{skill.name}/SKILL.md", renderizar(ler(skill / "SKILL.md"), ctx))
         for agente in sorted((base / "claude" / "agents").glob("*.md")):
             escrever(f".claude/agents/{agente.name}", renderizar(ler(agente), ctx))
-        for hook in sorted((base / "claude" / "hooks").glob("*.py")):
-            escrever(f".claude/hooks/{hook.name}", ler(hook))
+        # Hooks importam prumo_comum.py: atualizam juntos ou nenhum (versões misturadas quebrariam as guardas).
+        hooks = [(f".claude/hooks/{h.name}", ler(h)) for h in sorted((base / "claude" / "hooks").glob("*.py"))]
+
+        def editado(rel, texto):
+            destino = self.raiz / rel
+            if not destino.exists():
+                return False
+            atual = hash_conteudo(destino)
+            return atual != hash_texto(texto) and atual != manifesto.get(rel)
+
+        algum_editado = sobrescrever and not forcar and any(editado(rel, texto) for rel, texto in hooks)
+        for rel, texto in hooks:
+            destino = self.raiz / rel
+            if algum_editado and destino.exists() and hash_conteudo(destino) != hash_texto(texto):
+                gravar(self.raiz / ".prumo" / "kit-novo" / rel, texto)
+                self.kit_preservados.append(rel)
+            elif not algum_editado or not destino.exists():
+                escrever(rel, texto)
         if incluir_settings:
             escrever(".claude/settings.json", self.settings_claude())
         if self.figma_ativo():
-            escrever(".mcp.json", ler(base / "mcp.json"), forcar=False)
+            escrever(".mcp.json", ler(base / "mcp.json"), forcar_escrita=False)
+        gravar_json(arquivo_manifesto, manifesto)
         return escritos
 
     def listar_kit(self):
@@ -238,9 +284,7 @@ class Projeto:
                           "eventos": eventos.get(nome, []) if tipo == "hook" else []})
 
         modelos = {}
-        for skill in sorted((base / "claude" / "skills").iterdir()):
-            if skill.name in SKILLS_FIGMA and not self.figma_ativo():
-                continue
+        for skill in self.skills_do_kit():
             texto = renderizar(ler(skill / "SKILL.md"), ctx)
             modelos[f".claude/skills/{skill.name}/SKILL.md"] = ("skill", skill.name, texto)
         for agente in sorted((base / "claude" / "agents").glob("*.md")):
@@ -287,11 +331,24 @@ def _frontmatter(texto):
     return dados
 
 
-def _lista_skills(figma):
+def condicao_kit(condicao, fatos):
+    """Avalia uma condição do kit.json: vazia (sempre), `figma`, `perfil:<id>`; `!` nega. Desconhecida = falsa."""
+    condicao = (condicao or "").strip()
+    if not condicao:
+        return True
+    if condicao.startswith("!"):
+        return not condicao_kit(condicao[1:], fatos)
+    nome, _, valor = condicao.partition(":")
+    if nome == "figma" and not valor:
+        return bool(fatos.get("figma"))
+    if nome == "perfil" and valor:
+        return fatos.get("perfil") == valor
+    return False
+
+
+def _lista_skills(skills):
     linhas = ["| Skill | Quando usar | Arquivo |", "|---|---|---|"]
-    for skill in sorted((TEMPLATES / "agentes" / "claude" / "skills").iterdir()):
-        if skill.name in SKILLS_FIGMA and not figma:
-            continue
+    for skill in skills:
         fm = _frontmatter(ler(skill / "SKILL.md"))
         primeira = fm.get("description", "").split(". ")[0].rstrip(".")
         primeira = re.sub(r"\s*\([^()]{40,}\)", "", primeira)  # enumerações longas ficam só na skill (AGENTS.md é lido sempre)
@@ -324,6 +381,36 @@ def criar_projeto(destino, perfil_id, nome=None, cliente="", stack=None, autor=N
         sugeridos = mapear.comandos_das_ferramentas(ferramentas)
     if existente:
         documentos.insert(0, mapear.MAPA)
+
+    existia = destino.exists()
+    vazia = not existia or not any(destino.iterdir())
+    try:
+        return _criar(destino, perfil, freelancer, nome, cliente, stack, autor, usar_figma, figma_url, documentos,
+                      git, python, hooks_absolutos, hooks_via, comandos=comandos, existente=existente,
+                      pastas_codigo=pastas_codigo, ferramentas=ferramentas, sugeridos=sugeridos)
+    except BaseException:
+        # Criação interrompida (erro, Ctrl+C): numa pasta que era nova/vazia, não deixa projeto pela metade.
+        if vazia and destino.exists():
+            if existia:
+                for item in destino.iterdir():
+                    shutil.rmtree(item, ignore_errors=True) if item.is_dir() else item.unlink()
+            else:
+                shutil.rmtree(destino, ignore_errors=True)
+        raise
+
+
+def _criar(destino, perfil, freelancer, nome, cliente, stack, autor, usar_figma, figma_url, documentos,
+           git, python, hooks_absolutos, hooks_via, comandos=None, existente=False, pastas_codigo=None,
+           ferramentas=(), sugeridos=None):
+    backup = f"backup/{carimbo()}"
+
+    def gravar(caminho, texto):
+        """Em pasta já existente (--forcar), guarda uma cópia de qualquer arquivo do usuário antes de trocá-lo."""
+        caminho = Path(caminho)
+        if caminho.is_file() and caminho.read_bytes().replace(b"\r\n", b"\n") != texto.encode("utf-8"):
+            copia = guardar_copia(destino, caminho.relative_to(destino).as_posix(), backup)
+            aviso(f"{caminho.name} já existia; cópia guardada em {copia}.")
+        _gravar(caminho, texto)
 
     destino.mkdir(parents=True, exist_ok=True)
     config = {
@@ -397,7 +484,10 @@ def criar_projeto(destino, perfil_id, nome=None, cliente="", stack=None, autor=N
     novo_arquivo("README.md", renderizar(ler(base / "README.md"), ctx))
     if not (destino / ".env.example").exists():
         gravar(destino / ".env.example", "# Variáveis de ambiente do projeto (sem valores reais). Copie para .env.\n")
-    projeto.instalar_kit_agentes(incluir_settings=not existente, sobrescrever=not existente)
+    projeto.instalar_kit_agentes(incluir_settings=not existente)
+    if projeto.kit_preservados:
+        aviso(f"{len(projeto.kit_preservados)} arquivo(s) do kit já existiam e foram mantidos; "
+              "a versão do Prumo está em .prumo/kit-novo/.")
     if existente:
         mapear.mesclar_settings(destino / ".claude" / "settings.json", projeto.settings_claude())
         projeto.pulados = pulados

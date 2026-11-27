@@ -11,6 +11,10 @@
 | "foi aprovado pelo cliente... somente leitura" | Documento aprovado | Siga o controle de mudanças; `prumo desaprovar` só após o aceite do cliente |
 | `prumo validar` acusa "alterado depois de aprovado" | O arquivo mudou após `prumo aprovar` | Se a mudança é legítima e aceita: `prumo aprovar <arquivo>` de novo; senão, reverta pelo git |
 | "Mermaid: tipo de diagrama desconhecido" | Primeira linha do bloco errada | Comece com `flowchart LR`, `sequenceDiagram`, `classDiagram`, `stateDiagram-v2` ou `erDiagram`; valide com `--mmdc` |
+| `agentes atualizar` diz que manteve arquivos | Você (ou um clone novo, sem `.prumo/kit.json`) tem versões diferentes das do Prumo | Compare com `.prumo/kit-novo/`, junte o que quiser, ou rode `prumo agentes atualizar --forcar` (guarda cópia em `.prumo/backup/`) |
+| "parece conter CPF/chave..." ao editar | Hook impede dados reais e segredos em arquivos | Use dados fictícios; segredos no `.env`. Falso positivo: `hooks.bloquear_dados_sensiveis: false` |
+| Lint/testes "não está instalado" | O comando de `comandos` usa uma ferramenta ausente na máquina | Instale a ferramenta ou esvazie o comando em `projeto.prumo.json` |
+| Criação do projeto interrompida | Erro ou Ctrl+C no meio de `prumo novo` | A pasta nova é desfeita automaticamente; rode o comando de novo |
 | `Figma respondeu 403` | Token inválido ou sem acesso ao arquivo | Gere outro token com leitura de arquivos; confirme que sua conta abre o arquivo |
 | Ferramentas do Figma indisponíveis no Claude | Servidor MCP não aprovado/autenticado | No Claude Code: `/mcp` → figma → Authenticate |
 | Interface mostra "Sessão expirada" | O servidor local encerrou (janela fechada por mais de um minuto) | Abra de novo com `prumo gui` |

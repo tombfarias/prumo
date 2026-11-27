@@ -18,7 +18,7 @@ e mantém tudo rastreável por IDs. Repositório: https://github.com/tombfarias/
 ## Fluxo de um projeto freelance
 
 1. `prumo novo <pasta> --perfil <id> --nome "..." --cliente "..." [--figma <url>]`
-   Perfis: `api-rest`, `web-fullstack`, `sistema-gestao`, `site-institucional`, `automacao-bot`, `app-mobile`, `minimo`.
+   Perfis: `api-rest`, `web-fullstack`, `sistema-gestao`, `site-institucional`, `wordpress`, `automacao-bot`, `app-mobile`, `minimo`.
 2. Registrar o material do cliente em `docs/00-briefing.md` (palavras do cliente, perguntas em aberto).
 3. Especificar: no Claude Code, `/especificar-projeto`; ou `prumo claude especificar` (etapas: requisitos, casos-de-uso,
    uml, banco, arquitetura, backlog, testes, proposta, com validação entre elas).

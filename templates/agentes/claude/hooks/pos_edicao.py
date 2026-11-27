@@ -14,7 +14,7 @@ from pathlib import Path
 from datetime import datetime
 
 from prumo_comum import (
-    carregar_config, escrever_stderr, gravar_alteracoes, ler_alteracoes, ler_entrada, raiz_projeto, relativo,
+    carregar_config, escrever_stderr, ferramenta_ausente, gravar_alteracoes, ler_alteracoes, ler_entrada, raiz_projeto, relativo,
 )
 
 IGNORAR = ("node_modules/", ".git/", "dist/", "build/", ".next/", ".venv/", "venv/", ".prumo/")
@@ -80,6 +80,8 @@ def main():
             r = rodar(lint.replace("{arquivo}", alvo), raiz)
         except subprocess.TimeoutExpired:
             sys.exit(0)
+        if ferramenta_ausente(r):
+            sys.exit(0)  # lint não instalado nesta máquina: não trava cada edição (o ao_parar/validar avisam)
         if r.returncode != 0:
             saida = (r.stdout + r.stderr).decode("utf-8", "replace").strip().splitlines()
             escrever_stderr(f"[Prumo] O lint encontrou problemas em {rel}:\n" + "\n".join(saida[-40:]))

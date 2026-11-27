@@ -22,6 +22,16 @@
 5. **Não invente requisitos.** Dúvidas sobre o negócio viram perguntas na seção 9 de `docs/00-briefing.md`.
 6. Trechos `[PREENCHER: ...]` são lacunas. Ao preencher um documento, substitua todas ou deixe explícito por que ficaram em aberto.
 {{projeto_existente}}
+
+## Situações adversas (o que fazer sem improvisar)
+
+- **Briefing vago ou contraditório:** não escolha um lado. Registre as duas versões como pergunta (seção 9 do briefing) e siga só com o que não depende dela.
+- **Cliente muda o escopo no meio:** nada de código antes do registro `{{prumo}} mudanca "título"` com impacto em prazo e preço.
+- **Stack fora do perfil:** registre a escolha num ADR (`{{prumo}} adr "título"`) e escreva as convenções em `docs/07-arquitetura.md` antes de codificar; não aplique convenções de outra stack.
+- **Ferramenta ausente** (git, node, php, banco...): não instale nada global nem troque a stack por conta própria; diga ao usuário o que falta e o comando para instalar.
+- **Dados reais do cliente** (CPF, cartão, senhas, tokens): nunca em `docs/`, código ou commits. Use dados fictícios; segredos só no `.env`.
+- **Hook bloqueou:** leia o motivo e corrija a causa. Não contorne a guarda por outro caminho (shell, outro arquivo).
+
 ## Depois de toda mudança significativa
 
 Mudança significativa = 3 ou mais arquivos de código, 80 ou mais linhas, ou qualquer alteração em autenticação/autorização, banco de dados (migrações, models), rotas/API, dependências, infraestrutura (Docker, CI/CD), configuração ou dados sensíveis. Ao concluir uma mudança assim, **antes de encerrar**:
