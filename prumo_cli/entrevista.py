@@ -19,11 +19,12 @@ _SIM = {"sim", "s", "yes", "y", "true", "1"}
 _NAO = {"nao", "não", "n", "no", "false", "0"}
 
 
-def carregar_perguntas():
+def carregar_perguntas(idioma=None):
+    """Perguntas da entrevista, com os textos no idioma do projeto."""
     dados = ler_json(ARQUIVO, None)
     if not isinstance(dados, dict) or not isinstance(dados.get("itens"), list):
         raise ErroPrumo("Catálogo ausente ou inválido: templates/catalogos/entrevista.json")
-    return dados["itens"]
+    return formulario.no_idioma(dados["itens"], idioma)
 
 
 # ---------------------------------------------------------------- condições e pendências
@@ -180,15 +181,15 @@ def _perfil(projeto):
 def proxima(projeto, dados=None):
     """{'pergunta', 'feitas', 'total'}; 'pergunta' é None quando a entrevista acabou."""
     dados = dados or formulario.carregar(projeto)[0]
-    perguntas = carregar_perguntas()
+    perguntas = carregar_perguntas(projeto.idioma)
     pend = pendentes(dados, _perfil(projeto), perguntas)
     feitas = len(dados["entrevista"]["respostas"])
     return {"pergunta": pend[0] if pend else None, "feitas": feitas,
             "total": _aplicaveis(dados, _perfil(projeto), perguntas)}
 
 
-def _pergunta(ident):
-    q = next((q for q in carregar_perguntas() if q["id"] == ident), None)
+def _pergunta(ident, idioma=None):
+    q = next((q for q in carregar_perguntas(idioma) if q["id"] == ident), None)
     if not q:
         raise ErroPrumo(f"Pergunta '{ident}' não existe (veja templates/catalogos/entrevista.json).")
     return q
@@ -197,7 +198,7 @@ def _pergunta(ident):
 def responder(projeto, ident, valor):
     """Aplica a resposta, grava o formulário (IDs novos atribuídos) e devolve o que mudou e a próxima pergunta."""
     dados = formulario.carregar(projeto)[0]
-    q = _pergunta(ident)
+    q = _pergunta(ident, projeto.idioma)
     feitos = aplicar(dados, q, interpretar(q, valor))
     r = formulario.salvar(projeto, dados)
     return {"aplicado": feitos, "ids_criados": r["ids_criados"], **proxima(projeto)}

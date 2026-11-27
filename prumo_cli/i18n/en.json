@@ -19,6 +19,7 @@
     "## Regras de negócio": "## Business rules",
     "## Requisitos → casos de uso → telas → histórias → testes → código": "## Requirements → use cases → screens → stories → tests → code",
     "### Ferramentas da stack deste projeto": "### Tools of this project's stack",
+    "### Tela": "### Screen",
     "#### Fluxo principal": "#### Main flow",
     "#### Fluxos alternativos": "#### Alternative flows",
     "#### Fluxos de exceção": "#### Exception flows",

@@ -24,7 +24,7 @@ rastreabilidade e um kit de agentes (skills, subagentes, hooks) para o Claude Co
 - **O repositório é público (licença MIT).** Nada pessoal do autor ou da máquina dele vai para o GitHub (arquivos, commits, PRs, issues, releases): siga a skill `projeto-publico`. Em cada clone, `python .githooks/privacidade.py instalar`; nunca use `--no-verify`.
 - Sem dependências externas no Prumo: só a biblioteca padrão (o executável empacota tudo).
 - Todo texto voltado ao usuário em português do Brasil, curto e exato: siga `docs/guia-de-escrita.md` em modelos, skills e convenções.
-- Texto novo na CLI ou na interface: tradução em `prumo_cli/i18n/en.json` (`python tools/i18n.py --json`). Modelo, skill, subagente ou convenção nova ou alterada: versão em `templates/en/` no mesmo PR.
+- Texto novo na CLI ou na interface: tradução em `prumo_cli/i18n/en.json` (`python tools/i18n.py --json`). Modelo, skill, subagente ou convenção nova ou alterada: versão em `templates/en/` no mesmo PR. Texto novo num catálogo (`templates/catalogos/`): tradução em `templates/en/catalogos/textos.json`.
 - Mudou modelo, perfil, hook ou skill? Rode `python -m unittest discover -s tests -v` (os testes criam projetos de todos os perfis
   e validam que não sobram marcadores `{{...}}` nem IDs órfãos).
 - Hooks (`templates/agentes/claude/hooks/`) rodam no computador do usuário: só biblioteca padrão, nada de rede, rápidos e

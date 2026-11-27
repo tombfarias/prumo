@@ -69,6 +69,38 @@ class TestModelos(unittest.TestCase):
                     self.assertEqual(marcador in pt, marcador in en, marcador)
 
 
+class TestCatalogosEmIngles(unittest.TestCase):
+    def test_todo_texto_dos_catalogos_tem_traducao(self):
+        from prumo_cli import entrevista, formulario
+        textos = formulario.textos_catalogo("en")
+        faltam = set()
+
+        def varrer(o):
+            if isinstance(o, dict):
+                for k, v in o.items():
+                    if k in formulario.CAMPOS_DE_TEXTO and isinstance(v, str):
+                        if v not in textos and "{valor}" not in v:
+                            faltam.add(v)
+                    else:
+                        varrer(v)
+            elif isinstance(o, list):
+                for v in o:
+                    varrer(v)
+        varrer(formulario.carregar_catalogos())
+        varrer(entrevista.carregar_perguntas())
+        self.assertEqual(sorted(faltam), [], "acrescente em templates/en/catalogos/textos.json")
+
+    def test_catalogos_em_ingles_mantem_ids(self):
+        from prumo_cli import entrevista, formulario
+        pt, en = formulario.carregar_catalogos(), formulario.carregar_catalogos("en")
+        for nome in pt:
+            self.assertEqual([i["id"] for i in pt[nome]], [i["id"] for i in en[nome]])
+        self.assertEqual(en["rnf"][0]["categoria"], "Usability")
+        q = entrevista.carregar_perguntas("en")
+        self.assertEqual([x["id"] for x in q], [x["id"] for x in entrevista.carregar_perguntas()])
+        self.assertNotRegex(q[0]["pergunta"], r"[ãçõé]")
+
+
 class TestProjetoEmIngles(unittest.TestCase):
     def test_todos_os_perfis_em_ingles(self):
         for perfil in mp.listar_perfis():
@@ -131,6 +163,9 @@ class TestGeracaoEmIngles(unittest.TestCase):
             self.assertIn("**Estimate:**", ler(p.docs / "08-backlog.md"))
             for arq in p.docs.rglob("*.md"):
                 self.assertNotIn("[PREENCHER", ler(arq), p.rel(arq))
+            seg = ler(p.docs / "12-seguranca.md")
+            self.assertIn("Stolen session", seg)  # ameaça do catálogo de logins, em inglês
+            self.assertIn("Usability", ler(p.docs / "02-requisitos.md"))
 
 
 class TestCliEmIngles(unittest.TestCase):

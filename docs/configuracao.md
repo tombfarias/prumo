@@ -82,7 +82,7 @@ Num projeto em inglês:
 - as lacunas são `[FILL: dica]` (o Prumo conta `[PREENCHER]` e `[FILL]`);
 - IDs, comandos (`prumo validar`), nomes de arquivos (`docs/02-requisitos.md`) e chaves de configuração continuam iguais;
 - `prumo validar` usa as regras de estilo em inglês ([guia de escrita](guia-de-escrita.md));
-- `prumo gerar` traduz os rótulos do que escreve; textos do formulário e dos catálogos (RNFs, ameaças, perguntas da entrevista) entram como estão, em português até os catálogos ganharem versão em inglês.
+- os catálogos (RNFs, integrações, logins, stacks, tipos de campo e as perguntas da entrevista) aparecem em inglês no formulário, na entrevista e no que `prumo gerar` escreve (traduções em `templates/en/catalogos/textos.json`); só o que você digita no formulário entra como está.
 
 Trocar o idioma de um projeto já criado: mude `idioma` em `projeto.prumo.json` e rode `prumo agentes atualizar`. Isso troca skills e subagentes; `AGENTS.md`, `CLAUDE.md` e os documentos já escritos ficam como estão. Novos documentos (`prumo doc`, `adr`, `mudanca`) já saem no idioma novo.
 

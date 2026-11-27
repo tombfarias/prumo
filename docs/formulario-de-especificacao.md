@@ -1,6 +1,6 @@
 # Formulário de especificação e geração
 
-**Status:** fases 1, 2 e 4 implementadas. Dados e catálogos em `prumo_cli/formulario.py` e `templates/catalogos/`;
+**Status:** fases 1, 2 e 4 implementadas. Dados e catálogos em `prumo_cli/formulario.py` e `templates/catalogos/` (em projetos em inglês, os campos de texto vêm de `templates/en/catalogos/textos.json`);
 `prumo gerar` (`prumo_cli/geracao.py` + `prumo_cli/geradores.py`) preenche todos os blocos da seção 5.2; a aba
 **Formulário** tem os passos 1 a 8 da seção 3 mais Perguntas, a prévia antes de gravar e a entrevista guiada (3.1). Ainda são desenho: o passo
 Kit (9), a fase 3 (kit derivado) e o status por bloco na aba Documentos.

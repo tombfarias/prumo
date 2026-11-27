@@ -157,14 +157,42 @@ def _itens(dados, caminho):
 
 # ---------------------------------------------------------------- catálogos
 
-def carregar_catalogos():
-    """{nome: [itens]} de templates/catalogos/*.json."""
+# campos dos catálogos que são texto para pessoas (o resto é id, caminho, comando ou condição)
+CAMPOS_DE_TEXTO = {"nome", "ator", "ameaca", "controle", "pergunta", "ajuda", "rotulo", "categoria", "descricao",
+                   "metrica", "ponto", "exposicao", "autenticacao", "convencao", "acao", "grupo", "origem"}
+TEXTOS_EN = TEMPLATES / "en" / "catalogos" / "textos.json"
+
+
+def textos_catalogo(idioma):
+    """{texto em português: tradução} dos catálogos; vazio em português."""
+    if not str(idioma or "").lower().startswith("en"):
+        return {}
+    return (ler_json(TEXTOS_EN, {}) or {}).get("textos") or {}
+
+
+def no_idioma(itens, idioma):
+    """Cópia dos itens com os campos de texto no idioma (texto sem tradução fica como está)."""
+    textos = textos_catalogo(idioma)
+    if not textos:
+        return itens
+
+    def trocar(o):
+        if isinstance(o, dict):
+            return {k: textos.get(v, v) if k in CAMPOS_DE_TEXTO and isinstance(v, str) else trocar(v) for k, v in o.items()}
+        if isinstance(o, list):
+            return [trocar(v) for v in o]
+        return o
+    return trocar(itens)
+
+
+def carregar_catalogos(idioma=None):
+    """{nome: [itens]} de templates/catalogos/*.json, com os textos no idioma do projeto."""
     saida = {}
     for nome in CATALOGOS:
         dados = ler_json(PASTA_CATALOGOS / f"{nome}.json", None)
         if not isinstance(dados, dict) or not isinstance(dados.get("itens"), list):
             raise ErroPrumo(f"Catálogo ausente ou inválido: templates/catalogos/{nome}.json")
-        saida[nome] = dados["itens"]
+        saida[nome] = no_idioma(dados["itens"], idioma)
     return saida
 
 
@@ -635,7 +663,7 @@ def resumo(projeto):
     """Tudo o que a interface precisa para montar o formulário: dados, catálogos, opções, passos e problemas."""
     dados, existe = carregar(projeto)
     documentos = projeto.config.get("documentos")
-    catalogos = carregar_catalogos()
+    catalogos = carregar_catalogos(projeto.idioma)
     problemas = validar(dados, catalogos, ids_dos_documentos(projeto), documentos)
     valido = isinstance(dados, dict) and not estrutura(dados)
     return {"arquivo": ARQUIVO, "existe": existe, "formulario": dados,
