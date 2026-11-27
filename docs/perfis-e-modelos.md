@@ -61,7 +61,7 @@ Documentos que o perfil não traz podem ser adicionados a qualquer momento: `pru
 
 - Orientações ficam em comentários HTML (`<!-- -->`): aparecem para quem edita, mas não contam como lacuna nem como referência.
 - Lacunas: `[PREENCHER: dica]` (`[FILL: dica]` nos modelos em inglês). `prumo status` conta quantas restam por documento.
-- Modelo novo ou alterado precisa da versão em inglês em `templates/en/` (mesmo caminho, mesmos `{{marcadores}}` e blocos `prumo:gerado`); os testes conferem.
+- Modelo novo ou alterado precisa da versão em inglês em `templates/en/` (mesmo caminho, mesmos `{{marcadores}}` e blocos `prumo:gerado`); os testes conferem. Texto novo num catálogo de `templates/catalogos/` precisa da tradução em `templates/en/catalogos/textos.json`.
 - Exemplos dos modelos que citam IDs de documentos ausentes no perfil viram "—" na criação do projeto.
 
 ## Tecnologia que nenhum perfil cobre

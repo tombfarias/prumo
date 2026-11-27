@@ -405,7 +405,7 @@ def gerar(projeto, simular=False, sobrescrever=()):
     erros = formulario.estrutura(dados)
     if erros:
         raise ErroPrumo("Formulário com erro de estrutura:\n  " + "\n  ".join(erros))
-    catalogos = formulario.carregar_catalogos()
+    catalogos = formulario.carregar_catalogos(projeto.idioma)
     ctx = geradores.Contexto(projeto.config.get("documentos"), projeto.config.get("projeto", ""))
     forcar = {}
     for item in sobrescrever or ():
