@@ -318,6 +318,7 @@ textarea{resize:vertical;min-height:92px}
     <div class="lista-proj" id="lista-proj"></div>
   </div>
   <div class="rodape-lat">
+    <button class="btn fan larg" data-acao="mapear"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6M20 20l-3.5-3.5"/></svg>Mapear código existente</button>
     <button class="btn fan larg" data-acao="abrir-existente"><svg class="i" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Abrir pasta de projeto</button>
     <button class="btn fan larg" data-acao="meus-dados"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Meus dados</button>
     <button class="btn fan larg" data-acao="paleta"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h7"/></svg>Comandos<span class="atalho">Ctrl K</span></button>
@@ -503,7 +504,8 @@ function telaVazia() {
     <h2>Especifique antes. O Claude só executa.</h2>
     <p>O Prumo gera a documentação prévia do projeto e o kit de skills, subagentes e hooks que deixa o Claude Code trabalhar direto, sem fase de "pensar".</p>
     <div class="linha-acao" style="justify-content:center"><button class="btn pri" data-acao="novo">${ic("seta")}Novo projeto</button>
-    <button class="btn" data-acao="abrir-existente">Abrir projeto existente</button></div>
+    <button class="btn" data-acao="mapear">Mapear código que já existe</button>
+    <button class="btn fan" data-acao="abrir-existente">Abrir projeto do Prumo</button></div>
     <div class="passos-vazio"><div><b>1. Criar</b><span>Escolha o perfil (web, API, mobile…) e o Prumo monta os documentos e o kit.</span></div>
     <div><b>2. Especificar</b><span>O Claude preenche requisitos, UML, banco e backlog com IDs rastreáveis.</span></div>
     <div><b>3. Executar</b><span>Com tudo decidido, o Claude implementa cada história seguindo o kit.</span></div></div></div></div>`;
@@ -569,7 +571,10 @@ async function painelGeral() {
     {n: "Executar", t: "Claude implementa", ok: false, ir: () => irPara("claude", {tarefa: "implementar"})}];
   const atual = etapas.findIndex(e => !e.ok);
   let titulo, texto, botoes;
-  if (prox) {
+  if (prox && s.existente && r.docs.some(d => /0[12]-(visao|requisitos)/.test(d.documento) && d.estado === "em andamento")) {
+    titulo = "Descreva o sistema que já existe"; texto = "O Prumo já leu o código (stack, comandos e arquivos-chave estão no mapa do código). Agora o Claude descreve nos documentos o que existe hoje, citando o arquivo de origem de cada item, sem alterar o código.";
+    botoes = `<button class="btn pri" id="h-map">${ic("claude")}Mapear com o Claude</button><button class="btn" id="h-mapa">Ver o mapa do código</button>`;
+  } else if (prox) {
     titulo = "Complete a especificação"; texto = `Falta completar <b>${esc(prox.documento.replace(/^docs\//, ""))}</b> (${prox.lacunas} lacuna${prox.lacunas === 1 ? "" : "s"}). Quanto mais decidido aqui, menos o Claude precisa pensar depois.`;
     botoes = prox.documento.endsWith("00-briefing.md")
       ? `<button class="btn pri" id="h-form">${ic("form")}Preencher o formulário</button><button class="btn" id="h-esp">${ic("claude")}Especificar com o Claude</button><button class="btn fan" id="h-doc">Editar eu mesmo</button>`
@@ -611,7 +616,8 @@ async function painelGeral() {
   requestAnimationFrame(() => { const f = $(".anel .frente"); if (f) f.style.strokeDashoffset = C * (1 - r.pct / 100); });
   $$(".etapa").forEach(b => b.onclick = () => etapas[+b.dataset.e].ir());
   const liga = (id, fn) => { const b = $("#" + id); if (b) b.onclick = fn; };
-  liga("h-form", () => irPara("form")); liga("h-esp", () => irPara("claude", {tarefa: "especificar"})); liga("h-doc", () => irPara("docs", {docSel: prox.documento, modoDoc: "editar"}));
+  liga("h-form", () => irPara("form")); liga("h-esp", () => irPara("claude", {tarefa: "especificar"})); liga("h-map", () => irPara("claude", {tarefa: "mapear"}));
+  liga("h-mapa", () => irPara("docs", {docSel: "docs/00-mapa-do-codigo.md", modoDoc: "ver"})); liga("h-doc", () => irPara("docs", {docSel: prox.documento, modoDoc: "editar"}));
   liga("h-val", () => irPara("qualidade")); liga("h-apr", () => irPara("docs", {docSel: r.docs.find(d => !d.estado.startsWith("aprovado"))?.documento}));
   liga("h-prop", () => irPara("claude", {tarefa: "proposta"})); liga("h-impl", () => irPara("claude", {tarefa: "implementar"}));
   liga("g-docs", () => irPara("docs")); liga("g-kit", () => irPara("kit"));
@@ -786,7 +792,7 @@ async function atualizarKit() {
 
 /* ------------------------------------------------------------------ executar com o Claude */
 const GRUPOS_TAREFA = [
-  ["Especificar", [["especificar", "Tudo, em sequência"], ["requisitos", "Requisitos"], ["casos-de-uso", "Casos de uso"], ["interface", "Interface"], ["uml", "UML"], ["banco", "Banco"],
+  ["Especificar", [["mapear", "Mapear código existente"], ["especificar", "Tudo, em sequência"], ["requisitos", "Requisitos"], ["casos-de-uso", "Casos de uso"], ["interface", "Interface"], ["uml", "UML"], ["banco", "Banco"],
                    ["arquitetura", "Arquitetura"], ["backlog", "Backlog"], ["testes", "Testes"], ["proposta", "Proposta"]]],
   ["Executar", [["implementar", "Implementar HU"], ["revisar", "Revisar"], ["documentar", "Atualizar docs"], ["seguranca", "Segurança"], ["mudanca", "Mudança"]]],
   ["Figma", [["tela", "Tela do Figma"], ["figjam", "FigJam"]]],
@@ -798,7 +804,7 @@ function painelClaude() {
   const hus = Object.keys(E.status.ids || {}).includes("HU");
   $("#painel").innerHTML = `<div class="painel grade">
     <div class="cartao"><div class="grupos-tarefa">${GRUPOS_TAREFA.filter(([g]) => g !== "Figma" || E.status.figma).map(([g, ts]) => `<div class="grupo-t"><span class="rotulo">${g}</span>
-      ${ts.map(([id, n]) => `<button class="pill ${t === id ? "ativa" : ""}" data-t="${id}">${n}</button>`).join("")}</div>`).join("")}</div>
+      ${ts.filter(([id]) => id !== "mapear" || E.status.existente).map(([id, n]) => `<button class="pill ${t === id ? "ativa" : ""}" data-t="${id}">${n}</button>`).join("")}</div>`).join("")}</div>
       ${alvo ? `<div class="campo"><label for="alvo">${alvo}</label><input type="text" id="alvo" placeholder="${t === "implementar" ? "HU-001" : ""}" ${t === "implementar" && hus ? 'list="lista-hu"' : ""}></div>` : ""}
       <div class="campo"><label for="texto">${t === "livre" ? "Pedido para o Claude" : t === "mudanca" ? "O que o cliente pediu" : "Instruções adicionais (opcional)"}</label>
         <textarea id="texto" placeholder="${t === "livre" ? "Ex.: crie o componente de listagem de pedidos seguindo a TL-004" : ""}"></textarea></div>
@@ -1157,6 +1163,66 @@ async function abrirExistente() {
 }
 const slugJs = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
+const USOS_CMD = [["formatar", "Formatar", "mix format {arquivo}"], ["lint", "Lint", "mix credo {arquivo}"], ["testar", "Testar", "mix test"]];
+function camposComandos(pref, valores = {}) {
+  return `<details class="campo"><summary class="legenda" style="cursor:pointer">Comandos dos hooks (opcional): rodam após cada edição e ao final</summary>
+    <div class="grade g3" style="gap:8px;margin-top:8px">${USOS_CMD.map(([k, rot, ex]) => `<div class="campo"><label for="${pref}-c-${k}">${rot}</label>
+      <input type="text" class="mono" id="${pref}-c-${k}" data-auto="1" value="${esc(valores[k] || "")}" placeholder="${esc(ex)}"></div>`).join("")}</div>
+    <span class="legenda">{arquivo} é o arquivo editado. Em branco, o hook não roda.</span></details>`;
+}
+function preencherComandos(f, pref, cmds, soAuto) {
+  USOS_CMD.forEach(([k]) => { const i = $(`#${pref}-c-${k}`, f); if (!i || (soAuto && !i.dataset.auto)) return; i.placeholder = cmds[k] || "sem padrão: em branco, não roda"; });
+}
+function argsComandos(f, pref) {
+  return USOS_CMD.flatMap(([k]) => { const v = ($(`#${pref}-c-${k}`, f) || {}).value?.trim(); return v ? ["--comando", `${k}=${v}`] : []; });
+}
+
+async function abrirMapear() {
+  if (!E.perfis.length) { try { E.perfis = await prumo(["perfis"]); } catch (e) { return falhou(e); } }
+  let det = null, perfil = null;
+  await dialogo({titulo: "Mapear código existente", peq: false, botoes: [],
+    desc: "Para projetos que já têm código (manutenção, evolução, sistema herdado). O Prumo lê a pasta sem executar nada, detecta a stack e os comandos e instala os documentos e o kit do Claude sem sobrescrever nenhum arquivo.",
+    corpo: `<div class="campo"><label for="m-pasta">Pasta do código</label><div class="linha-acao"><input type="text" id="m-pasta" style="flex:1" placeholder="D:\\Projetos\\sistema-do-cliente"><button class="btn" id="m-esc">Escolher…</button><button class="btn pri" id="m-ler">Analisar</button></div></div>
+    <div id="m-res"></div>
+    <div class="rodape"><button class="btn fan" id="m-canc">Cancelar</button><button class="btn pri" id="m-ok" disabled>${ic("seta")}Instalar o Prumo</button></div>`,
+    aoAbrir: (f, fechar) => {
+      $("#m-canc", f).onclick = () => fechar(null);
+      $("#m-esc", f).onclick = async () => { const p = await escolherPasta(); if (p) { $("#m-pasta", f).value = p; analisar(); } };
+      const analisar = async () => {
+        const pasta = $("#m-pasta", f).value.trim(); if (!pasta) return toast("Informe a pasta do código.", true);
+        const res = $("#m-res", f); res.innerHTML = '<p class="carregando">Lendo a pasta…</p>'; $("#m-ok", f).disabled = true;
+        try { det = await prumo(["mapear", pasta, "--simular"]); } catch (e) { res.innerHTML = ""; return falhou(e); }
+        if (det.ja_e_prumo) { res.innerHTML = '<p class="legenda">Esta pasta já é um projeto do Prumo. Abra o projeto; o mapa pode ser refeito por lá.</p>'; return; }
+        perfil = det.perfil;
+        res.innerHTML = `<div class="cartao" style="margin:4px 0 10px"><div class="linha-acao">
+            ${det.linguagens.slice(0, 5).map(l => `<span class="chip azul">${esc(l.linguagem)} · ${l.arquivos}</span>`).join("") || '<span class="legenda">Nenhum código reconhecido.</span>'}
+            ${det.frameworks.map(x => `<span class="chip cinza">${esc(x.nome)}</span>`).join("")}</div>
+          <p class="legenda" style="margin:8px 0 0">${det.arquivos} arquivo(s) lidos${det.truncado ? " (limite atingido)" : ""} · gerenciador: ${esc(det.gerenciador || "—")} · pastas de código: ${det.pastas_codigo.map(esc).join(", ")}${det.git ? " · git já existe (nada é commitado)" : ""}</p></div>
+          <div class="grade g2" style="gap:10px"><div class="campo"><label for="m-nome">Nome do projeto</label><input type="text" id="m-nome" value="${esc(det.nome)}"></div>
+          <div class="campo"><label for="m-cli">Cliente</label><input type="text" id="m-cli" placeholder="Ana Doces Ltda."></div></div>
+          <div class="campo"><label for="m-stack">Stack detectada</label><input type="text" id="m-stack" value="${esc(det.stack)}"></div>
+          <div class="campo"><label>Perfil (sugerido pela detecção)</label><div class="perfis">${E.perfis.map(p => `<button class="perfil ${p.id === perfil ? "ativo" : ""}" data-p="${p.id}"><b>${esc(p.nome)}</b><span>${esc(p.descricao)}</span></button>`).join("")}</div></div>
+          ${camposComandos("m", det.comandos)}`;
+        $("details", res).open = true;
+        $$(".perfil", res).forEach(b => b.onclick = () => { perfil = b.dataset.p; $$(".perfil", res).forEach(x => x.classList.toggle("ativo", x === b)); });
+        $("#m-ok", f).disabled = false;
+      };
+      $("#m-ler", f).onclick = analisar;
+      $("#m-pasta", f).onkeydown = e => { if (e.key === "Enter") analisar(); };
+      $("#m-ok", f).onclick = async () => {
+        if (!det) return;
+        const args = ["mapear", $("#m-pasta", f).value.trim(), "--perfil", perfil, "--nome", $("#m-nome", f).value.trim() || det.nome,
+                      "--cliente", $("#m-cli", f).value.trim(), "--stack", $("#m-stack", f).value.trim() || det.stack];
+        USOS_CMD.forEach(([k]) => { const v = $(`#m-c-${k}`, f).value.trim(); if (v !== (det.comandos[k] || "")) args.push("--comando", `${k}=${v}`); });
+        const b = $("#m-ok", f); b.disabled = true; b.textContent = "Instalando…";
+        try { const r = await prumo(args); fechar(true);
+          toast(`Prumo instalado. ${r.preservados.length ? r.preservados.length + " arquivo(s) do cliente preservados." : ""}`);
+          E.tarefa = "mapear"; abrirProjeto(r.caminho, "geral"); }
+        catch (e) { falhou(e); b.disabled = false; b.innerHTML = `${ic("seta")}Instalar o Prumo`; }
+      };
+    }});
+}
+
 async function abrirNovo() {
   if (!E.perfis.length) { try { E.perfis = await prumo(["perfis"]); } catch (e) { return falhou(e); } }
   let perfil = E.perfis.find(p => p.id === "web-fullstack") || E.perfis[0], pastaBase = lembrar("pastaBase", ""), pastaManual = false;
@@ -1165,7 +1231,9 @@ async function abrirNovo() {
     <div class="campo"><label for="n-cli">Cliente</label><input type="text" id="n-cli" placeholder="Ana Doces Ltda."></div></div>
     <div class="campo"><label for="n-pasta">Pasta onde criar</label><div class="linha-acao"><input type="text" id="n-pasta" style="flex:1" placeholder="D:\\Projetos\\loja-da-ana"><button class="btn" id="n-esc">Escolher…</button></div></div>
     <div class="campo"><label>Perfil</label><div class="perfis">${E.perfis.map(p => `<button class="perfil ${p.id === perfil.id ? "ativo" : ""}" data-p="${p.id}"><b>${esc(p.nome)}</b><span>${esc(p.descricao)}</span></button>`).join("")}</div></div>
-    <div class="campo"><label for="n-stack">Stack</label><input type="text" id="n-stack" value="${esc(perfil.stack)}"></div>
+    <div class="campo"><label for="n-stack">Stack</label><input type="text" id="n-stack" value="${esc(perfil.stack)}">
+      <span class="legenda" id="n-ferr">Pode trocar por qualquer tecnologia pedida pelo cliente (ex.: Elixir + Phoenix, Go + Gin, Rails).</span></div>
+    ${camposComandos("n")}
     <div class="campo"><label for="n-figma">Arquivo do Figma (opcional)</label><input type="text" id="n-figma" placeholder="https://www.figma.com/design/..."></div>
     <div class="rodape"><button class="btn fan" id="n-canc">Cancelar</button><button class="btn pri" id="n-ok">${ic("seta")}Criar projeto</button></div>`,
     aoAbrir: (f, fechar) => {
@@ -1175,12 +1243,22 @@ async function abrirNovo() {
       $("#n-canc", f).onclick = () => fechar(null);
       $("#n-esc", f).onclick = async () => { const p = await escolherPasta(); if (p) { pastaBase = p; pastaManual = false; guardar("pastaBase", p); sugerir(); } };
       $$(".perfil", f).forEach(b => b.onclick = () => { perfil = E.perfis.find(p => p.id === b.dataset.p);
-        $$(".perfil", f).forEach(x => x.classList.toggle("ativo", x === b)); $("#n-stack", f).value = perfil.stack; });
+        $$(".perfil", f).forEach(x => x.classList.toggle("ativo", x === b)); $("#n-stack", f).value = perfil.stack; dicaStack(); });
+      let espera; const dicaStack = () => { clearTimeout(espera); espera = setTimeout(async () => {
+        const st = $("#n-stack", f).value.trim(), alvo = $("#n-ferr", f);
+        if (!st || st === perfil.stack) { alvo.textContent = "Pode trocar por qualquer tecnologia pedida pelo cliente (ex.: Elixir + Phoenix, Go + Gin, Rails)."; preencherComandos(f, "n", perfil.comandos_sugeridos || {}, true); return; }
+        try { const d = await prumo(["ferramentas", "--stack", st]);
+          alvo.textContent = d.ferramentas.length ? `Reconhecido: ${d.ferramentas.join(", ")}. Comandos e convenções da linguagem entram no kit (ajuste abaixo se quiser).`
+                                                   : "Linguagem não reconhecida: informe abaixo os comandos de formatar, lint e testar para os hooks.";
+          preencherComandos(f, "n", d.comandos, true);
+        } catch { /* só dica */ } }, 350); };
+      $("#n-stack", f).oninput = dicaStack;
       $("#n-ok", f).onclick = async () => {
         const pasta = $("#n-pasta", f).value.trim(), nome = $("#n-nome", f).value.trim();
         if (!pasta || !nome) return toast("Informe o nome e a pasta do projeto.", true);
         const args = ["novo", pasta, "--perfil", perfil.id, "--nome", nome, "--cliente", $("#n-cli", f).value.trim(), "--stack", $("#n-stack", f).value.trim()];
         const fig = $("#n-figma", f).value.trim(); if (fig) args.push("--figma", fig);
+        args.push(...argsComandos(f, "n"));
         const b = $("#n-ok", f); b.disabled = true; b.textContent = "Criando…";
         try { const r = await prumo(args); fechar(true); toast("Projeto criado com documentos e kit do Claude."); abrirProjeto(r.caminho, "geral"); }
         catch (e) { falhou(e); b.disabled = false; b.innerHTML = `${ic("seta")}Criar projeto`; }
@@ -1190,7 +1268,7 @@ async function abrirNovo() {
 
 /* ------------------------------------------------------------------ paleta de comandos (Ctrl+K) */
 function comandos() {
-  const c = [["Novo projeto", "ação", abrirNovo], ["Abrir pasta de projeto", "ação", abrirExistente], ["Meus dados", "ação", meusDados], ["Trocar tema", "ação", trocarTema]];
+  const c = [["Novo projeto", "ação", abrirNovo], ["Mapear código existente", "ação", abrirMapear], ["Abrir pasta de projeto", "ação", abrirExistente], ["Meus dados", "ação", meusDados], ["Trocar tema", "ação", trocarTema]];
   if (E.projeto) {
     ABAS.forEach(([id, n]) => c.push([n, "aba", () => irPara(id)]));
     c.push(["Validar especificação", "ação", () => irPara("qualidade")], ["Especificar tudo com o Claude", "Claude", () => irPara("claude", {tarefa: "especificar"})],
@@ -1231,7 +1309,7 @@ function abrirPaleta() {
 /* ------------------------------------------------------------------ atalhos e ações globais */
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-acao]"); if (!b) return;
-  ({"novo": abrirNovo, "abrir-existente": abrirExistente, "meus-dados": meusDados, "paleta": abrirPaleta, "tema": trocarTema,
+  ({"novo": abrirNovo, "mapear": abrirMapear, "abrir-existente": abrirExistente, "meus-dados": meusDados, "paleta": abrirPaleta, "tema": trocarTema,
     "menu": () => document.body.classList.toggle("menu-aberto")})[b.dataset.acao]?.();
 });
 document.addEventListener("keydown", e => {

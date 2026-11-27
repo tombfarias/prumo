@@ -6,6 +6,7 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -74,6 +75,8 @@ TAREFAS = {
     "livre": (None, "Comando livre", ESCRITA, []),
 }
 # Mensagens do próprio Claude Code quando a cota da conta acaba (só são procuradas se a execução falhou).
+RE_LOGIN = re.compile(r"invalid api key|please run /login|not logged in|login required|authentication_error|"
+                      r"oauth token (?:has )?expired", re.I)
 RE_LIMITE = re.compile(r"(?:you'?ve|you have) (?:hit|reached) your .{0,40}limit|usage limit reached", re.I)
 ETAPAS_ESPECIFICACAO = ["requisitos", "casos-de-uso", "interface", "uml", "banco", "arquitetura", "backlog", "testes",
                         "proposta"]
@@ -289,6 +292,82 @@ def _descontar_sessao_anterior(historico, resultado):
             tokens[k] = max(0, tokens.get(k, 0) - sum((a.get("tokens") or {}).get(k, 0) for a in anteriores))
 
 
+ESPERA_SAIDA_S = 30  # depois que o Claude fecha a saída, quanto esperar o processo terminar
+
+
+def _flags_processo():
+    """Grupo de processos próprio, para encerrar o Claude e os filhos dele juntos; no Windows, sem janela."""
+    if os.name == "nt":
+        return {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW}
+    return {"start_new_session": True}
+
+
+def encerrar_arvore(proc, espera=5):
+    """Encerra o processo e os filhos dele (o Claude Code abre subprocessos)."""
+    if proc.poll() is not None:
+        return
+    try:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW, timeout=espera)
+        else:
+            import signal
+            os.killpg(proc.pid, signal.SIGTERM)
+        proc.wait(timeout=espera)
+    except (OSError, subprocess.SubprocessError):
+        pass
+    if proc.poll() is None:
+        try:
+            proc.kill()
+        except OSError:
+            pass
+
+
+
+def _ler_stderr(fluxo, destino):
+    for bruto in fluxo:
+        destino.append(bruto.decode("utf-8", "replace"))
+
+
+def _tratar_linha(bruto, eventos_brutos, resultado, emitir, texto_final):
+    """Interpreta uma linha do stream-json do Claude; devolve o texto final (atualizado se for o resultado)."""
+    linha = bruto.decode("utf-8", "replace").strip()
+    if not linha:
+        return texto_final
+    eventos_brutos.append(linha)
+    try:
+        ev = json.loads(linha)
+    except json.JSONDecodeError:
+        emitir(linha)
+        return texto_final
+    if not isinstance(ev, dict):
+        emitir(linha)
+        return texto_final
+    tipo = ev.get("type")
+    if tipo == "system" and ev.get("subtype") == "init":
+        resultado["sessao"] = ev.get("session_id")
+        emitir(f"  sessão {ev.get('session_id', '?')} · modelo {ev.get('model', '?')}")
+    elif tipo == "assistant":
+        for bloco in (ev.get("message") or {}).get("content") or []:
+            if bloco.get("type") == "text" and bloco.get("text", "").strip():
+                emitir(bloco["text"].strip())
+            elif bloco.get("type") == "tool_use":
+                emitir(_resumir_ferramenta(bloco))
+    elif tipo == "result":
+        texto_final = ev.get("result") or ""
+        resultado.update({
+            "sessao": ev.get("session_id") or resultado.get("sessao"),
+            "erro": bool(ev.get("is_error")) or ev.get("subtype") not in (None, "success"),
+            "subtipo": ev.get("subtype"),
+            "custo_usd": ev.get("total_cost_usd"),
+            "turnos": ev.get("num_turns"),
+        })
+        tokens = _resumir_tokens(ev)
+        if tokens:
+            resultado["tokens"] = tokens
+    return texto_final
+
+
 def executar(projeto, tarefa, alvo="", texto="", continuar=False, sessao=None, modelo=None, max_turnos=None,
              extras=None, modo=None, simular=False, ao_evento=None, etapas=None):
     """Roda uma tarefa no Claude Code e devolve o resultado (dict). `ao_evento(linha)` recebe o progresso legível.
@@ -326,48 +405,35 @@ def executar(projeto, tarefa, alvo="", texto="", continuar=False, sessao=None, m
     resultado = {"tarefa": tarefa, "alvo": alvo, "inicio": datetime.now().astimezone().isoformat(timespec="seconds")}
     if etapas:
         resultado["etapas"] = etapas
-    texto_final, eventos_brutos = "", []
+    texto_final, eventos_brutos, erros_linhas = "", [], []
     try:
         proc = subprocess.Popen(args, cwd=str(projeto.raiz), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+                                stderr=subprocess.PIPE, **_flags_processo())
     except OSError as e:
         raise ErroPrumo(f"Não consegui iniciar o Claude Code ({args[0]}): {e}") from e
-    proc.stdin.write(prompt.encode("utf-8"))
-    proc.stdin.close()
-    for bruto in proc.stdout:
-        linha = bruto.decode("utf-8", "replace").strip()
-        if not linha:
-            continue
-        eventos_brutos.append(linha)
+    interrompido = None
+    with proc:  # fecha stdin/stdout/stderr e espera o processo, mesmo com exceção
+        # stderr lido em paralelo: se ele enchesse o buffer, o Claude travaria esperando
+        leitor = threading.Thread(target=_ler_stderr, args=(proc.stderr, erros_linhas), daemon=True)
+        leitor.start()
         try:
-            ev = json.loads(linha)
-        except json.JSONDecodeError:
-            emitir(linha)
-            continue
-        tipo = ev.get("type")
-        if tipo == "system" and ev.get("subtype") == "init":
-            resultado["sessao"] = ev.get("session_id")
-            emitir(f"  sessão {ev.get('session_id', '?')} · modelo {ev.get('model', '?')}")
-        elif tipo == "assistant":
-            for bloco in (ev.get("message") or {}).get("content") or []:
-                if bloco.get("type") == "text" and bloco.get("text", "").strip():
-                    emitir(bloco["text"].strip())
-                elif bloco.get("type") == "tool_use":
-                    emitir(_resumir_ferramenta(bloco))
-        elif tipo == "result":
-            texto_final = ev.get("result") or ""
-            resultado.update({
-                "sessao": ev.get("session_id") or resultado.get("sessao"),
-                "erro": bool(ev.get("is_error")) or ev.get("subtype") not in (None, "success"),
-                "subtipo": ev.get("subtype"),
-                "custo_usd": ev.get("total_cost_usd"),
-                "turnos": ev.get("num_turns"),
-            })
-            tokens = _resumir_tokens(ev)
-            if tokens:
-                resultado["tokens"] = tokens
-    erros = proc.stderr.read().decode("utf-8", "replace").strip()
-    codigo = proc.wait()
+            try:
+                proc.stdin.write(prompt.encode("utf-8"))
+                proc.stdin.close()
+            except OSError:
+                pass  # o Claude saiu antes de ler o prompt; o código de saída e o stderr dizem o motivo
+            for bruto in proc.stdout:
+                texto_final = _tratar_linha(bruto, eventos_brutos, resultado, emitir, texto_final)
+        except BaseException as e:  # Ctrl+C ou falha no Prumo: não deixa o Claude rodando sozinho
+            interrompido = e
+            encerrar_arvore(proc)
+        try:
+            codigo = proc.wait(timeout=ESPERA_SAIDA_S)
+        except subprocess.TimeoutExpired:
+            encerrar_arvore(proc)
+            codigo = proc.wait()
+        leitor.join(timeout=5)
+    erros = "".join(erros_linhas).strip()
     resultado["codigo_saida"] = codigo
     resultado["duracao_s"] = round(time.time() - inicio, 1)
     resultado["resumo"] = texto_final
@@ -375,6 +441,12 @@ def executar(projeto, tarefa, alvo="", texto="", continuar=False, sessao=None, m
     if falhou and (RE_LIMITE.search(texto_final or "") or RE_LIMITE.search(erros or "")):
         resultado["erro"] = True
         resultado["limite_atingido"] = True
+    if interrompido is not None:
+        resultado["erro"] = True
+        resultado["interrompido"] = True
+    elif falhou and (RE_LOGIN.search(texto_final or "") or RE_LOGIN.search(erros or "")):
+        resultado["sem_login"] = True
+        emitir("[Prumo] O Claude Code não está conectado à sua conta. Rode `claude` uma vez, entre com /login e tente de novo.")
     if codigo != 0:
         resultado["erro"] = True
         if erros:
@@ -391,6 +463,8 @@ def executar(projeto, tarefa, alvo="", texto="", continuar=False, sessao=None, m
     resultado["log"] = projeto.rel(log)
     with open(pasta_log / "historico.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps({k: v for k, v in resultado.items() if k not in ("resumo", "stderr")}, ensure_ascii=False) + "\n")
+    if interrompido is not None:
+        raise interrompido
     return resultado
 
 
