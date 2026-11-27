@@ -1,6 +1,6 @@
 ---
 name: modelar-banco
-description: Modela o banco de dados (06-banco-de-dados.md): diagrama ER em Mermaid, dicionário de dados, índices, DDL de referência, privacidade/LGPD e política de migrações. Use quando pedirem modelo de dados, tabelas, esquema do banco ou migrações.
+description: Modela o banco de dados (06-banco-de-dados.md): diagrama ER em Mermaid, dicionário de dados, índices, DDL de referência, volume e consultas críticas, cargas de dados, papéis de acesso, privacidade/LGPD e política de migrações. Use quando pedirem modelo de dados, tabelas, esquema do banco ou migrações.
 ---
 
 # Modelar o banco de dados
@@ -16,9 +16,12 @@ description: Modela o banco de dados (06-banco-de-dados.md): diagrama ER em Merm
 3. **Dicionário de dados:** uma tabela por entidade com coluna, tipo do SGBD escolhido, nulidade, padrão, restrições e descrição.
 4. **Convenções:** chave primária `id` (UUID ou bigint, conforme a stack), `criado_em`/`atualizado_em` em UTC, exclusão lógica (`excluido_em`) quando houver histórico, valores monetários em `numeric(12,2)` ou centavos inteiros.
 5. **Índices:** para cada consulta frequente dos casos de uso (listagens com filtro, buscas, joins), registre o índice e o UC que o justifica.
-6. **DDL de referência** coerente com o diagrama. As migrações oficiais ficam no código, geradas pelo ORM.
-7. **LGPD:** liste todo dado pessoal com finalidade, base legal, retenção e proteção (hash, criptografia, mascaramento). Dados sensíveis (saúde, biometria, etc.) exigem atenção especial: sinalize ao usuário.
-8. **Migrações e backup:** ferramenta, como aplicar, política de rollback, seeds, frequência de backup.
+6. **DDL de referência** coerente com o diagrama. As migrações oficiais ficam no código (geradas pelo ORM ou escritas em SQL).
+7. **Volume e consultas críticas:** estime linhas e crescimento por tabela; para cada consulta crítica, a meta de tempo e o UC/RNF de origem. Tabelas grandes com expurgo por data: avalie particionamento (ADR).
+8. **Cargas e integrações:** origem, frequência, chave de deduplicação (carga idempotente) e destino dos registros rejeitados.
+9. **Papéis:** aplicação sem DDL, migrações com DDL só no deploy, relatórios só leitura (de preferência em views).
+10. **LGPD:** liste todo dado pessoal com finalidade, base legal, retenção e proteção (hash, criptografia, mascaramento). Dados sensíveis (saúde, biometria, etc.) exigem atenção especial: sinalize ao usuário.
+11. **Migrações e backup:** ferramenta, como aplicar, rollback, expandir → migrar → contrair em mudanças incompatíveis, seeds, backup com RPO/RTO e teste de restauração.
 
 ## Saída
 

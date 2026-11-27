@@ -11,6 +11,7 @@
 | `wordpress` | Site ou loja que o cliente edita sozinho | WordPress 6.x + PHP 8.1+, tema de blocos + plugin próprio, wp-env, phpcs (WordPress Coding Standards), PHPUnit; WooCommerce opcional | sim |
 | `automacao-bot` | Scripts agendados, integrações, ETL, bots | Python + httpx + Playwright + APScheduler | não |
 | `app-mobile` | App Android/iOS | React Native + Expo (ou Flutter) | sim |
+| `banco-de-dados` | Modelagem, migrações, otimização de consultas, cargas/ETL e relatórios em SQL | PostgreSQL + dbmate + SQLFluff + pgTAP (ou MySQL + Flyway) | não |
 | `minimo` | Projeto pequeno, orçamento rápido | a definir | não |
 
 Cada perfil define os documentos incluídos, as pastas de código, os comandos sugeridos (formatar, lint, testar) e as convenções da stack, que entram no `AGENTS.md`.
@@ -28,20 +29,20 @@ Cada perfil define os documentos incluídos, as pastas de código, os comandos s
 | `04-uml/pacotes` | Pacotes/módulos e dependências permitidas | api, web, gestão, automação, mobile |
 | `04-uml/componentes` | Componentes e integrações | api, web, gestão, automação, mobile, wordpress |
 | `04-uml/estrutura-composta` | Partes, portas e conectores internos | api, web, gestão, mobile |
-| `04-uml/implantacao` | Ambientes e infraestrutura | api, web, gestão, automação, mobile, wordpress |
+| `04-uml/implantacao` | Ambientes e infraestrutura | api, web, gestão, automação, mobile, wordpress, banco |
 | `04-uml/perfil-uml` | Estereótipos e valores etiquetados | api, web, gestão, mobile |
 | `04-uml/sequencia` | Sequência por caso de uso | api, web, gestão, automação, mobile |
 | `04-uml/comunicacao` | Mensagens numeradas entre objetos | api, web, gestão, automação, mobile |
 | `04-uml/tempo` | Estados no tempo, prazos, timeouts (tabela + gantt) | api, web, gestão, automação, mobile |
 | `04-uml/visao-geral-interacao` | Jornada entre interações (refs) | api, web, gestão, automação, mobile |
 | `04-uml/estados` | Máquina de estados (ciclo de vida) | api, web, gestão, mobile |
-| `04-uml/atividades` | Processos de negócio | api, web, gestão, automação, mobile |
+| `04-uml/atividades` | Processos de negócio | api, web, gestão, automação, mobile, banco |
 
 Os 14 tipos da UML 2.5 estão cobertos: os 13 acima e o diagrama de casos de uso, em `03-casos-de-uso`. A Mermaid não tem
 diagrama de tempo nem de perfil nativos: o de tempo usa tabela + `gantt` em segundos e o de perfil usa `classDiagram`
 com `<<metaclass>>`/`<<stereotype>>`. Qualquer documento pode ser incluído num projeto com `prumo documento <id>`.
 | `05-interface` | Design system, inventário de telas (Figma), navegação | web, gestão, site, mobile, wordpress |
-| `06-banco-de-dados` | ER, dicionário, índices, DDL, LGPD, migrações (no WordPress: tipos de post, meta, taxonomias ou tabelas próprias) | api, web, gestão, automação, mobile, wordpress |
+| `06-banco-de-dados` | ER, dicionário, índices, DDL, volume e consultas críticas, cargas, papéis, LGPD, migrações e backup (no WordPress: tipos de post, meta, taxonomias ou tabelas próprias) | api, web, gestão, automação, mobile, wordpress, banco |
 | `07-arquitetura` | Stack, pastas, módulos, segurança, operação, ADRs | todos exceto mínimo |
 | `08-backlog` | Épicos, histórias, estimativas, marcos, DoR/DoD | todos |
 | `09-plano-de-testes` | Estratégia, casos de teste, homologação | todos exceto mínimo |

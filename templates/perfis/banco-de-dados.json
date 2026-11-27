@@ -1,0 +1,35 @@
+{
+  "id": "banco-de-dados",
+  "nome": "Banco de dados (modelagem, SQL e relatórios)",
+  "descricao": "Modelagem e criação de bancos, migrações, otimização de consultas, cargas/ETL, views e relatórios em SQL, sem aplicação própria.",
+  "stack": "PostgreSQL 16+ + dbmate (migrações em SQL) + SQLFluff (formatação e lint) + pgTAP (testes) (alternativa: MySQL 8 + Flyway + testes com pytest)",
+  "stack_padrao": {"banco": "postgresql", "orm": "dbmate", "testes": "pgtap"},
+  "documentos": [
+    "00-briefing",
+    "01-visao",
+    "02-requisitos",
+    "04-uml/atividades",
+    "04-uml/implantacao",
+    "06-banco-de-dados",
+    "07-arquitetura",
+    "08-backlog",
+    "09-plano-de-testes",
+    "10-proposta-comercial",
+    "11-entrega",
+    "12-seguranca"
+  ],
+  "pastas": [
+    "db/migrations",
+    "db/seeds",
+    "sql",
+    "tests"
+  ],
+  "figma": false,
+  "extensoes_lint": [".sql"],
+  "comandos_sugeridos": {
+    "formatar": "sqlfluff format --dialect postgres {arquivo}",
+    "lint": "sqlfluff lint --dialect postgres {arquivo}",
+    "testar": "pg_prove -r tests"
+  },
+  "convencoes": "banco-de-dados.md"
+}

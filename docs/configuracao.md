@@ -33,6 +33,7 @@ Na mesma pasta, o Prumo mantém `projetos.json` (projetos recentes) e `.janela/`
 | `hooks.comandos_permitidos` | Expressões regulares de comandos que o `guarda_comandos` deve liberar |
 | `hooks.revisao_pos_mudanca` | Exige documentação e segurança após mudança significativa (padrão `true`) |
 | `hooks.limite_arquivos` / `hooks.limite_linhas` | Limites da mudança significativa (padrão 3 e 80) |
+| `hooks.extensoes_lint` | Extensões extras em que o lint roda, além das de código (ex.: `[".sql"]` no perfil `banco-de-dados`) |
 | `hooks.caminhos_sensiveis` | Padrões extras (regex) que tornam qualquer mudança significativa |
 | `hooks.bloquear_dados_sensiveis` | `false` desliga o bloqueio de segredos (chaves, tokens) em qualquer arquivo e de CPF/cartão válidos em `docs/` (padrão: ligado; valores de teste conhecidos passam) |
 | `pastas_codigo` | Pastas varridas pela rastreabilidade e pela segurança |
