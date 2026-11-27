@@ -1,5 +1,6 @@
 """Testes do Prumo (biblioteca padrão: python -m unittest discover -s tests -v)."""
 
+import copy
 import io
 import json
 import os
@@ -16,7 +17,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
-from prumo_cli import claude, estilo, figma, formulario, gestao, mapear, projeto as mp, rastreio, seguranca, validacao  # noqa: E402
+from prumo_cli import claude, estilo, figma, formulario, geracao, gestao, mapear, projeto as mp, rastreio, seguranca, validacao  # noqa: E402
 from prumo_cli.cli import main  # noqa: E402
 from prumo_cli.util import ErroPrumo, gravar, ler  # noqa: E402
 
@@ -1089,6 +1090,65 @@ class TestFormulario(unittest.TestCase):
             dados["casos_de_uso"][0]["requisitos"] = ["RF-050"]
             gravar(p.raiz / formulario.ARQUIVO, json.dumps(dados))
             self.assertEqual(rodar("validar")[0], 1)
+
+
+class TestGeracao(unittest.TestCase):
+    def test_briefing_gerado_preservado_e_idempotente(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "web-fullstack")
+            self.assertFalse(geracao.gerar(p)["existe"])
+            dados = copy.deepcopy(FORMULARIO)
+            dados["restricoes"] = {"prazo": "até março"}
+            formulario.salvar(p, dados)
+            arq = p.raiz / geracao.BRIEFING
+            antes = ler(arq)
+            r = geracao.gerar(p, simular=True)
+            self.assertEqual((r["alterados"], ler(arq)), ([geracao.BRIEFING], antes))  # simular não grava
+            r = geracao.gerar(p)
+            texto = ler(arq)
+            estados = r["documentos"][geracao.BRIEFING]
+            self.assertEqual(estados["contexto"], "gerado")
+            self.assertEqual(estados["referencias"], "vazio")
+            self.assertIn("Doceria com encomendas pelo WhatsApp.", texto)
+            self.assertIn("| Prazo | até março |", texto)
+            self.assertIn("Encomendas só com 48h de antecedência", texto)
+            self.assertIn("| P-01 |", texto)  # perguntas do formulário e do catálogo
+            self.assertIn("Qual gateway", texto)
+            self.assertIn("Contato principal | Ana", texto)
+            self.assertEqual(texto.count("<!-- prumo:gerado:fim -->"), 8)
+            self.assertEqual(geracao.gerar(p)["alterados"], [])  # gerar de novo não muda nada
+            self.assertEqual([m for g, m in validacao.validar(p) if g == "erro"], [])
+            # bloco editado pelo usuário fica; bloco intocado acompanha o formulário
+            texto = texto.replace("Doceria com encomendas pelo WhatsApp.", "Doceria (texto meu).")
+            gravar(arq, texto)
+            dados, _ = formulario.carregar(p)
+            dados["negocio"]["contexto"] = "Outro contexto"
+            dados["fora_do_escopo"] = ["App nativo"]
+            formulario.salvar(p, dados)
+            estados = geracao.gerar(p)["documentos"][geracao.BRIEFING]
+            self.assertEqual((estados["contexto"], estados["funcionalidades"]), ("editado", "atualizado"))
+            texto = ler(arq)
+            self.assertIn("Doceria (texto meu).", texto)
+            self.assertIn("- App nativo", texto)
+            # campo apagado no formulário volta a ser lacuna; documento aprovado não é tocado
+            dados["negocio"]["objetivos"] = []
+            formulario.salvar(p, dados)
+            self.assertEqual(geracao.gerar(p)["documentos"][geracao.BRIEFING]["objetivos"], "limpo")
+            mp.aprovar(p, [geracao.BRIEFING], forcar=True)
+            texto = ler(arq)
+            dados["negocio"]["proposito"] = "Mudou"
+            formulario.salvar(p, dados)
+            r = geracao.gerar(mp.Projeto(p.raiz))
+            self.assertEqual((r["alterados"], ler(arq)), ([], texto))
+
+    def test_secao_com_texto_proprio_nao_e_sobrescrita(self):
+        texto = "# B\n\n## 1. Contexto do negócio\n\nTexto colado do cliente.\n\n## 8. Referências\n\n- [PREENCHER]\n"
+        dados = formulario.normalizar({"negocio": {"contexto": "x", "referencias": ["https://a.exemplo"]}})
+        novo, estados = geracao.gerar_briefing(texto, dados)
+        self.assertEqual((estados["contexto"], estados["referencias"]), ("editado", "gerado"))
+        self.assertIn("Texto colado do cliente.", novo)
+        self.assertIn("- https://a.exemplo", novo)
+        self.assertNotIn("[PREENCHER]", novo)
 
 
 class TestCliEServidor(unittest.TestCase):

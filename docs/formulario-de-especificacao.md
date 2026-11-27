@@ -1,7 +1,10 @@
 # Formulário de especificação e geração
 
 **Status:** fase 1 implementada (dados e catálogos: `prumo_cli/formulario.py`, `templates/catalogos/`,
-`stack_padrao` nos perfis e `prumo formulario`). Fases 2 a 5 ainda são desenho.
+`stack_padrao` nos perfis e `prumo formulario`). Primeira parte das fases 2 e 4: `prumo gerar` (`prumo_cli/geracao.py`)
+preenche o briefing e a interface tem a aba **Formulário** com os passos Negócio, Usuários, Funcionalidades,
+Integrações e Perguntas. Os demais documentos, os outros passos (casos de uso, dados, telas, stack, comercial, kit) e a
+fase 3 ainda são desenho.
 
 ## Objetivo
 
@@ -349,14 +352,16 @@ Cada fase é um PR com testes (`python -m unittest discover -s tests -v`).
 1. **Dados e catálogos:** `prumo_cli/formulario.py` (carregar, validar, atribuir IDs), `templates/catalogos/`,
    `stack_padrao` nos perfis, comando `prumo formulario`. Testes: validação, IDs sem colisão com os documentos,
    catálogos bem formados.
-2. **Geração:** `prumo_cli/geracao.py` (um gerador por bloco, registrados num dicionário), marcadores nos modelos,
+2. **Geração:** *feito para `00-briefing` (sem marcadores no modelo: a seção só é preenchida se ainda é lacuna; o
+   contato vai na linha da tabela de cabeçalho).* `prumo_cli/geracao.py` (um gerador por bloco, registrados num dicionário), marcadores nos modelos,
    `prumo gerar`, regra nas skills. Começar por `02-requisitos`, `06-banco` + `04-uml/classes` e `08-backlog`, que
    são o maior ganho. Testes: todos os perfis com formulário vazio e com formulário completo; sem IDs órfãos; Mermaid
    válido; gerar duas vezes não muda nada; bloco editado preservado; item novo acrescentado; documento aprovado
    intocado.
 3. **Kit derivado:** `kit.json`, linguagem de condição, `{{#se}}`, comandos por extensão e programa ausente nos
    hooks, `.env.example`, `permissions.allow`, primeiras skills de integração.
-4. **Interface:** aba Formulário, prévia e status dos blocos.
+4. **Interface:** aba Formulário, prévia e status dos blocos. *Feito:* aba com 5 passos, gravação automática e
+   **Gravar no briefing** (estado de cada bloco). *Falta:* passos 4 a 10 da seção 3 e a prévia `--simular`.
 5. **Opcional:** tarefa do Claude que preenche o formulário a partir das anotações.
 
 Projetos criados antes disto não têm marcadores: `prumo gerar` não altera os documentos deles (só o kit, se pedido).

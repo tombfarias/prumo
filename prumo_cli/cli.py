@@ -7,7 +7,7 @@ import runpy
 import sys
 from pathlib import Path
 
-from . import claude, figma, mapear, formulario, gestao, projeto as mod_projeto, rastreio, seguranca, validacao
+from . import claude, figma, geracao, mapear, formulario, gestao, projeto as mod_projeto, rastreio, seguranca, validacao
 from .util import (
     CONGELADO, RAIZ_KIT, VERSAO, ErroPrumo, configurar_console, formatar_horas, formatar_moeda, info,
     config_freelancer, ler, ler_json, gravar_json, tabela_console, agora_iso,
@@ -185,6 +185,9 @@ def cmd_formulario(args):
         texto += _texto_problemas(erros, avisos)
         if erros or avisos:
             texto.append(f"{len(erros)} erro(s), {len(avisos)} aviso(s).")
+        if args.gerar:
+            r["geracao"] = geracao.gerar(p)
+            texto += ["", *_texto_geracao(r["geracao"])]
         saida(dict(r, erros=erros, avisos=avisos), "\n".join(texto))
         return 0
     if args.acao == "validar":
@@ -208,6 +211,30 @@ def cmd_formulario(args):
     if erros or avisos:
         texto += ["", f"{len(erros)} erro(s), {len(avisos)} aviso(s): veja com `prumo formulario validar`."]
     saida(dict(r, erros=erros, avisos=avisos), "\n".join(texto))
+    return 0
+
+
+ESTADOS_GERACAO = {"gerado": "preenchido agora", "atualizado": "atualizado", "igual": "sem mudança",
+                   "limpo": "voltou a ser lacuna", "editado": "editado no documento (mantido)",
+                   "vazio": "sem dados no formulário", "aprovado": "documento aprovado (não tocado)"}
+
+
+def _texto_geracao(r):
+    if not r["existe"]:
+        return [f"{formulario.ARQUIVO} ainda não existe: preencha o formulário na interface."]
+    texto = []
+    for doc, blocos in r["documentos"].items():
+        texto.append(doc + (" (simulação)" if r.get("simulado") else ""))
+        texto += [f"  {b}: {ESTADOS_GERACAO.get(e, e)}" for b, e in blocos.items()]
+    texto.append("Gravado: " + ", ".join(r["alterados"]) if r["alterados"] and not r.get("simulado")
+                 else "Nada a gravar." if not r["alterados"] else "Mudaria: " + ", ".join(r["alterados"]))
+    return texto
+
+
+def cmd_gerar(args):
+    p = abrir_projeto(args)
+    r = geracao.gerar(p, simular=args.simular)
+    saida(r, "\n".join(_texto_geracao(r)))
     return 0
 
 
@@ -608,6 +635,9 @@ def montar_parser():
     s = novo("formulario", cmd_formulario, "formulário de especificação (especificacao.prumo.json)")
     s.add_argument("acao", nargs="?", default="mostrar", choices=["mostrar", "salvar", "validar"])
     s.add_argument("arquivo", nargs="?", help="em salvar: JSON com o formulário")
+    s.add_argument("--gerar", action="store_true", help="em salvar: em seguida preenche os documentos (prumo gerar)")
+    s = novo("gerar", cmd_gerar, "preenche os documentos com o formulário (hoje: o briefing)")
+    s.add_argument("--simular", action="store_true", help="só mostra o que mudaria")
     novo("rastreabilidade", cmd_rastreabilidade, "gera docs/rastreabilidade.md")
     s = novo("contexto", cmd_contexto, "imprime só a trilha ligada a um ou mais IDs (economiza tokens)")
     s.add_argument("ids", nargs="+")
