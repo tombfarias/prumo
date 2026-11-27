@@ -38,9 +38,12 @@
       "pastas": ["src"]
     },
     {
-      "id": "wordpress", "nome": "WordPress (tema próprio)", "camadas": ["frontend", "backend"],
+      "id": "wordpress", "nome": "WordPress (tema e plugin próprios, WooCommerce opcional)", "camadas": ["frontend", "backend"],
       "extensoes": [".php", ".css", ".js"],
-      "pastas": ["wp-content/themes"],
+      "comandos": {"formatar": "composer exec -- phpcbf -q {arquivo}", "lint": "composer exec -- phpcs -q --report=emacs {arquivo}", "testar": "composer test"},
+      "permissoes": ["Bash(composer exec:*)", "Bash(composer test:*)", "Bash(composer lint:*)", "Bash(npx @wordpress/env:*)", "Bash(npx wp-env:*)", "Bash(npm run build:*)"],
+      "pastas": ["wp-content/themes", "wp-content/plugins"],
+      "convencao": "Tema só apresenta; regras, tipos de post e integrações ficam no plugin do projeto. Sanitize na entrada, escape na saída, nonce e current_user_can em toda alteração.",
       "variaveis": ["WORDPRESS_DB_HOST", "WORDPRESS_DB_NAME", "WORDPRESS_DB_USER", "WORDPRESS_DB_PASSWORD"]
     },
     {

@@ -22,6 +22,15 @@
 5. **Não invente requisitos.** Dúvidas sobre o negócio viram perguntas na seção 9 de `docs/00-briefing.md`.
 6. Trechos `[PREENCHER: ...]` são lacunas. Ao preencher um documento, substitua todas ou deixe explícito por que ficaram em aberto.
 
+## Situações adversas (o que fazer sem improvisar)
+
+- **Briefing vago ou contraditório:** não escolha um lado. Registre as duas versões como pergunta (seção 9 do briefing) e siga só com o que não depende dela.
+- **Cliente muda o escopo no meio:** nada de código antes do registro `{{prumo}} mudanca "título"` com impacto em prazo e preço.
+- **Stack fora do perfil:** registre a escolha num ADR (`{{prumo}} adr "título"`) e escreva as convenções em `docs/07-arquitetura.md` antes de codificar; não aplique convenções de outra stack.
+- **Ferramenta ausente** (git, node, php, banco...): não instale nada global nem troque a stack por conta própria; diga ao usuário o que falta e o comando para instalar.
+- **Dados reais do cliente** (CPF, cartão, senhas, tokens): nunca em `docs/`, código ou commits. Use dados fictícios; segredos só no `.env`.
+- **Hook bloqueou:** leia o motivo e corrija a causa. Não contorne a guarda por outro caminho (shell, outro arquivo).
+
 ## Depois de toda mudança significativa
 
 Mudança significativa = 3 ou mais arquivos de código, 80 ou mais linhas, ou qualquer alteração em autenticação/autorização, banco de dados (migrações, models), rotas/API, dependências, infraestrutura (Docker, CI/CD), configuração ou dados sensíveis. Ao concluir uma mudança assim, **antes de encerrar**:
@@ -30,6 +39,15 @@ Mudança significativa = 3 ou mais arquivos de código, 80 ou mais linhas, ou qu
 2. **Procure falhas de segurança** seguindo `.claude/skills/revisar-seguranca/SKILL.md` (inclui `{{prumo}} seguranca`) e registre os achados em `docs/12-seguranca.md`.
 
 No Claude Code um hook exige essas duas etapas automaticamente; nos demais agentes, siga esta regra por conta própria.
+
+## Escrita dos documentos
+
+- **Um fato, um lugar.** Termos do negócio são definidos uma vez no glossário de `docs/02-requisitos.md`; cada ID, no documento dono. Nos demais, cite o ID em vez de repetir o texto.
+- **Estrutura antes de prosa:** tabelas e listas; parágrafos de até 3 frases; frases de até 40 palavras.
+- **Verificável:** números, nomes e critérios. Termo vago ("rápido", "intuitivo", "moderno") vira métrica ou pergunta P-xx.
+- **Sem enchimento:** nada de introduções que repetem o título, "é importante ressaltar", "a fim de" (use "para").
+- **Instruções no imperativo**, uma ação por item. Seção que não se aplica: "Não se aplica: motivo", em uma linha.
+- `{{prumo}} validar` aponta os excessos como avisos de estilo.
 
 ## Economia de tokens (sem perder qualidade)
 

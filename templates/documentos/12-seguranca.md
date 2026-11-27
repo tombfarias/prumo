@@ -30,7 +30,7 @@ negação de serviço, elevação de privilégio. -->
 - [ ] Limites de taxa e regras de negócio contra abuso (A04)
 - [ ] Configuração segura: sem modo debug em produção, CORS restrito, cabeçalhos de segurança (A05)
 - [ ] Dependências auditadas e atualizadas (A06)
-- [ ] Autenticação robusta: sessão/JWT com expiração, proteção contra força bruta (A07)
+- [ ] Autenticação: sessão/JWT com expiração, proteção contra força bruta (A07)
 - [ ] Integridade: segredos fora do código, pipeline de deploy protegido (A08)
 - [ ] Logs de segurança sem dados sensíveis; alertas para falhas repetidas (A09)
 - [ ] Requisições a URLs externas validadas (SSRF) (A10)

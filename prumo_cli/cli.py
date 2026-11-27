@@ -10,7 +10,7 @@ from pathlib import Path
 from . import claude, figma, formulario, gestao, projeto as mod_projeto, rastreio, seguranca, validacao
 from .util import (
     CONGELADO, RAIZ_KIT, VERSAO, ErroPrumo, configurar_console, formatar_horas, formatar_moeda, info,
-    ler, ler_json, gravar_json, tabela_console, agora_iso,
+    config_freelancer, ler, ler_json, gravar_json, tabela_console, agora_iso,
 )
 
 JSON = False
@@ -48,6 +48,10 @@ def registrar_recente(p):
 
 
 def cmd_projetos(args):
+    if args.remover:
+        alvo = str(Path(args.remover).resolve())
+        lista = [x for x in (ler_json(_arquivo_recentes(), []) or []) if str(Path(x["caminho"]).resolve()) != alvo]
+        gravar_json(_arquivo_recentes(), lista)
     lista = [x for x in (ler_json(_arquivo_recentes(), []) or []) if Path(x["caminho"], "projeto.prumo.json").exists()]
     saida(lista, tabela_console(["Projeto", "Cliente", "Pasta"], [[x["nome"], x.get("cliente", ""), x["caminho"]] for x in lista])
           if lista else "Nenhum projeto recente.")
@@ -200,12 +204,23 @@ def cmd_doc(args):
 
 def cmd_agentes(args):
     p = abrir_projeto(args)
+    if args.acao == "listar":
+        itens = p.listar_kit()
+        saida(itens, tabela_console(["Tipo", "Nome", "Estado", "Arquivo"], [[i["tipo"], i["nome"], i["estado"], i["arquivo"]] for i in itens]))
+        return
     if args.acao == "exportar":
         escritos = gestao.exportar_agentes(p, args.alvos.split(",") if args.alvos else None)
         saida({"arquivos": escritos}, "Exportado: " + ", ".join(escritos))
     else:
-        escritos = p.instalar_kit_agentes(incluir_settings=args.incluir_settings)
-        saida({"arquivos": escritos}, f"{len(escritos)} arquivo(s) do kit de agentes atualizados.")
+        escritos = p.instalar_kit_agentes(incluir_settings=args.incluir_settings, forcar=args.forcar)
+        texto = f"{len(escritos)} arquivo(s) do kit de agentes atualizados."
+        if p.kit_preservados:
+            texto += (f"\n{len(p.kit_preservados)} arquivo(s) editados por você foram mantidos: "
+                      + ", ".join(p.kit_preservados)
+                      + "\nA versão nova de cada um está em .prumo/kit-novo/ (compare e junte, ou rode com --forcar).")
+        if p.kit_backups:
+            texto += "\nCópias de segurança antes de sobrescrever: " + ", ".join(p.kit_backups)
+        saida({"arquivos": escritos, "preservados": p.kit_preservados, "backups": p.kit_backups}, texto)
 
 
 def cmd_orcamento(args):
@@ -356,6 +371,121 @@ def cmd_escolher_pasta(args):
     print(json.dumps({"pasta": pasta or ""}))
 
 
+# ---------------------------------------------------------------- configurações
+
+FREELANCER = {"nome": str, "email": str, "valor_hora": float, "moeda": str, "contingencia_percentual": float}
+PROJETO_CAMPOS = {
+    "projeto": str, "cliente": str, "stack": str,
+    "comandos.formatar": str, "comandos.lint": str, "comandos.testar": str,
+    "hooks.registrar_horas": bool, "hooks.testes_ao_parar": bool, "hooks.revisao_pos_mudanca": bool,
+    "hooks.limite_arquivos": int, "hooks.limite_linhas": int, "hooks.comandos_permitidos": list,
+    "orcamento.valor_hora": float, "orcamento.contingencia_percentual": float,
+    "claude.modelo": str, "claude.max_turnos": int, "pastas_codigo": list,
+}
+
+
+def _converter(valor, tipo, chave):
+    """Converte o texto vindo da linha de comando (ou JSON vindo da interface) para o tipo do campo."""
+    if isinstance(valor, str):
+        bruto = valor.strip()
+        if bruto == "" and tipo is not str:
+            return None
+        if tipo is bool:
+            if bruto.lower() in ("1", "true", "sim", "s", "on"):
+                return True
+            if bruto.lower() in ("0", "false", "nao", "não", "n", "off"):
+                return False
+            raise ErroPrumo(f"{chave}: use sim ou não.")
+        if tipo is list:
+            try:
+                valor = json.loads(bruto)
+            except json.JSONDecodeError:
+                return [x.strip() for x in bruto.splitlines() if x.strip()]
+        elif tipo in (int, float):
+            try:
+                return tipo(bruto.replace(",", "."))
+            except ValueError:
+                raise ErroPrumo(f"{chave}: número inválido ({bruto}).") from None
+        else:
+            return bruto
+    if valor is None:
+        return None
+    if tipo is list:
+        if not isinstance(valor, list):
+            raise ErroPrumo(f"{chave}: esperava uma lista.")
+        return [str(x) for x in valor]
+    if tipo is bool:
+        return bool(valor)
+    if tipo in (int, float):
+        if isinstance(valor, bool) or not isinstance(valor, (int, float)):
+            raise ErroPrumo(f"{chave}: número inválido.")
+        if valor < 0:
+            raise ErroPrumo(f"{chave}: o valor não pode ser negativo.")
+        return tipo(valor)
+    return str(valor)
+
+
+def _ler_caminho(dados, chave):
+    for parte in chave.split("."):
+        if not isinstance(dados, dict):
+            return None
+        dados = dados.get(parte)
+    return dados
+
+
+def _definir_caminho(dados, chave, valor):
+    partes = chave.split(".")
+    for parte in partes[:-1]:
+        if not isinstance(dados.get(parte), dict):
+            dados[parte] = {}
+        dados = dados[parte]
+    dados[partes[-1]] = valor
+
+
+def cmd_config(args):
+    arq_freelancer = RAIZ_KIT / "config" / "freelancer.json"
+    try:
+        p = abrir_projeto(args)
+    except ErroPrumo:
+        p = None
+    if args.definir:
+        pessoal = ler_json(arq_freelancer, {}) or {}
+        mudou_freelancer = mudou_projeto = False
+        for item in args.definir:
+            if "=" not in item:
+                raise ErroPrumo(f"Use chave=valor (recebido: {item}).")
+            chave, valor = item.split("=", 1)
+            chave = chave.strip()
+            if chave.startswith("freelancer."):
+                campo = chave[len("freelancer."):]
+                if campo not in FREELANCER:
+                    raise ErroPrumo(f"Campo desconhecido: {chave}")
+                pessoal[campo] = _converter(valor, FREELANCER[campo], chave)
+                mudou_freelancer = True
+            elif chave.startswith("projeto."):
+                campo = chave[len("projeto."):]
+                if campo not in PROJETO_CAMPOS:
+                    raise ErroPrumo(f"Campo desconhecido: {chave}")
+                if p is None:
+                    raise ErroPrumo("Informe o projeto com --projeto para alterar campos do projeto.")
+                _definir_caminho(p.config, campo, _converter(valor, PROJETO_CAMPOS[campo], chave))
+                mudou_projeto = True
+            else:
+                raise ErroPrumo(f"A chave deve começar com freelancer. ou projeto. (recebido: {chave})")
+        if mudou_freelancer:
+            gravar_json(arq_freelancer, pessoal)
+        if mudou_projeto:
+            p.salvar()
+    dados = {"freelancer": {k: config_freelancer().get(k) for k in FREELANCER},
+             "arquivo_freelancer": str(arq_freelancer)}
+    if p is not None:
+        dados["projeto"] = {k: _ler_caminho(p.config, k) for k in PROJETO_CAMPOS}
+        dados["comandos_sugeridos"] = p.config.get("comandos_sugeridos") or {}
+    linhas = [f"freelancer.{k} = {v}" for k, v in dados["freelancer"].items()]
+    linhas += [f"projeto.{k} = {v}" for k, v in (dados.get("projeto") or {}).items()]
+    saida(dados, "\n".join(linhas))
+
+
 def cmd_versao(args):
     saida({"versao": VERSAO, "kit": str(RAIZ_KIT), "executavel": CONGELADO}, f"Prumo {VERSAO} ({RAIZ_KIT})")
 
@@ -378,7 +508,11 @@ def montar_parser():
         return s
 
     novo("perfis", cmd_perfis, "lista os perfis (templates) de projeto")
-    novo("projetos", cmd_projetos, "lista os projetos abertos recentemente")
+    s = novo("projetos", cmd_projetos, "lista os projetos abertos recentemente")
+    s.add_argument("--remover", metavar="PASTA", help="tira um projeto da lista de recentes (não apaga nada)")
+    s = novo("config", cmd_config, "mostra ou altera seus dados e as configurações do projeto")
+    s.add_argument("--definir", action="append", metavar="CHAVE=VALOR",
+                   help="ex.: freelancer.valor_hora=150 ou projeto.comandos.testar=\"npm test\"")
     s = novo("novo", cmd_novo, "cria um projeto com documentos, kit de agentes e git")
     s.add_argument("pasta")
     s.add_argument("--perfil", "-p", default="web-fullstack")
@@ -418,9 +552,11 @@ def montar_parser():
     s.add_argument("id", nargs="?")
     s.add_argument("--listar", action="store_true")
     s = novo("agentes", cmd_agentes, "exporta instruções para outros agentes ou atualiza o kit")
-    s.add_argument("acao", choices=["exportar", "atualizar"])
+    s.add_argument("acao", choices=["listar", "exportar", "atualizar"])
     s.add_argument("--alvos", help="gemini,copilot,cursor (padrão: todos)")
     s.add_argument("--incluir-settings", action="store_true", help="na atualização, sobrescreve .claude/settings.json")
+    s.add_argument("--forcar", action="store_true",
+                   help="sobrescreve também arquivos do kit editados por você (guarda cópia em .prumo/backup/)")
     s = novo("orcamento", cmd_orcamento, "soma as estimativas do backlog e gera docs/orcamento.md")
     s.add_argument("--valor-hora", type=float)
     s.add_argument("--contingencia", type=float)

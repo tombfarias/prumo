@@ -63,3 +63,17 @@ Proteções: o hook `guarda_arquivos` bloqueia edições de agentes em documento
 
 - Agentes não leem nem editam `.env`, `.env.*` (exceto `.env.example`), chaves (`.pem`, `.key`, `.p12`, `id_rsa`...) e arquivos de credenciais.
 - Comandos destrutivos ou arriscados são bloqueados pelo `guarda_comandos`. Se um for realmente necessário, o Claude explica e você roda no terminal, ou libera um padrão em `hooks.comandos_permitidos`.
+
+## Cenários adversos cobertos
+
+| Situação | O que o Prumo faz |
+|---|---|
+| Briefing vago/contraditório, escopo mudando, stack sem perfil, ferramenta ausente | Regras em `AGENTS.md` (seção "Situações adversas"): vira pergunta, registro de mudança ou ADR; o agente não improvisa nem instala nada global |
+| Regenerar o kit sobre arquivos editados | Mantém os seus; versão nova em `.prumo/kit-novo/`; `--forcar` com cópia em `.prumo/backup/` |
+| `prumo novo --forcar` numa pasta com arquivos | Copia os arquivos trocados para `.prumo/backup/` |
+| Criação interrompida (erro, Ctrl+C) | Desfaz a pasta nova; gravações são atômicas (nunca ficam pela metade) |
+| Documento aprovado alterado por shell (`sed -i`, `>`, `mv`, `Set-Content`) | `guarda_comandos` bloqueia, como já fazia o `guarda_arquivos` com Edit/Write |
+| `projeto.prumo.json` com BOM (PowerShell 5.1) ou malformado | Hooks leem com BOM; JSON inválido não gera erro nem trava o Claude |
+| Caminhos no Windows com outra caixa, barras invertidas, espaços e acentos | Comparação normalizada; coberto por testes |
+| Segredos ou dados reais de clientes | Bloqueados ao escrever (chaves/tokens em qualquer arquivo; CPF/cartão válidos em `docs/`) |
+| Lint ou testes cuja ferramenta não está instalada | Lint é ignorado; ao parar, o Claude avisa o usuário uma vez (sem loop) |

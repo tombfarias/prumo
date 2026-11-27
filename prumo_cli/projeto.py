@@ -1,5 +1,6 @@
 """Criação e manutenção de projetos: perfis, documentos, kit de agentes, aprovações e registros."""
 
+import json
 import re
 import shutil
 import subprocess
@@ -7,8 +8,8 @@ from pathlib import Path
 
 from .util import (
     ARQUIVO_PROJETO, CONGELADO, RAIZ_KIT, python_disponivel, TEMPLATES, URL_PRUMO, VERSAO, ErroPrumo, agora_iso, aviso,
-    comando_prumo, comando_python, config_freelancer, contar_lacunas, git_usuario, gravar,
-    gravar_json, hash_conteudo, hoje_br, info, ler, ler_json, renderizar, slug,
+    comando_prumo, comando_python, config_freelancer, contar_lacunas, git_usuario, gravar, gravar as _gravar,
+    carimbo, gravar_json, guardar_copia, hash_conteudo, hash_texto, hoje_br, info, ler, ler_json, renderizar, slug,
 )
 
 DESCRICOES = {
@@ -17,11 +18,18 @@ DESCRICOES = {
     "02-requisitos": "Requisitos funcionais (RF), não funcionais (RNF), regras de negócio (RN), glossário",
     "03-casos-de-uso": "Atores, diagrama e especificação dos casos de uso (UC)",
     "04-uml/classes": "Modelo de domínio (diagrama de classes)",
+    "04-uml/objetos": "Instâncias de exemplo que validam o modelo de classes",
+    "04-uml/pacotes": "Pacotes/módulos e dependências permitidas",
+    "04-uml/componentes": "Componentes e integrações",
+    "04-uml/estrutura-composta": "Partes, portas e conectores internos de componentes",
+    "04-uml/implantacao": "Ambientes e infraestrutura",
+    "04-uml/perfil-uml": "Estereótipos e valores etiquetados usados nos diagramas",
     "04-uml/sequencia": "Diagramas de sequência por caso de uso",
+    "04-uml/comunicacao": "Vínculos e mensagens numeradas entre objetos por caso de uso",
+    "04-uml/tempo": "Estados ao longo do tempo, prazos e timeouts",
+    "04-uml/visao-geral-interacao": "Jornada entre interações (refs para sequências)",
     "04-uml/estados": "Ciclo de vida das entidades",
     "04-uml/atividades": "Processos de negócio",
-    "04-uml/componentes": "Componentes e integrações",
-    "04-uml/implantacao": "Ambientes e infraestrutura",
     "05-interface": "Design system, inventário de telas (TL) ligado ao Figma, navegação",
     "06-banco-de-dados": "Diagrama ER, dicionário, índices, consultas críticas, cargas, LGPD, migrações",
     "07-arquitetura": "Stack, estrutura de pastas, módulos, segurança, operação, ADRs",
@@ -31,7 +39,6 @@ DESCRICOES = {
     "11-entrega": "Implantação, checklist de entrega, manual de operação",
     "12-seguranca": "Superfície de ataque, ameaças, checklist OWASP, achados (SEG) e histórico de revisões",
 }
-SKILLS_FIGMA = {"implementar-tela-figma", "diagramas-figjam"}
 IGNORAR_DOCS = {"rastreabilidade.md", "orcamento.md"}
 
 
@@ -115,6 +122,7 @@ class Projeto:
         ctx = {
             "projeto": c["projeto"],
             "slug": c.get("slug", slug(c["projeto"])),
+            "prefixo": c.get("slug", slug(c["projeto"])).replace("-", "_"),
             "cliente": c.get("cliente", ""),
             "autor": c.get("autor", ""),
             "data": hoje_br(),
@@ -126,7 +134,7 @@ class Projeto:
             "url_prumo": URL_PRUMO,
         }
         ctx["lista_documentos"] = _lista_documentos(c.get("documentos") or [])
-        ctx["lista_skills"] = _lista_skills(figma)
+        ctx["lista_skills"] = _lista_skills(self.skills_do_kit())
         ctx["convencoes"] = renderizar(ler(TEMPLATES / "perfis" / "convencoes" / perfil["convencoes"]), ctx).strip()
         ctx["comandos_figma"] = (
             f"| `{ctx['prumo']} figma telas` | Sincroniza o inventário de telas (TL) de `docs/05-interface.md` com o arquivo do Figma |\n"
@@ -138,6 +146,13 @@ class Projeto:
             if figma else ""
         )
         return ctx
+
+    def skills_do_kit(self):
+        """Skills do kit que este projeto recebe, conforme as condições de templates/agentes/kit.json."""
+        regras = ler_json(TEMPLATES / "agentes" / "kit.json").get("skills", {})
+        fatos = {"figma": self.figma_ativo(), "perfil": self.config.get("perfil", "")}
+        return [d for d in sorted((TEMPLATES / "agentes" / "claude" / "skills").iterdir())
+                if d.is_dir() and condicao_kit(regras.get(d.name, ""), fatos)]
 
     def comando_hook(self, nome, args=""):
         """Linha de comando de um hook: Python (padrão, portátil) ou o próprio prumo.exe (sem Python instalado)."""
@@ -163,32 +178,128 @@ class Projeto:
 
     # ------------------------------------------------------------ kit de agentes
 
-    def instalar_kit_agentes(self, incluir_settings=True, sobrescrever=True):
-        """Copia skills, subagentes, hooks e instruções do kit para o projeto. Retorna os arquivos escritos."""
+    def instalar_kit_agentes(self, incluir_settings=True, sobrescrever=True, forcar=False):
+        """Copia skills, subagentes, hooks e instruções do kit para o projeto. Retorna os arquivos escritos.
+
+        Nunca perde trabalho do usuário: o Prumo guarda em .prumo/kit.json o hash do que gravou. Arquivo que o
+        usuário editou depois disso fica como está e a versão nova vai para .prumo/kit-novo/ (lista em
+        self.kit_preservados). Com forcar=True o arquivo é sobrescrito, mas antes copiado para .prumo/backup/.
+        """
         ctx = self.contexto()
         base = TEMPLATES / "agentes"
-        escritos = []
+        arquivo_manifesto = self.raiz / ".prumo" / "kit.json"
+        manifesto = ler_json(arquivo_manifesto, {}) if arquivo_manifesto.exists() else {}
+        if not isinstance(manifesto, dict):
+            manifesto = {}
+        escritos, self.kit_preservados, self.kit_backups = [], [], []
+        backup = f"backup/{carimbo()}"
 
-        def escrever(destino, texto, forcar=sobrescrever):
+        def escrever(destino, texto, forcar_escrita=sobrescrever):
+            rel = destino
             destino = self.raiz / destino
-            if destino.exists() and not forcar:
-                return
+            novo_hash = hash_texto(texto)
+            if destino.exists():
+                if not forcar_escrita:
+                    return
+                atual = hash_conteudo(destino)
+                if atual == novo_hash:
+                    manifesto[rel] = novo_hash
+                    return
+                if atual != manifesto.get(rel):  # editado pelo usuário (ou de antes do manifesto)
+                    if not forcar:
+                        gravar(self.raiz / ".prumo" / "kit-novo" / rel, texto)
+                        self.kit_preservados.append(rel)
+                        return
+                    self.kit_backups.append(guardar_copia(self.raiz, rel, backup))
             gravar(destino, texto)
-            escritos.append(self.rel(destino))
+            manifesto[rel] = novo_hash
+            escritos.append(rel)
 
-        for skill in sorted((base / "claude" / "skills").iterdir()):
-            if skill.name in SKILLS_FIGMA and not self.figma_ativo():
-                continue
+        for skill in self.skills_do_kit():
             escrever(f".claude/skills/{skill.name}/SKILL.md", renderizar(ler(skill / "SKILL.md"), ctx))
         for agente in sorted((base / "claude" / "agents").glob("*.md")):
             escrever(f".claude/agents/{agente.name}", renderizar(ler(agente), ctx))
-        for hook in sorted((base / "claude" / "hooks").glob("*.py")):
-            escrever(f".claude/hooks/{hook.name}", ler(hook))
+        # Hooks importam prumo_comum.py: atualizam juntos ou nenhum (versões misturadas quebrariam as guardas).
+        hooks = [(f".claude/hooks/{h.name}", ler(h)) for h in sorted((base / "claude" / "hooks").glob("*.py"))]
+
+        def editado(rel, texto):
+            destino = self.raiz / rel
+            if not destino.exists():
+                return False
+            atual = hash_conteudo(destino)
+            return atual != hash_texto(texto) and atual != manifesto.get(rel)
+
+        algum_editado = sobrescrever and not forcar and any(editado(rel, texto) for rel, texto in hooks)
+        for rel, texto in hooks:
+            destino = self.raiz / rel
+            if algum_editado and destino.exists() and hash_conteudo(destino) != hash_texto(texto):
+                gravar(self.raiz / ".prumo" / "kit-novo" / rel, texto)
+                self.kit_preservados.append(rel)
+            elif not algum_editado or not destino.exists():
+                escrever(rel, texto)
         if incluir_settings:
             escrever(".claude/settings.json", self.settings_claude())
         if self.figma_ativo():
-            escrever(".mcp.json", ler(base / "mcp.json"), forcar=False)
+            escrever(".mcp.json", ler(base / "mcp.json"), forcar_escrita=False)
+        gravar_json(arquivo_manifesto, manifesto)
         return escritos
+
+    def listar_kit(self):
+        """Arquivos do kit do Claude neste projeto, com descrição e se diferem do modelo do Prumo."""
+        ctx = self.contexto()
+        base = TEMPLATES / "agentes"
+        eventos = {}
+        try:
+            settings = json.loads(ler(self.raiz / ".claude" / "settings.json"))
+            for evento, grupos in (settings.get("hooks") or {}).items():
+                for grupo in grupos:
+                    for h in grupo.get("hooks", []):
+                        m = re.search(r"hooks[/\\](\w+)\.py|\bhook\s+(\w+)", h.get("command", ""))
+                        if m:
+                            nome = m.group(1) or m.group(2)
+                            rotulo = evento + (f" ({grupo['matcher']})" if grupo.get("matcher") else "")
+                            eventos.setdefault(nome, []).append(rotulo)
+        except (FileNotFoundError, json.JSONDecodeError, ErroPrumo):
+            pass
+
+        itens = []
+
+        def item(tipo, nome, rel, modelo_texto, descricao=""):
+            arq = self.raiz / rel
+            if not arq.exists():
+                estado = "ausente"
+            elif modelo_texto is None:
+                estado = "próprio"
+            else:
+                estado = "igual ao kit" if ler(arq).replace("\r\n", "\n") == modelo_texto else "modificado"
+            if arq.exists() and not descricao and rel.endswith(".md"):
+                descricao = _frontmatter(ler(arq)).get("description", "")
+            itens.append({"tipo": tipo, "nome": nome, "arquivo": rel, "estado": estado, "descricao": descricao,
+                          "eventos": eventos.get(nome, []) if tipo == "hook" else []})
+
+        modelos = {}
+        for skill in self.skills_do_kit():
+            texto = renderizar(ler(skill / "SKILL.md"), ctx)
+            modelos[f".claude/skills/{skill.name}/SKILL.md"] = ("skill", skill.name, texto)
+        for agente in sorted((base / "claude" / "agents").glob("*.md")):
+            modelos[f".claude/agents/{agente.name}"] = ("subagente", agente.stem, renderizar(ler(agente), ctx))
+        for hook in sorted((base / "claude" / "hooks").glob("*.py")):
+            texto = ler(hook)
+            doc = re.match(r'\s*"""(.*?)"""', texto, flags=re.S)
+            modelos[f".claude/hooks/{hook.name}"] = ("hook", hook.stem, texto, doc.group(1).strip().split("\n")[0] if doc else "")
+        for rel, dados in modelos.items():
+            item(dados[0], dados[1], rel, dados[2], dados[3] if len(dados) > 3 else "")
+        # arquivos criados no próprio projeto (skills, subagentes ou hooks a mais)
+        for padrao, tipo in ((".claude/skills/*/SKILL.md", "skill"), (".claude/agents/*.md", "subagente"), (".claude/hooks/*.py", "hook")):
+            for arq in sorted(self.raiz.glob(padrao)):
+                rel = self.rel(arq)
+                if rel not in modelos:
+                    nome = arq.parent.name if tipo == "skill" else arq.stem
+                    item(tipo, nome, rel, None)
+        item("instruções", "CLAUDE.md", "CLAUDE.md", renderizar(ler(base / "CLAUDE.md"), ctx), "Instruções que o Claude Code lê em toda sessão")
+        item("instruções", "AGENTS.md", "AGENTS.md", renderizar(ler(base / "AGENTS.md"), ctx), "Regras do projeto para qualquer agente de IA")
+        item("configuração", "settings.json", ".claude/settings.json", self.settings_claude(), "Permissões e ligação dos hooks aos eventos do Claude Code")
+        return itens
 
 
 def _lista_documentos(documentos):
@@ -212,13 +323,27 @@ def _frontmatter(texto):
     return dados
 
 
-def _lista_skills(figma):
+def condicao_kit(condicao, fatos):
+    """Avalia uma condição do kit.json: vazia (sempre), `figma`, `perfil:<id>`; `!` nega. Desconhecida = falsa."""
+    condicao = (condicao or "").strip()
+    if not condicao:
+        return True
+    if condicao.startswith("!"):
+        return not condicao_kit(condicao[1:], fatos)
+    nome, _, valor = condicao.partition(":")
+    if nome == "figma" and not valor:
+        return bool(fatos.get("figma"))
+    if nome == "perfil" and valor:
+        return fatos.get("perfil") == valor
+    return False
+
+
+def _lista_skills(skills):
     linhas = ["| Skill | Quando usar | Arquivo |", "|---|---|---|"]
-    for skill in sorted((TEMPLATES / "agentes" / "claude" / "skills").iterdir()):
-        if skill.name in SKILLS_FIGMA and not figma:
-            continue
+    for skill in skills:
         fm = _frontmatter(ler(skill / "SKILL.md"))
         primeira = fm.get("description", "").split(". ")[0].rstrip(".")
+        primeira = re.sub(r"\s*\([^()]{40,}\)", "", primeira)  # enumerações longas ficam só na skill (AGENTS.md é lido sempre)
         linhas.append(f"| `{skill.name}` | {primeira}. | `.claude/skills/{skill.name}/SKILL.md` |")
     return "\n".join(linhas)
 
@@ -238,6 +363,34 @@ def criar_projeto(destino, perfil_id, nome=None, cliente="", stack=None, autor=N
     usar_figma = perfil.get("figma", False) if figma is None else figma
     usar_figma = usar_figma or bool(figma_url)
     documentos = [f"docs/{d}.md" for d in perfil["documentos"]]
+
+    existia = destino.exists()
+    vazia = not existia or not any(destino.iterdir())
+    try:
+        return _criar(destino, perfil, freelancer, nome, cliente, stack, autor, usar_figma, figma_url, documentos,
+                      git, python, hooks_absolutos, hooks_via)
+    except BaseException:
+        # Criação interrompida (erro, Ctrl+C): numa pasta que era nova/vazia, não deixa projeto pela metade.
+        if vazia and destino.exists():
+            if existia:
+                for item in destino.iterdir():
+                    shutil.rmtree(item, ignore_errors=True) if item.is_dir() else item.unlink()
+            else:
+                shutil.rmtree(destino, ignore_errors=True)
+        raise
+
+
+def _criar(destino, perfil, freelancer, nome, cliente, stack, autor, usar_figma, figma_url, documentos,
+           git, python, hooks_absolutos, hooks_via):
+    backup = f"backup/{carimbo()}"
+
+    def gravar(caminho, texto):
+        """Em pasta já existente (--forcar), guarda uma cópia de qualquer arquivo do usuário antes de trocá-lo."""
+        caminho = Path(caminho)
+        if caminho.is_file() and caminho.read_bytes().replace(b"\r\n", b"\n") != texto.encode("utf-8"):
+            copia = guardar_copia(destino, caminho.relative_to(destino).as_posix(), backup)
+            aviso(f"{caminho.name} já existia; cópia guardada em {copia}.")
+        _gravar(caminho, texto)
 
     destino.mkdir(parents=True, exist_ok=True)
     config = {
@@ -287,6 +440,9 @@ def criar_projeto(destino, perfil_id, nome=None, cliente="", stack=None, autor=N
     gravar(destino / ".gitignore", ler(base / "gitignore"))
     gravar(destino / ".env.example", "# Variáveis de ambiente do projeto (sem valores reais). Copie para .env.\n")
     projeto.instalar_kit_agentes()
+    if projeto.kit_preservados:
+        aviso(f"{len(projeto.kit_preservados)} arquivo(s) do kit já existiam e foram mantidos; "
+              "a versão do Prumo está em .prumo/kit-novo/.")
     for pasta in config["pastas_codigo"]:
         (destino / pasta).mkdir(parents=True, exist_ok=True)
         gravar(destino / pasta / ".gitkeep", "")
