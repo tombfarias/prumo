@@ -54,9 +54,9 @@ Todos usam `model: inherit` (o mesmo modelo da sessão), para não perder qualid
 |---|---|---|
 | SessionStart | `contexto_sessao.py` | Injeta um resumo compacto: documentos com lacunas, aprovados, lembrete das regras |
 | UserPromptSubmit | `registrar_atividade.py prompt` | Registra o horário em `.prumo/atividade.log` (para `prumo horas`) |
-| PreToolUse (Bash/PowerShell) | `guarda_comandos.py` | Bloqueia `rm -rf` amplo, `git push --force`, `git reset --hard`, `DROP`/`TRUNCATE`, resets de banco, `curl \| sh`, leitura de `.env`, publicação de pacotes |
-| PreToolUse (Read/Edit/Write) | `guarda_arquivos.py` | Bloqueia leitura/edição de segredos, edição de documentos aprovados e de arquivos gerados, e mudanças na lista de aprovados |
-| PostToolUse (Edit/Write) | `pos_edicao.py` | Registra a alteração, formata o arquivo e roda o lint (erros voltam ao Claude) |
+| PreToolUse (Bash/PowerShell) | `guarda_comandos.py` | Bloqueia `rm -rf` amplo, `git push --force`, `git reset --hard`, `DROP`/`TRUNCATE`, resets de banco, `curl \| sh`, leitura de `.env`, publicação de pacotes e alteração por shell (`sed -i`, `>`, `mv`, `Set-Content`...) de documentos aprovados ou gerados |
+| PreToolUse (Read/Edit/Write) | `guarda_arquivos.py` | Bloqueia leitura/edição de segredos, edição de documentos aprovados e de arquivos gerados, mudanças na lista de aprovados e escrita de segredos (chaves, tokens) ou de CPF/cartão reais em `docs/` |
+| PostToolUse (Edit/Write) | `pos_edicao.py` | Registra a alteração, formata o arquivo e roda o lint (erros voltam ao Claude; lint não instalado é ignorado em silêncio) |
 | Stop | `registrar_atividade.py stop` | Registra o fim da resposta |
 | Stop | `revisao_pos_mudanca.py` | Em mudança significativa, exige atualizar a documentação e revisar a segurança |
 | Stop | `ao_parar.py` | Se ligado, roda os testes e devolve as falhas ao Claude |
@@ -87,4 +87,6 @@ Em `projeto.prumo.json` → `hooks`:
 
 ## Atualizar o kit de um projeto existente
 
-Depois de atualizar o Prumo: `prumo agentes atualizar` recopia skills, subagentes e hooks. O `settings.json` só é sobrescrito com `--incluir-settings` (para não perder ajustes seus).
+Depois de atualizar o Prumo: `prumo agentes atualizar` recopia skills, subagentes e hooks. O `settings.json` só é sobrescrito com `--incluir-settings`.
+
+Nada que você editou se perde: o Prumo guarda em `.prumo/kit.json` o hash do que gravou. Arquivo alterado depois disso (ou sem registro, como num clone novo) é **mantido**, e a versão nova vai para `.prumo/kit-novo/` para você comparar. Os hooks atualizam juntos ou nenhum (todos importam `prumo_comum.py`). `--forcar` sobrescreve tudo, guardando antes uma cópia em `.prumo/backup/<data-hora>/`. O mesmo vale para `prumo novo --forcar` numa pasta existente: README, `.gitignore` e outros arquivos seus são copiados para `.prumo/backup/` antes de serem trocados.
