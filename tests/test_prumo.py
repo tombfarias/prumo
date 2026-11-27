@@ -1,5 +1,6 @@
 """Testes do Prumo (biblioteca padrão: python -m unittest discover -s tests -v)."""
 
+import gc
 import io
 import json
 import os
@@ -8,8 +9,10 @@ import sys
 import tempfile
 import textwrap
 import threading
+import time
 import unittest
 import urllib.request
+import warnings
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -704,6 +707,32 @@ sys.exit(1)
 '''
 
 
+FALSO_CLAUDE_STDERR_CHEIO = r'''import json, sys
+sys.stdin.buffer.read()
+sys.stderr.write("x" * 300000)  # mais que o buffer do pipe: travaria se o Prumo lesse o stderr só no fim
+sys.stderr.flush()
+print(json.dumps({"type": "result", "subtype": "success", "is_error": False, "session_id": "s-err",
+                  "result": "ok", "total_cost_usd": 0, "num_turns": 1}))
+'''
+
+FALSO_CLAUDE_SEM_LOGIN = r'''import sys
+sys.stdin.buffer.read()
+sys.stderr.write("Invalid API key · Please run /login\n")
+sys.exit(1)
+'''
+
+FALSO_CLAUDE_LENTO = r'''import json, sys, time
+sys.stdin.buffer.read()
+print(json.dumps({"type": "system", "subtype": "init", "session_id": "s-lento", "model": "falso"}), flush=True)
+time.sleep(60)
+'''
+
+FALSO_CLAUDE_SEM_LER = r'''import sys
+sys.stdin.close()
+sys.stdout.write("não é json\n")
+'''
+
+
 class TestCenariosAdversos(unittest.TestCase):
     """Situações que não podem perder trabalho nem desligar as guardas em silêncio."""
 
@@ -848,6 +877,53 @@ class TestCenariosAdversos(unittest.TestCase):
 
 
 class TestClaude(unittest.TestCase):
+    def _rodar(self, tmp, script, **kw):
+        p = projeto_com_espec(tmp)
+        falso = Path(tmp) / "claude_duble.py"
+        falso.write_text(script, encoding="utf-8")
+        os.environ["PRUMO_CLAUDE"] = str(falso)
+        try:
+            return claude.executar(p, "livre", texto="olá", **kw)
+        finally:
+            del os.environ["PRUMO_CLAUDE"]
+
+    def test_sem_resourcewarning(self):
+        # pipes e processo do Claude fechados em todos os caminhos (sucesso, erro, saída sem ler o prompt)
+        for script in (FALSO_CLAUDE, FALSO_CLAUDE_LIMITE, FALSO_CLAUDE_SEM_LER):
+            with self.subTest(script=script[:40]), tempfile.TemporaryDirectory() as tmp:
+                with warnings.catch_warnings(record=True) as avisos:
+                    warnings.simplefilter("always", ResourceWarning)
+                    self._rodar(tmp, script, ao_evento=lambda _l: None)
+                    gc.collect()
+                self.assertEqual([str(a.message) for a in avisos if issubclass(a.category, ResourceWarning)], [])
+
+    def test_stderr_grande_nao_trava(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = self._rodar(tmp, FALSO_CLAUDE_STDERR_CHEIO, ao_evento=lambda _l: None)
+            self.assertFalse(r.get("erro"), r)
+            self.assertEqual(r["sessao"], "s-err")
+
+    def test_sem_login(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            eventos = []
+            r = self._rodar(tmp, FALSO_CLAUDE_SEM_LOGIN, ao_evento=eventos.append)
+            self.assertTrue(r["erro"] and r["sem_login"], r)
+            self.assertTrue(any("/login" in e for e in eventos), eventos)
+
+    def test_interrupcao_encerra_o_claude(self):
+        def interromper(linha):
+            if "sessão s-lento" in linha:
+                raise KeyboardInterrupt
+        with tempfile.TemporaryDirectory() as tmp:
+            inicio = time.time()
+            with self.assertRaises(KeyboardInterrupt):
+                self._rodar(tmp, FALSO_CLAUDE_LENTO, ao_evento=interromper)
+            self.assertLess(time.time() - inicio, 20)  # não esperou o dublê dormir 60 s
+            hist = next(Path(tmp).rglob("historico.jsonl"))
+            registro = json.loads(hist.read_text(encoding="utf-8").splitlines()[-1])
+            self.assertTrue(registro["interrompido"])
+            self.assertEqual(registro["sessao"], "s-lento")
+
     def test_execucao_com_duble(self):
         with tempfile.TemporaryDirectory() as tmp:
             p = projeto_com_espec(tmp)
