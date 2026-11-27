@@ -814,6 +814,11 @@ class TestCliEServidor(unittest.TestCase):
                     post("/api/executar", {"args": ["status"]}, token="errado")
                 with self.assertRaises(urllib.error.HTTPError):
                     post("/api/ler", {"projeto": str(p.raiz), "arquivo": "../../fora.md"})
+                grande = urllib.request.Request(base + "/api/executar", data=b"x" * (servidor.LIMITE_CORPO + 1),
+                                                method="POST", headers={"X-Prumo-Token": estado.token})
+                with self.assertRaises(urllib.error.HTTPError) as erro:
+                    urllib.request.urlopen(grande, timeout=60)
+                self.assertEqual(erro.exception.code, 413)
             finally:
                 srv.shutdown()
                 srv.server_close()
