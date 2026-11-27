@@ -63,9 +63,14 @@ A partir daí, alterações só via controle de mudanças (`prumo mudanca "títu
 
 ## 7. Premissas e dependências
 
-- [PREENCHER: ex.: o cliente fornecerá textos e imagens até a data X]
+<!-- Tudo o que foi suposto para poder especificar e estimar, e ainda depende de confirmação do cliente.
+Cite a pergunta correspondente da seção 9 do briefing (P-xx). Sugestões técnicas (stack do perfil) também ficam aqui. -->
+
+- [PREENCHER: ex.: Premissa: o cliente fornecerá textos e imagens até a data X (P-03)]
 
 ## 8. Restrições
+
+<!-- Só o que o cliente impôs (prazo, orçamento, tecnologia, hospedagem, legislação). -->
 
 - [PREENCHER: prazo, orçamento, tecnologia, legislação]
 

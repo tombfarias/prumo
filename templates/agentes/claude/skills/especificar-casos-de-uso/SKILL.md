@@ -15,7 +15,7 @@ description: Escreve os casos de uso (03-casos-de-uso.md) a partir dos requisito
 2. **Identifique os casos de uso** agrupando RFs que formam um objetivo completo do ator ("Emitir nota fiscal", não "Clicar em emitir"). CRUDs simples podem ser um único caso "Manter X" com fluxos para incluir/alterar/excluir/consultar.
 3. **Diagrama.** Atualize o flowchart Mermaid da seção 2: atores fora do `subgraph` do sistema, um nó `((UC-00N Nome))` por caso de uso, ligações ator–caso. Use `-.->|inclui|` e `-.->|estende|` quando fizer sentido.
 4. **Especificação de cada caso** no formato do modelo (`### UC-00N — Nome`):
-   - linha "Requisitos atendidos" com todos os RF/RNF cobertos; "Regras de negócio" com as RN aplicadas; "Telas" com TL-xxx quando houver interface;
+   - linha "Requisitos atendidos" com todos os RF/RNF cobertos; "Regras de negócio" com as RN aplicadas; "Telas" com as TL-xxx de `05-interface.md` quando já existirem (senão `—`: a etapa de interface preenche depois);
    - fluxo principal numerado, alternando ator e sistema, de 4 a 12 passos;
    - fluxos alternativos referenciando o passo de origem (`FA-01 (passo 3)`);
    - fluxos de exceção para validação, permissão negada, falha de integração e indisponibilidade.

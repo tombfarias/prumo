@@ -217,6 +217,8 @@ def cmd_orcamento(args):
         texto.append(f"  Valor total: {formatar_moeda(o['valor_total'], o['moeda'])}")
     else:
         texto.append("  Valor da hora não configurado (use --valor-hora ou config/freelancer.json).")
+    if o.get("opcionais"):
+        texto.append(f"  Opcionais (Could, fora do total): {len(o['opcionais'])} história(s), {formatar_horas(o['horas_opcionais'])}")
     if o["sem_estimativa"]:
         texto.append(f"  Sem estimativa: {', '.join(o['sem_estimativa'])}")
     saida(o, "\n".join(texto))
@@ -276,8 +278,9 @@ def cmd_claude(args):
     if args.tarefa == "historico":
         p = abrir_projeto(args)
         h = claude.historico(p, args.limite)
-        saida(h, tabela_console(["Início", "Tarefa", "Alvo", "Duração", "Custo US$", "Erro"],
+        saida(h, tabela_console(["Início", "Tarefa", "Alvo", "Duração", "Tokens", "Saída", "Custo US$", "Erro"],
                                 [[x.get("inicio", ""), x.get("tarefa"), x.get("alvo", ""), f"{x.get('duracao_s', '')}s",
+                                  (x.get("tokens") or {}).get("total", ""), (x.get("tokens") or {}).get("saida", ""),
                                   x.get("custo_usd") or "", "sim" if x.get("erro") else ""] for x in h]) if h else "Sem execuções ainda.")
         return 0
     p = abrir_projeto(args)
@@ -289,11 +292,16 @@ def cmd_claude(args):
         texto, alvo = alvo, ""
     if args.tarefa == "especificar":
         if args.simular:
-            etapas = [e for e in claude.ETAPAS_ESPECIFICACAO if claude.etapa_existe(p, e)]
-            saida({"etapas": etapas}, "Etapas que seriam executadas: " + ", ".join(etapas))
+            etapas = claude.etapas_do_projeto(p, args.de, args.ate)
+            modo = claude.modo_sessoes(p, args.sessoes)
+            blocos = claude.planejar_sessoes(etapas, modo)
+            saida({"etapas": etapas, "modo": modo, "sessoes": blocos},
+                  f"Modo: {claude.MODOS_SESSAO[modo]}.\n" + "\n".join(
+                      f"  Sessão {n}: {', '.join(b)}" for n, b in enumerate(blocos, 1)))
             return 0
         resultados = claude.especificar(p, de=args.de, ate=args.ate, pausar=False if args.sem_pausa else None,
-                                        texto=texto, **{k: v for k, v in opcoes.items() if k != "simular"})
+                                        sessoes=args.sessoes, texto=texto,
+                                        **{k: v for k, v in opcoes.items() if k != "simular"})
         saida(resultados, "\nConcluído. Resumos e logs em .prumo/claude/.")
         return 1 if any(r.get("erro") for r in resultados) else 0
     r = claude.executar(p, args.tarefa, alvo=alvo, texto=texto, **opcoes)
@@ -445,6 +453,8 @@ def montar_parser():
     s.add_argument("--de", choices=claude.ETAPAS_ESPECIFICACAO)
     s.add_argument("--ate", choices=claude.ETAPAS_ESPECIFICACAO)
     s.add_argument("--sem-pausa", action="store_true", help="na especificação, não pergunta entre as etapas")
+    s.add_argument("--sessoes", choices=list(claude.MODOS_SESSAO),
+                   help="na especificação: grupos (padrão, 3 sessões), unica (1 sessão) ou etapa (uma por etapa)")
     s.add_argument("--limite", type=int, default=20, help="itens do histórico")
     s = novo("hook", cmd_hook, "executa um hook do Claude Code (uso interno)")
     s.add_argument("nome")

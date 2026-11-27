@@ -27,7 +27,13 @@ comerciais e, para contratos, consulte um profissional de direito.
 
 - [PREENCHER: funcionalidades / épicos]
 
-### 3.2 Não incluído
+### 3.2 Opcionais (o cliente escolhe)
+
+<!-- Histórias Could do backlog, com as horas de cada uma (docs/orcamento.md, seção "Opcionais"). -->
+
+- [PREENCHER: opcional — N h]
+
+### 3.3 Não incluído
 
 - [PREENCHER: o que está fora; itens que podem ser orçados à parte]
 
@@ -53,6 +59,12 @@ comerciais e, para contratos, consulte um profissional de direito.
 
 **Condições de pagamento:** [PREENCHER]
 
+### Perguntas que podem mudar o valor
+
+<!-- As perguntas marcadas como bloqueantes na seção 9 do briefing, em linguagem simples, e o efeito de cada resposta. -->
+
+- [PREENCHER: pergunta — efeito no escopo ou no preço]
+
 ## 7. Mudanças de escopo
 
 Solicitações fora do escopo acima são registradas como pedidos de mudança, com análise de impacto em prazo e custo, e só entram no projeto após aprovação por escrito.
@@ -63,7 +75,7 @@ Solicitações fora do escopo acima são registradas como pedidos de mudança, c
 
 ## 9. Propriedade intelectual e confidencialidade
 
-[PREENCHER: a quem pertence o código após a quitação; uso de bibliotecas de código aberto; sigilo]
+[PREENCHER: ex.: código e direitos transferidos ao cliente após a quitação; bibliotecas de código aberto mantêm as próprias licenças; sigilo sobre os dados do cliente]
 
 ## 10. Aceite
 

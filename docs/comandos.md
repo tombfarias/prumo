@@ -113,6 +113,7 @@ Horas por dia a partir de `.prumo/atividade.log`, que os hooks gravam a cada ped
 | `--modo` | Modo de permissão (`acceptEdits` padrão; `default` na revisão) |
 | `--simular` | Mostra o comando e o prompt sem executar |
 | `--de`, `--ate`, `--sem-pausa` | Na especificação: intervalo de etapas e sem perguntas entre elas |
+| `--sessoes grupos\|unica\|etapa` | Na especificação: 3 sessões (análise, solução, planejamento; padrão), uma sessão só ou uma por etapa. Também em `projeto.prumo.json` → `claude.sessoes_especificacao` |
 
 Detalhes em [PowerShell e Claude](powershell-e-claude.md).
 

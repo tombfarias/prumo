@@ -337,7 +337,7 @@ async function adicionarDoc() {
 
 /* ------------------------------------------------ Claude */
 const TAREFAS = [
-  ["especificar", "Especificar tudo"], ["requisitos", "Requisitos"], ["casos-de-uso", "Casos de uso"], ["uml", "UML"], ["banco", "Banco"],
+  ["especificar", "Especificar tudo"], ["requisitos", "Requisitos"], ["casos-de-uso", "Casos de uso"], ["interface", "Interface"], ["uml", "UML"], ["banco", "Banco"],
   ["arquitetura", "Arquitetura"], ["backlog", "Backlog"], ["testes", "Testes"], ["proposta", "Proposta"],
   ["implementar", "Implementar HU"], ["revisar", "Revisar"], ["documentar", "Atualizar docs"], ["seguranca", "Segurança"],
   ["mudanca", "Mudança"], ["tela", "Tela do Figma"], ["figjam", "FigJam"], ["livre", "Pedido livre"]];
@@ -457,7 +457,7 @@ async function rodarOrcamento() {
     const fmt = v => v == null ? "—" : v.toLocaleString("pt-BR", {style: "currency", currency: o.moeda || "BRL"});
     $("#orc").innerHTML = `<div class="grade g2" style="gap:10px"><div><div class="legenda">Total de horas</div><div class="num">${o.horas_total.toFixed(1).replace(".", ",")}<small>h</small></div></div>
       <div><div class="legenda">Valor</div><div class="num" style="font-size:22px">${fmt(o.valor_total)}</div></div></div>
-      <p class="legenda">${o.historias} histórias · base ${o.horas_base.toFixed(1)}h + ${o.contingencia}%${o.sem_estimativa.length ? ` · sem estimativa: ${esc(o.sem_estimativa.join(", "))}` : ""}</p>`;
+      <p class="legenda">${o.historias} histórias · base ${o.horas_base.toFixed(1)}h + ${o.contingencia}%${(o.opcionais || []).length ? ` · opcionais (Could, fora do total): ${o.opcionais.length}, ${o.horas_opcionais.toFixed(1)}h` : ""}${(o.fora || []).length ? ` · fora desta entrega (Won't): ${o.fora.length}` : ""}${o.sem_estimativa.length ? ` · sem estimativa: ${esc(o.sem_estimativa.join(", "))}` : ""}</p>`;
   } catch (e) { falhou(e); }
 }
 async function rodarHoras() {

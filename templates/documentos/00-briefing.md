@@ -61,9 +61,15 @@ em "Registro de reuniões".
 
 ## 9. Perguntas em aberto para o cliente
 
-<!-- Mantenha esta lista viva. Marque [x] quando respondida e registre a resposta. -->
+<!--
+Mantenha esta tabela viva: uma linha por pergunta, IDs P-01, P-02... em sequência.
+"Bloqueia" = Sim quando a resposta muda escopo ou preço (essas vão para a proposta).
+Quando o cliente responder, troque o status para "respondida" e registre a resposta na coluna.
+-->
 
-- [ ] [PREENCHER: pergunta]
+| ID | Pergunta | Bloqueia | Impacta | Status / resposta |
+|---|---|---|---|---|
+| P-01 | [PREENCHER: pergunta objetiva, de preferência com alternativas] | Sim | [PREENCHER: RF, RN, estimativa] | aberta |
 
 ## 10. Registro de reuniões
 

@@ -13,7 +13,9 @@ Regras de identificação (usadas pela rastreabilidade do Prumo):
 - Requisito não funcional: RNF-001...
 - Regra de negócio: RN-001...
 Cada ID é definido uma única vez, na primeira coluna da tabela.
-Prioridade no formato MoSCoW: Must, Should, Could, Won't.
+Prioridade no formato MoSCoW: Must, Should, Could, Won't. Must e Should = escopo base;
+Could = opcional (orçado à parte); Won't = fora desta entrega.
+Origem: Pedido (está no briefing), Reunião dd/mm, Premissa (cite a pergunta P-xx) ou Sugestão técnica.
 Escreva requisitos verificáveis: "O sistema deve..." com um único comportamento por linha.
 -->
 
@@ -21,7 +23,7 @@ Escreva requisitos verificáveis: "O sistema deve..." com um único comportament
 
 | ID | Descrição | Prioridade | Origem |
 |---|---|---|---|
-| RF-001 | [PREENCHER: O sistema deve permitir...] | Must | Briefing |
+| RF-001 | [PREENCHER: O sistema deve permitir...] | Must | Pedido |
 
 ## 2. Requisitos não funcionais
 

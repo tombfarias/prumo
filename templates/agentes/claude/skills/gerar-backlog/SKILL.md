@@ -17,11 +17,13 @@ Casos de uso, requisitos, arquitetura e, se houver, telas (05-interface.md).
    - Formato "Como / quero / para".
    - Critérios de aceite em Dado/Quando/Então, cobrindo fluxo principal e as exceções do caso de uso.
    - `**Estimativa:** 6h` (formato lido por `prumo orcamento`), prioridade MoSCoW e status `a fazer`.
-3. **Histórias técnicas** também entram: configuração do projeto, CI/CD, autenticação, deploy, migração de dados. Elas citam os RNF atendidos.
-4. **Estimativas:** some tempo de testes e revisão a cada história. Registre premissas da estimativa quando houver incerteza alta e sinalize as histórias de maior risco.
-5. **Marcos** (`M1`, `M2`...): agrupe épicos em entregas que o cliente consegue validar, com percentual de pagamento sugerido.
-6. Rode `{{prumo}} orcamento` para gerar `docs/orcamento.md` e `{{prumo}} rastreabilidade` para ver casos de uso sem história.
+   - Nos títulos dos épicos ou em outras tabelas, não comece a linha pelo ID já definido (use "Épico EP-01 — ..."): cada ID é definido uma vez.
+3. **Escopo base e opcionais.** A prioridade da história segue a do requisito: Must e Should formam o escopo base; **Could são opcionais** e `prumo orcamento` os soma à parte, fora do total. Won't não entra no orçamento. Liste os opcionais numa seção própria, com as horas de cada um, para o cliente escolher.
+4. **Histórias técnicas** só as necessárias para entregar o escopo (configuração, deploy, migração de dados quando houver). CI/CD, monitoramento, rotinas de LGPD e afins na medida do porte: em projetos pequenos, um item simples ou opcional. Elas citam os RNF atendidos.
+5. **Estimativas:** some tempo de testes e revisão a cada história. Registre premissas da estimativa quando houver incerteza alta e sinalize as histórias de maior risco. Não escreva percentual de contingência próprio: a contingência vem da configuração e aparece em `docs/orcamento.md`.
+6. **Marcos** (`M1`, `M2`...): agrupe épicos em entregas que o cliente consegue validar, com percentual de pagamento sugerido.
+7. Rode `{{prumo}} orcamento` para gerar `docs/orcamento.md` e `{{prumo}} rastreabilidade` para ver casos de uso sem história.
 
 ## Saída
 
-Resumo: número de histórias por épico e por prioridade, total de horas (com e sem contingência) e histórias sem estimativa.
+Resumo: número de histórias por épico e por prioridade, horas do escopo base e dos opcionais e histórias sem estimativa.

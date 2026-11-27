@@ -16,7 +16,7 @@
 #>
 
 $script:RaizKit = Split-Path -Parent $PSScriptRoot
-$script:Tarefas = @('especificar', 'requisitos', 'casos-de-uso', 'uml', 'banco', 'arquitetura', 'backlog', 'testes',
+$script:Tarefas = @('especificar', 'requisitos', 'casos-de-uso', 'interface', 'uml', 'banco', 'arquitetura', 'backlog', 'testes',
                     'proposta', 'implementar', 'revisar', 'documentar', 'seguranca', 'mudanca', 'tela', 'figjam', 'livre')
 
 function Get-PrumoComando {
@@ -90,7 +90,7 @@ function Invoke-PrumoTarefa {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [ValidateSet('especificar', 'requisitos', 'casos-de-uso', 'uml', 'banco', 'arquitetura', 'backlog', 'testes',
+        [ValidateSet('especificar', 'requisitos', 'casos-de-uso', 'interface', 'uml', 'banco', 'arquitetura', 'backlog', 'testes',
                      'proposta', 'implementar', 'revisar', 'documentar', 'seguranca', 'mudanca', 'tela', 'figjam', 'livre')]
         [string]$Tarefa,
         [Parameter(Position = 1)][string]$Alvo,

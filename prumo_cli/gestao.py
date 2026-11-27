@@ -26,15 +26,23 @@ def orcamento(projeto, valor_hora=None, contingencia=None):
     epicos = {e.id: e.titulo for e in analise.do_tipo("EP")}
 
     por_epico = OrderedDict()
-    sem_estimativa = []
+    sem_estimativa, opcionais, fora = [], [], []
     for hu in historias:
         horas = rastreio.estimativa_horas(hu)
-        epico = next((r for r in rastreio.ordenar(hu.refs) if rastreio.tipo_de(r) == "EP"), "—")
+        prio = rastreio.prioridade(hu)
+        if prio == "wont":  # fora desta entrega: não entra no orçamento
+            fora.append(hu.id)
+            continue
         if horas is None:
             sem_estimativa.append(hu.id)
+        if prio == "could":  # opcional: orçado à parte, fora do total
+            opcionais.append((hu, horas or 0.0))
+            continue
+        epico = next((r for r in rastreio.ordenar(hu.refs) if rastreio.tipo_de(r) == "EP"), "—")
         por_epico.setdefault(epico, []).append((hu, horas or 0.0))
 
     base = sum(h for itens in por_epico.values() for _, h in itens)
+    horas_opcionais = sum(h for _, h in opcionais)
     extra = base * float(contingencia) / 100
     total = base + extra
     partes = [
@@ -50,7 +58,7 @@ def orcamento(projeto, valor_hora=None, contingencia=None):
             ["Histórias", len(historias)],
         ]),
         "",
-        "## Estimativas por épico",
+        "## Estimativas por épico (escopo base: Must e Should)",
         "",
     ]
     linhas = []
@@ -69,6 +77,16 @@ def orcamento(projeto, valor_hora=None, contingencia=None):
     if valor_hora:
         resumo.append(["**Valor total**", f"**{formatar_moeda(total * float(valor_hora), moeda)}**"])
     partes += ["## Total", "", tabela_markdown(["Item", "Valor"], resumo), ""]
+    if opcionais:
+        linhas_opc = [[hu.id, hu.titulo[:70], formatar_horas(h) if h else "sem estimativa",
+                       formatar_moeda(h * (1 + float(contingencia) / 100) * float(valor_hora), moeda) if valor_hora and h else "—"]
+                      for hu, h in opcionais]
+        linhas_opc.append(["**Total dos opcionais**", "", f"**{formatar_horas(horas_opcionais)}**", ""])
+        partes += ["## Opcionais (prioridade Could, fora do total)", "",
+                   "O cliente escolhe quais entram. O valor de cada um já inclui a contingência.", "",
+                   tabela_markdown(["História", "Título", "Horas", "Valor"], linhas_opc), ""]
+    if fora:
+        partes += ["## Fora desta entrega (Won't)", "", ", ".join(fora), ""]
     if sem_estimativa:
         partes += ["## Histórias sem estimativa", "", ", ".join(sem_estimativa), ""]
     destino = projeto.docs / "orcamento.md"
@@ -77,6 +95,7 @@ def orcamento(projeto, valor_hora=None, contingencia=None):
         "arquivo": projeto.rel(destino), "horas_base": base, "contingencia": contingencia, "horas_total": total,
         "valor_hora": valor_hora, "valor_total": total * float(valor_hora) if valor_hora else None,
         "moeda": moeda, "sem_estimativa": sem_estimativa, "historias": len(historias),
+        "horas_opcionais": horas_opcionais, "opcionais": [hu.id for hu, _ in opcionais], "fora": fora,
     }
 
 
