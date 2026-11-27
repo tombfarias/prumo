@@ -20,7 +20,7 @@ O nome vem do fio de prumo, a ferramenta que mantém a obra alinhada. No Prumo, 
 | **Claude pelo terminal** | `prumo claude <tarefa>` e o módulo PowerShell (`Send-Claude`, `Invoke-PrumoTarefa`) disparam o Claude Code sem abrir o editor |
 | **Figma** | Servidor MCP do Figma configurado, inventário de telas sincronizado pela API e diagramas publicados no FigJam |
 | **Gestão freelance** | Orçamento a partir das estimativas do backlog, horas trabalhadas registradas pelos hooks, proposta e checklist de entrega |
-| **Interface gráfica** | Leve, em HTML/CSS/JS puro, com modo claro e escuro; abre em janela própria |
+| **Interface gráfica** | Em HTML/CSS/JS puro, abre em janela própria: prontidão do projeto, editor de documentos com diagramas desenhados, kit do Claude, configurações, paleta de comandos (Ctrl+K) e tema claro/escuro com paleta acessível |
 | **Executável** | `prumo.exe` e `prumo-app.exe` para Windows, gerados pelo GitHub Actions ou pelo `build.ps1` |
 
 ## Começo rápido
@@ -62,6 +62,7 @@ Requisitos: Python 3.9+ (ou o executável), Git e, para as tarefas com IA, o [Cl
 ## Licença
 
 [MIT](LICENSE): use, copie, modifique e distribua, mantendo o aviso de copyright e a licença.
+A interface inclui o [Mermaid](https://github.com/mermaid-js/mermaid) (MIT, `prumo_cli/gui/mermaid.LICENSE.txt`).
 
 ## Contribuir
 

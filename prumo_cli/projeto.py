@@ -1,5 +1,6 @@
 """Criação e manutenção de projetos: perfis, documentos, kit de agentes, aprovações e registros."""
 
+import json
 import re
 import shutil
 import subprocess
@@ -196,6 +197,65 @@ class Projeto:
         if self.figma_ativo():
             escrever(".mcp.json", ler(base / "mcp.json"), forcar=False)
         return escritos
+
+    def listar_kit(self):
+        """Arquivos do kit do Claude neste projeto, com descrição e se diferem do modelo do Prumo."""
+        ctx = self.contexto()
+        base = TEMPLATES / "agentes"
+        eventos = {}
+        try:
+            settings = json.loads(ler(self.raiz / ".claude" / "settings.json"))
+            for evento, grupos in (settings.get("hooks") or {}).items():
+                for grupo in grupos:
+                    for h in grupo.get("hooks", []):
+                        m = re.search(r"hooks[/\\](\w+)\.py|\bhook\s+(\w+)", h.get("command", ""))
+                        if m:
+                            nome = m.group(1) or m.group(2)
+                            rotulo = evento + (f" ({grupo['matcher']})" if grupo.get("matcher") else "")
+                            eventos.setdefault(nome, []).append(rotulo)
+        except (FileNotFoundError, json.JSONDecodeError, ErroPrumo):
+            pass
+
+        itens = []
+
+        def item(tipo, nome, rel, modelo_texto, descricao=""):
+            arq = self.raiz / rel
+            if not arq.exists():
+                estado = "ausente"
+            elif modelo_texto is None:
+                estado = "próprio"
+            else:
+                estado = "igual ao kit" if ler(arq).replace("\r\n", "\n") == modelo_texto else "modificado"
+            if arq.exists() and not descricao and rel.endswith(".md"):
+                descricao = _frontmatter(ler(arq)).get("description", "")
+            itens.append({"tipo": tipo, "nome": nome, "arquivo": rel, "estado": estado, "descricao": descricao,
+                          "eventos": eventos.get(nome, []) if tipo == "hook" else []})
+
+        modelos = {}
+        for skill in sorted((base / "claude" / "skills").iterdir()):
+            if skill.name in SKILLS_FIGMA and not self.figma_ativo():
+                continue
+            texto = renderizar(ler(skill / "SKILL.md"), ctx)
+            modelos[f".claude/skills/{skill.name}/SKILL.md"] = ("skill", skill.name, texto)
+        for agente in sorted((base / "claude" / "agents").glob("*.md")):
+            modelos[f".claude/agents/{agente.name}"] = ("subagente", agente.stem, renderizar(ler(agente), ctx))
+        for hook in sorted((base / "claude" / "hooks").glob("*.py")):
+            texto = ler(hook)
+            doc = re.match(r'\s*"""(.*?)"""', texto, flags=re.S)
+            modelos[f".claude/hooks/{hook.name}"] = ("hook", hook.stem, texto, doc.group(1).strip().split("\n")[0] if doc else "")
+        for rel, dados in modelos.items():
+            item(dados[0], dados[1], rel, dados[2], dados[3] if len(dados) > 3 else "")
+        # arquivos criados no próprio projeto (skills, subagentes ou hooks a mais)
+        for padrao, tipo in ((".claude/skills/*/SKILL.md", "skill"), (".claude/agents/*.md", "subagente"), (".claude/hooks/*.py", "hook")):
+            for arq in sorted(self.raiz.glob(padrao)):
+                rel = self.rel(arq)
+                if rel not in modelos:
+                    nome = arq.parent.name if tipo == "skill" else arq.stem
+                    item(tipo, nome, rel, None)
+        item("instruções", "CLAUDE.md", "CLAUDE.md", renderizar(ler(base / "CLAUDE.md"), ctx), "Instruções que o Claude Code lê em toda sessão")
+        item("instruções", "AGENTS.md", "AGENTS.md", renderizar(ler(base / "AGENTS.md"), ctx), "Regras do projeto para qualquer agente de IA")
+        item("configuração", "settings.json", ".claude/settings.json", self.settings_claude(), "Permissões e ligação dos hooks aos eventos do Claude Code")
+        return itens
 
 
 def _lista_documentos(documentos):
