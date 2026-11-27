@@ -34,6 +34,9 @@ CLAUDE.md                 @AGENTS.md + específicos do Claude Code
 | `controle-de-mudancas` | Pedido de mudança com análise de impacto |
 | `implementar-tela-figma` | Tela a partir do Figma via MCP; inventário TL (perfis com interface) |
 | `diagramas-figjam` | Publica diagramas Mermaid no FigJam (perfis com interface) |
+| `desenvolver-wordpress` | Montagem (composer, phpcs com WordPress Coding Standards, wp-env, PHPUnit), tema de blocos, plugin, REST, WooCommerce e segurança (só no perfil `wordpress`) |
+
+Quais skills cada projeto recebe vem de `templates/agentes/kit.json` (condição por skill: `figma`, `perfil:<id>`, `!` nega; skill fora da lista vai para todos). Menos skills instaladas = menos descrições no contexto de cada sessão.
 
 No Claude Code, cada skill vira um comando (`/implementar-historia HU-003`) e também é carregada automaticamente quando o pedido combina com a descrição. Outros agentes leem o `SKILL.md` indicado na tabela do `AGENTS.md`.
 
@@ -54,8 +57,8 @@ Todos usam `model: inherit` (o mesmo modelo da sessão), para não perder qualid
 |---|---|---|
 | SessionStart | `contexto_sessao.py` | Injeta um resumo compacto: documentos com lacunas, aprovados, lembrete das regras |
 | UserPromptSubmit | `registrar_atividade.py prompt` | Registra o horário em `.prumo/atividade.log` (para `prumo horas`) |
-| PreToolUse (Bash/PowerShell) | `guarda_comandos.py` | Bloqueia `rm -rf` amplo, `git push --force`, `git reset --hard`, `DROP`/`TRUNCATE`, resets de banco, `curl \| sh`, leitura de `.env`, publicação de pacotes e alteração por shell (`sed -i`, `>`, `mv`, `Set-Content`...) de documentos aprovados ou gerados |
-| PreToolUse (Read/Edit/Write) | `guarda_arquivos.py` | Bloqueia leitura/edição de segredos, edição de documentos aprovados e de arquivos gerados, mudanças na lista de aprovados e escrita de segredos (chaves, tokens) ou de CPF/cartão reais em `docs/` |
+| PreToolUse (Bash/PowerShell) | `guarda_comandos.py` | Bloqueia `rm -rf` amplo, `git push --force`, `git reset --hard`, `DROP`/`TRUNCATE`, resets de banco (inclusive `wp db reset/drop`, `wp site empty` e `wp search-replace` sem `--dry-run`), `curl \| sh`, leitura de `.env`, publicação de pacotes e alteração por shell (`sed -i`, `>`, `mv`, `Set-Content`...) de documentos aprovados ou gerados |
+| PreToolUse (Read/Edit/Write) | `guarda_arquivos.py` | Bloqueia leitura/edição de segredos (`.env`, chaves, `wp-config.php`), edição de documentos aprovados e de arquivos gerados, mudanças na lista de aprovados e escrita de segredos (chaves, tokens) ou de CPF/cartão reais em `docs/` |
 | PostToolUse (Edit/Write) | `pos_edicao.py` | Registra a alteração, formata o arquivo e roda o lint (erros voltam ao Claude; lint não instalado é ignorado em silêncio) |
 | Stop | `registrar_atividade.py stop` | Registra o fim da resposta |
 | Stop | `revisao_pos_mudanca.py` | Em mudança significativa, exige atualizar a documentação e revisar a segurança |

@@ -1,0 +1,8 @@
+{
+  "descricao": "Condição para instalar cada skill do kit. Skill fora desta lista é instalada sempre. Condições: figma, perfil:<id>; ! nega.",
+  "skills": {
+    "implementar-tela-figma": "figma",
+    "diagramas-figjam": "figma",
+    "desenvolver-wordpress": "perfil:wordpress"
+  }
+}

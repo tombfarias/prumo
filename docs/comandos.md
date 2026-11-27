@@ -34,7 +34,7 @@ Cria um projeto completo.
 
 | Opção | Descrição |
 |---|---|
-| `--perfil, -p` | `api-rest`, `web-fullstack` (padrão), `sistema-gestao`, `site-institucional`, `automacao-bot`, `app-mobile`, `minimo` |
+| `--perfil, -p` | `api-rest`, `web-fullstack` (padrão), `sistema-gestao`, `site-institucional`, `wordpress`, `automacao-bot`, `app-mobile`, `minimo` |
 | `--nome`, `--cliente`, `--autor` | Metadados usados nos documentos (autor padrão: `config/freelancer.json` ou `git config user.name`) |
 | `--stack` | Substitui a stack sugerida do perfil |
 | `--figma URL` | Ativa a integração com o Figma e registra o arquivo |
