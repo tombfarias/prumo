@@ -156,6 +156,14 @@
       "pastas": ["alembic"]
     },
     {
+      "id": "dbmate", "nome": "dbmate (migrações em SQL puro)", "camadas": ["orm"],
+      "extensoes": [".sql"],
+      "permissoes": ["Bash(dbmate new:*)", "Bash(dbmate status:*)"],
+      "pastas": ["db/migrations"],
+      "variaveis": ["DATABASE_URL"],
+      "convencao": "Cada migração tem -- migrate:up e -- migrate:down; nunca edite uma migração já aplicada."
+    },
+    {
       "id": "authjs", "nome": "Auth.js (NextAuth)", "camadas": ["autenticacao"],
       "variaveis": ["AUTH_SECRET", "AUTH_URL"]
     },
@@ -214,6 +222,12 @@
       "id": "pytest", "nome": "pytest", "camadas": ["testes"],
       "comandos": {"testar": "pytest -q"},
       "permissoes": ["Bash(pytest:*)"],
+      "pastas": ["tests"]
+    },
+    {
+      "id": "pgtap", "nome": "pgTAP + pg_prove (testes no PostgreSQL)", "camadas": ["testes"],
+      "comandos": {"testar": "pg_prove -r tests"},
+      "permissoes": ["Bash(pg_prove:*)"],
       "pastas": ["tests"]
     },
     {

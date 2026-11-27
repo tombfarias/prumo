@@ -64,7 +64,9 @@ def main():
     if not rel or rel.startswith(IGNORAR) or not Path(caminho).exists():
         sys.exit(0)
     registrar_alteracao(raiz, rel, dados)
-    comandos = carregar_config(raiz).get("comandos") or {}
+    config = carregar_config(raiz)
+    comandos = config.get("comandos") or {}
+    extras = {e.lower() for e in ((config.get("hooks") or {}).get("extensoes_lint") or []) if isinstance(e, str)}
     alvo = citar(str(Path(caminho)))
 
     formatar = (comandos.get("formatar") or "").strip()
@@ -75,7 +77,7 @@ def main():
             pass
 
     lint = (comandos.get("lint") or "").strip()
-    if lint and Path(caminho).suffix.lower() in EXT_CODIGO:
+    if lint and Path(caminho).suffix.lower() in (EXT_CODIGO | extras):
         try:
             r = rodar(lint.replace("{arquivo}", alvo), raiz)
         except subprocess.TimeoutExpired:

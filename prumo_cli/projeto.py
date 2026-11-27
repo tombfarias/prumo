@@ -23,7 +23,7 @@ DESCRICOES = {
     "04-uml/componentes": "Componentes e integrações",
     "04-uml/implantacao": "Ambientes e infraestrutura",
     "05-interface": "Design system, inventário de telas (TL) ligado ao Figma, navegação",
-    "06-banco-de-dados": "Diagrama ER, dicionário de dados, índices, LGPD, migrações",
+    "06-banco-de-dados": "Diagrama ER, dicionário, índices, consultas críticas, cargas, LGPD, migrações",
     "07-arquitetura": "Stack, estrutura de pastas, módulos, segurança, operação, ADRs",
     "08-backlog": "Épicos (EP), histórias (HU) com critérios de aceite e estimativas, marcos",
     "09-plano-de-testes": "Estratégia e casos de teste (CT), homologação",
@@ -259,6 +259,7 @@ def criar_projeto(destino, perfil_id, nome=None, cliente="", stack=None, autor=N
         "hooks": {
             "registrar_horas": True, "testes_ao_parar": False, "comandos_permitidos": [],
             "revisao_pos_mudanca": True, "limite_arquivos": 3, "limite_linhas": 80, "caminhos_sensiveis": [],
+            "extensoes_lint": perfil.get("extensoes_lint") or [],
         },
         "pastas_codigo": perfil.get("pastas") or ["src", "tests"],
         "figma": {"ativo": usar_figma, "arquivo": figma_url, "telas": {}},

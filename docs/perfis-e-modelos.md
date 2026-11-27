@@ -10,6 +10,7 @@
 | `site-institucional` | Site, landing page, portfólio com foco em SEO | Astro + Tailwind (ou Next.js estático, WordPress) | sim |
 | `automacao-bot` | Scripts agendados, integrações, ETL, bots | Python + httpx + Playwright + APScheduler | não |
 | `app-mobile` | App Android/iOS | React Native + Expo (ou Flutter) | sim |
+| `banco-de-dados` | Modelagem, migrações, otimização de consultas, cargas/ETL e relatórios em SQL | PostgreSQL + dbmate + SQLFluff + pgTAP (ou MySQL + Flyway) | não |
 | `minimo` | Projeto pequeno, orçamento rápido | a definir | não |
 
 Cada perfil define os documentos incluídos, as pastas de código, os comandos sugeridos (formatar, lint, testar) e as convenções da stack, que entram no `AGENTS.md`.
@@ -25,11 +26,11 @@ Cada perfil define os documentos incluídos, as pastas de código, os comandos s
 | `04-uml/classes` | Modelo de domínio | api, web, gestão, mobile |
 | `04-uml/sequencia` | Sequência por caso de uso | api, web, gestão, automação, mobile |
 | `04-uml/estados` | Ciclo de vida | api, web, gestão, mobile |
-| `04-uml/atividades` | Processos de negócio | api, web, gestão, automação, mobile |
+| `04-uml/atividades` | Processos de negócio | api, web, gestão, automação, mobile, banco |
 | `04-uml/componentes` | Componentes e integrações | api, web, gestão, mobile |
-| `04-uml/implantacao` | Ambientes e infraestrutura | api, web, gestão, automação, mobile |
+| `04-uml/implantacao` | Ambientes e infraestrutura | api, web, gestão, automação, mobile, banco |
 | `05-interface` | Design system, inventário de telas (Figma), navegação | web, gestão, site, mobile |
-| `06-banco-de-dados` | ER, dicionário, índices, DDL, LGPD, migrações | api, web, gestão, automação, mobile |
+| `06-banco-de-dados` | ER, dicionário, índices, DDL, volume e consultas críticas, cargas, papéis, LGPD, migrações e backup | api, web, gestão, automação, mobile, banco |
 | `07-arquitetura` | Stack, pastas, módulos, segurança, operação, ADRs | todos exceto mínimo |
 | `08-backlog` | Épicos, histórias, estimativas, marcos, DoR/DoD | todos |
 | `09-plano-de-testes` | Estratégia, casos de teste, homologação | todos exceto mínimo |

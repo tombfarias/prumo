@@ -457,6 +457,18 @@ class TestHooks(unittest.TestCase):
         self.assertEqual(r("Write", self.raiz / "docs" / "rastreabilidade.md"), 2)
         self.assertEqual(r("Edit", self.raiz / "projeto.prumo.json", old_string='"aprovados": {', new_string="x"), 2)
 
+    def test_lint_em_extensoes_extras(self):
+        arq = self.raiz / "db" / "m.sql"
+        gravar(arq, "select 1;\n")
+        cfg = json.loads((self.raiz / "projeto.prumo.json").read_text(encoding="utf-8"))
+        cfg["comandos"]["lint"] = f'"{sys.executable}" -c "import sys; sys.exit(1)" {{arquivo}}'
+        gravar(self.raiz / "projeto.prumo.json", json.dumps(cfg))
+        entrada = {"tool_name": "Write", "tool_input": {"file_path": str(arq), "content": "select 1;\n"}}
+        self.assertEqual(rodar_hook("pos_edicao", entrada, self.raiz)[0], 0)  # .sql não é código por padrão
+        cfg["hooks"]["extensoes_lint"] = [".sql"]
+        gravar(self.raiz / "projeto.prumo.json", json.dumps(cfg))
+        self.assertEqual(rodar_hook("pos_edicao", entrada, self.raiz)[0], 2)
+
     def test_mudanca_significativa(self):
         for i in range(3):
             arq = self.raiz / "src" / f"m{i}.ts"

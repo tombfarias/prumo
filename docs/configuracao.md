@@ -33,6 +33,7 @@ Na mesma pasta, o Prumo mantém `projetos.json` (projetos recentes) e `.janela/`
 | `hooks.comandos_permitidos` | Expressões regulares de comandos que o `guarda_comandos` deve liberar |
 | `hooks.revisao_pos_mudanca` | Exige documentação e segurança após mudança significativa (padrão `true`) |
 | `hooks.limite_arquivos` / `hooks.limite_linhas` | Limites da mudança significativa (padrão 3 e 80) |
+| `hooks.extensoes_lint` | Extensões extras em que o lint roda, além das de código (ex.: `[".sql"]` no perfil `banco-de-dados`) |
 | `hooks.caminhos_sensiveis` | Padrões extras (regex) que tornam qualquer mudança significativa |
 | `pastas_codigo` | Pastas varridas pela rastreabilidade e pela segurança |
 | `figma.ativo`, `figma.arquivo`, `figma.telas` | Integração com o Figma; `telas` mapeia nó do Figma → `TL-xxx` |
