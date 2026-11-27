@@ -93,11 +93,11 @@ SENSIVEIS = [
 ]
 
 DOCS_POR_AREA = [
-    (r"migrat|schema|(^|/)models?/|entit|\.sql$", ["docs/06-banco-de-dados.md", "docs/04-uml/classes.md"]),
+    (r"migrat|schema|(^|/)models?/|entit|\.sql$", ["docs/06-banco-de-dados.md", "docs/04-uml/classes.md", "docs/04-uml/objetos.md"]),
     (r"(^|/)(routes?|controllers?|api|handlers?|pages?|app|screens?|telas?|components?|componentes)/",
      ["docs/03-casos-de-uso.md", "docs/04-uml/sequencia.md", "docs/05-interface.md"]),
     (r"(^|/)(package\.json|requirements[^/]*\.txt|pyproject\.toml|composer\.json|Gemfile|go\.mod|Cargo\.toml|pubspec\.yaml)$",
-     ["docs/07-arquitetura.md", "docs/04-uml/componentes.md"]),
+     ["docs/07-arquitetura.md", "docs/04-uml/componentes.md", "docs/04-uml/pacotes.md"]),
     (r"Dockerfile|docker-compose|\.github/workflows|\.tf$|nginx|vercel\.json|netlify\.toml|fly\.toml",
      ["docs/04-uml/implantacao.md", "docs/07-arquitetura.md", "docs/11-entrega.md"]),
     (r"(^|/)\.env\.example$|(^|/)config/", ["docs/07-arquitetura.md", "docs/11-entrega.md", "README.md"]),

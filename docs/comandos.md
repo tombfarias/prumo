@@ -12,8 +12,22 @@ Forma geral: `prumo [--projeto PASTA] [--json] <comando> [opções]`.
 ### `prumo perfis`
 Lista os perfis (templates de projeto) com descrição e stack sugerida.
 
-### `prumo projetos`
-Projetos abertos recentemente (alimenta a barra lateral da interface).
+### `prumo projetos [--remover PASTA]`
+Projetos abertos recentemente (alimenta a barra lateral da interface). `--remover` tira um projeto da lista sem apagar nada.
+
+### `prumo config [--definir CHAVE=VALOR ...]`
+Mostra ou altera seus dados (`freelancer.*`, gravados em `config/freelancer.json`) e as configurações do projeto
+(`projeto.*`, gravadas em `projeto.prumo.json`). É o que a tela **Configurações** e o botão **Meus dados** da interface usam.
+
+```powershell
+prumo config --definir freelancer.valor_hora=150 --definir freelancer.nome="Seu Nome"
+prumo config --projeto D:\Projetos\loja --definir projeto.comandos.testar="npm test" --definir projeto.hooks.testes_ao_parar=sim
+```
+
+Chaves aceitas: `freelancer.nome`, `email`, `valor_hora`, `moeda`, `contingencia_percentual`; `projeto.projeto`, `cliente`, `stack`,
+`comandos.formatar|lint|testar`, `hooks.registrar_horas|testes_ao_parar|revisao_pos_mudanca|limite_arquivos|limite_linhas|comandos_permitidos`,
+`orcamento.valor_hora|contingencia_percentual`, `claude.modelo|max_turnos` e `pastas_codigo`. Listas aceitam JSON (`["src","lib"]`)
+e valor vazio volta ao padrão.
 
 ### `prumo novo PASTA`
 Cria um projeto completo.
@@ -47,8 +61,8 @@ faltam (RF, RN, UC, TL, marcos) sem colidir com os documentos e grava; só erro 
 ## Qualidade da especificação
 
 ### `prumo validar [--estrito] [--mmdc]`
-Erros: documento aprovado alterado ou ausente, Mermaid inválido, ID citado e não definido, ID definido duas vezes. Avisos: lacunas `[PREENCHER]`, marcadores `{{...}}` não substituídos, cobertura incompleta (requisito sem caso de uso ou história, caso de uso sem história, história sem teste, tela sem caso de uso).
-`--estrito` transforma avisos em erros (útil antes de enviar ao cliente). `--mmdc` valida cada diagrama com o mermaid-cli.
+Erros: documento aprovado alterado ou ausente, Mermaid inválido, ID citado e não definido, ID definido duas vezes. Avisos: lacunas `[PREENCHER]`, marcadores `{{...}}` não substituídos, cobertura incompleta (requisito sem caso de uso ou história, caso de uso sem história, história sem teste, tela sem caso de uso) e avisos `estilo:` (enchimento, termos vagos, frases ou parágrafos longos, linhas repetidas; veja o [guia de escrita](guia-de-escrita.md)).
+`--estrito` transforma avisos em erros (exceto os de estilo) (útil antes de enviar ao cliente). `--mmdc` valida cada diagrama com o mermaid-cli.
 
 ### `prumo rastreabilidade`
 Gera `docs/rastreabilidade.md`: requisitos → casos de uso → histórias → testes → código, regras de negócio, casos de uso com telas e histórias, e a lista de problemas. Veja [Rastreabilidade](rastreabilidade.md).
@@ -83,6 +97,7 @@ Horas por dia a partir de `.prumo/atividade.log`, que os hooks gravam a cada ped
 
 | Comando | Descrição |
 |---|---|
+| `prumo agentes listar` | Lista skills, subagentes, hooks, `CLAUDE.md`, `AGENTS.md` e `settings.json` do projeto, com descrição, eventos de cada hook e estado: igual ao kit, personalizado, próprio do projeto ou ausente |
 | `prumo agentes exportar [--alvos gemini,copilot,cursor]` | Gera `GEMINI.md`, `.github/copilot-instructions.md` e `.cursor/rules/prumo.mdc` a partir do `AGENTS.md` |
 | `prumo agentes atualizar [--incluir-settings]` | Recopia skills, subagentes e hooks da versão atual do Prumo para o projeto (o `settings.json` só com a opção) |
 

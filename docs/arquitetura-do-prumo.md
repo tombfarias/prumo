@@ -16,6 +16,7 @@ flowchart TB
         proj["projeto.py"]
         ras["rastreio.py"]
         val["validacao.py"]
+        est["estilo.py"]
         ges["gestao.py"]
         seg["seguranca.py"]
         fig["figma.py"]
@@ -37,6 +38,7 @@ flowchart TB
     cliPy --> fig
     cliPy --> cla
     val --> ras
+    val --> est
     ges --> ras
     proj --> tpl
     proj --> projeto
@@ -50,13 +52,14 @@ flowchart TB
 | `util.py` | Versão, caminhos (código-fonte × executável), leitura/escrita UTF-8, modelos `{{chave}}`, hash, formatação |
 | `projeto.py` | Perfis, criação de projetos, instalação do kit de agentes, geração do `settings.json`, aprovação, ADR/mudança, Figma |
 | `rastreio.py` | Parser de IDs (definição × referência por bloco), varredura do código, problemas de cobertura, matriz, estimativas |
-| `validacao.py` | Status, validação (aprovados, lacunas, Mermaid leve ou mmdc, rastreabilidade), contexto compacto, extração de diagramas |
+| `validacao.py` | Status, validação (aprovados, lacunas, Mermaid leve ou mmdc, rastreabilidade, estilo), contexto compacto, extração de diagramas |
+| `estilo.py` | Avisos de concisão dos documentos (enchimento, termos vagos, frases e parágrafos longos, repetição); regras em [guia-de-escrita.md](guia-de-escrita.md) |
 | `gestao.py` | Orçamento, horas, exportação para Gemini/Copilot/Cursor |
 | `seguranca.py` | Regras da varredura estática e mascaramento de segredos |
 | `figma.py` | API REST do Figma: telas, IDs estáveis, preservação da coluna de casos de uso, imagens |
 | `claude.py` | Tarefas, prompts, ferramentas por tarefa, execução em `stream-json`, logs, histórico, especificação em etapas |
-| `servidor.py` | Servidor local da GUI: token, lista de comandos permitidos, tarefas longas, abrir pasta/arquivo/editor/terminal |
-| `cli.py` | Argumentos, saída texto/JSON, projetos recentes, `hook`, `gui`, `_escolher-pasta` |
+| `servidor.py` | Servidor local da GUI: token, lista de comandos permitidos, tarefas longas, ler e salvar documentos (com proteção de aprovados e de conflito), arquivos estáticos (Mermaid), abrir pasta/arquivo/editor/terminal |
+| `cli.py` | Argumentos, saída texto/JSON, projetos recentes, `config` (dados do freelancer e do projeto), `hook`, `gui`, `_escolher-pasta` |
 
 ## Decisões
 
@@ -70,7 +73,7 @@ flowchart TB
 
 ## Testes
 
-`python -m unittest discover -s tests -v`. Cobrem: criação de todos os perfis (sem marcadores sobrando, sem IDs órfãos, skills e settings válidos), rastreabilidade, contexto, validação de Mermaid e de aprovados (incluindo CRLF), registros, orçamento, horas, exportação, segurança, Figma (API simulada), todos os hooks (executados como processo, como no Claude Code), ponte com o Claude (com um dublê que emite `stream-json`), CLI JSON, servidor da interface e o guarda de privacidade (`tests/test_privacidade.py`, que também confere que o próprio repositório não tem dados pessoais). `tests/powershell.ps1` testa o módulo PowerShell no CI.
+`python -m unittest discover -s tests -v`. Cobrem: criação de todos os perfis (sem marcadores sobrando, sem IDs órfãos, skills e settings válidos), rastreabilidade, contexto, validação de Mermaid e de aprovados (incluindo CRLF), registros, orçamento, horas, exportação, segurança, Figma (API simulada), todos os hooks (executados como processo, como no Claude Code), ponte com o Claude (com um dublê que emite `stream-json`), CLI JSON, servidor da interface (`tests/test_interface.py`: salvar documento, configurações, kit do Claude, arquivos estáticos e a paleta de cores via `tools/cores.py`) e o guarda de privacidade (`tests/test_privacidade.py`, que também confere que o próprio repositório não tem dados pessoais). `tests/powershell.ps1` testa o módulo PowerShell no CI.
 
 ## Repositório público e privacidade
 

@@ -15,7 +15,7 @@ description: Especifica a interface (05-interface.md) a partir dos requisitos e 
    - Se o inventário já veio do Figma (`prumo figma telas`, com links preenchidos), mantenha as linhas e complete só a coluna "Casos de uso".
    - Se existir `docs/03-casos-de-uso.md`, atualize a linha "Telas" de cada caso de uso com as TL que o atendem (ou `—`).
 2. **Mapa de navegação** (seção 3): troque o exemplo do modelo por um `flowchart` com as telas reais (`tl1["TL-001 Home"]`), as ligações entre elas e, quando houver, as entradas externas (anúncio, link de WhatsApp, e-mail).
-3. **Detalhe de cada tela** (seção 4, uma subseção `### Tela TL-00N — Nome` por tela; o ID é definido no inventário, por isso o título começa por "Tela"): objetivo, blocos de conteúdo na ordem em que aparecem, ações (botões, formulários e para onde levam), dados exibidos, estados (vazio, carregando, erro, sucesso, quando se aplicam) e os RF/RNF/UC atendidos.
+3. **Detalhe de cada tela** (seção 4): uma subseção `### Tela TL-00N — Nome` por tela (o ID já está definido no inventário; por isso o título começa por "Tela"). Inclua objetivo, blocos na ordem em que aparecem, ações e destino, dados exibidos, estados (vazio, carregando, erro, sucesso) e os RF/RNF/UC atendidos.
 4. **Design system** (seção 1): preencha só o que o cliente informou (identidade, cores, fontes, referências) ou o que o perfil já define. O resto entra como proposta marcada ("Proposta: ...") ou como pergunta na seção 9 do briefing. Biblioteca de componentes só se fizer sentido para a stack.
 5. **Diretrizes** (seção 5): acessibilidade com critério verificável (contraste WCAG AA, foco visível, `prefers-reduced-motion` quando houver animação), responsividade (dispositivos prioritários) e quem fornece textos e imagens.
 

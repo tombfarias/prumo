@@ -1,5 +1,6 @@
 """Criação e manutenção de projetos: perfis, documentos, kit de agentes, aprovações e registros."""
 
+import json
 import re
 import shutil
 import subprocess
@@ -17,11 +18,18 @@ DESCRICOES = {
     "02-requisitos": "Requisitos funcionais (RF), não funcionais (RNF), regras de negócio (RN), glossário",
     "03-casos-de-uso": "Atores, diagrama e especificação dos casos de uso (UC)",
     "04-uml/classes": "Modelo de domínio (diagrama de classes)",
+    "04-uml/objetos": "Instâncias de exemplo que validam o modelo de classes",
+    "04-uml/pacotes": "Pacotes/módulos e dependências permitidas",
+    "04-uml/componentes": "Componentes e integrações",
+    "04-uml/estrutura-composta": "Partes, portas e conectores internos de componentes",
+    "04-uml/implantacao": "Ambientes e infraestrutura",
+    "04-uml/perfil-uml": "Estereótipos e valores etiquetados usados nos diagramas",
     "04-uml/sequencia": "Diagramas de sequência por caso de uso",
+    "04-uml/comunicacao": "Vínculos e mensagens numeradas entre objetos por caso de uso",
+    "04-uml/tempo": "Estados ao longo do tempo, prazos e timeouts",
+    "04-uml/visao-geral-interacao": "Jornada entre interações (refs para sequências)",
     "04-uml/estados": "Ciclo de vida das entidades",
     "04-uml/atividades": "Processos de negócio",
-    "04-uml/componentes": "Componentes e integrações",
-    "04-uml/implantacao": "Ambientes e infraestrutura",
     "05-interface": "Design system, inventário de telas (TL) ligado ao Figma, navegação",
     "06-banco-de-dados": "Diagrama ER, dicionário de dados, índices, LGPD, migrações",
     "07-arquitetura": "Stack, estrutura de pastas, módulos, segurança, operação, ADRs",
@@ -195,6 +203,63 @@ class Projeto:
             escrever(".mcp.json", ler(base / "mcp.json"), forcar=False)
         return escritos
 
+    def listar_kit(self):
+        """Arquivos do kit do Claude neste projeto, com descrição e se diferem do modelo do Prumo."""
+        ctx = self.contexto()
+        base = TEMPLATES / "agentes"
+        eventos = {}
+        try:
+            settings = json.loads(ler(self.raiz / ".claude" / "settings.json"))
+            for evento, grupos in (settings.get("hooks") or {}).items():
+                for grupo in grupos:
+                    for h in grupo.get("hooks", []):
+                        m = re.search(r"hooks[/\\](\w+)\.py|\bhook\s+(\w+)", h.get("command", ""))
+                        if m:
+                            nome = m.group(1) or m.group(2)
+                            rotulo = evento + (f" ({grupo['matcher']})" if grupo.get("matcher") else "")
+                            eventos.setdefault(nome, []).append(rotulo)
+        except (FileNotFoundError, json.JSONDecodeError, ErroPrumo):
+            pass
+
+        itens = []
+
+        def item(tipo, nome, rel, modelo_texto, descricao=""):
+            arq = self.raiz / rel
+            if not arq.exists():
+                estado = "ausente"
+            elif modelo_texto is None:
+                estado = "próprio"
+            else:
+                estado = "igual ao kit" if ler(arq).replace("\r\n", "\n") == modelo_texto else "modificado"
+            if arq.exists() and not descricao and rel.endswith(".md"):
+                descricao = _frontmatter(ler(arq)).get("description", "")
+            itens.append({"tipo": tipo, "nome": nome, "arquivo": rel, "estado": estado, "descricao": descricao,
+                          "eventos": eventos.get(nome, []) if tipo == "hook" else []})
+
+        modelos = {}
+        for skill in self.skills_do_kit():
+            texto = renderizar(ler(skill / "SKILL.md"), ctx)
+            modelos[f".claude/skills/{skill.name}/SKILL.md"] = ("skill", skill.name, texto)
+        for agente in sorted((base / "claude" / "agents").glob("*.md")):
+            modelos[f".claude/agents/{agente.name}"] = ("subagente", agente.stem, renderizar(ler(agente), ctx))
+        for hook in sorted((base / "claude" / "hooks").glob("*.py")):
+            texto = ler(hook)
+            doc = re.match(r'\s*"""(.*?)"""', texto, flags=re.S)
+            modelos[f".claude/hooks/{hook.name}"] = ("hook", hook.stem, texto, doc.group(1).strip().split("\n")[0] if doc else "")
+        for rel, dados in modelos.items():
+            item(dados[0], dados[1], rel, dados[2], dados[3] if len(dados) > 3 else "")
+        # arquivos criados no próprio projeto (skills, subagentes ou hooks a mais)
+        for padrao, tipo in ((".claude/skills/*/SKILL.md", "skill"), (".claude/agents/*.md", "subagente"), (".claude/hooks/*.py", "hook")):
+            for arq in sorted(self.raiz.glob(padrao)):
+                rel = self.rel(arq)
+                if rel not in modelos:
+                    nome = arq.parent.name if tipo == "skill" else arq.stem
+                    item(tipo, nome, rel, None)
+        item("instruções", "CLAUDE.md", "CLAUDE.md", renderizar(ler(base / "CLAUDE.md"), ctx), "Instruções que o Claude Code lê em toda sessão")
+        item("instruções", "AGENTS.md", "AGENTS.md", renderizar(ler(base / "AGENTS.md"), ctx), "Regras do projeto para qualquer agente de IA")
+        item("configuração", "settings.json", ".claude/settings.json", self.settings_claude(), "Permissões e ligação dos hooks aos eventos do Claude Code")
+        return itens
+
 
 def _lista_documentos(documentos):
     linhas = ["| Documento | Conteúdo |", "|---|---|"]
@@ -237,6 +302,7 @@ def _lista_skills(skills):
     for skill in skills:
         fm = _frontmatter(ler(skill / "SKILL.md"))
         primeira = fm.get("description", "").split(". ")[0].rstrip(".")
+        primeira = re.sub(r"\s*\([^()]{40,}\)", "", primeira)  # enumerações longas ficam só na skill (AGENTS.md é lido sempre)
         linhas.append(f"| `{skill.name}` | {primeira}. | `.claude/skills/{skill.name}/SKILL.md` |")
     return "\n".join(linhas)
 

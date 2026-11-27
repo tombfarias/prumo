@@ -16,7 +16,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
-from prumo_cli import claude, figma, formulario, gestao, projeto as mp, rastreio, seguranca, validacao  # noqa: E402
+from prumo_cli import claude, estilo, figma, formulario, gestao, projeto as mp, rastreio, seguranca, validacao  # noqa: E402
 from prumo_cli.cli import main  # noqa: E402
 from prumo_cli.util import ErroPrumo, gravar, ler  # noqa: E402
 
@@ -287,7 +287,56 @@ class TestRastreio(unittest.TestCase):
             self.assertNotIn("Fluxo principal\n\n1. O ator informa os dados.\n\n## Outra", texto)
 
 
+class TestEstilo(unittest.TestCase):
+    def test_kit_gerado_sem_avisos_de_estilo(self):
+        for perfil in mp.listar_perfis():
+            with self.subTest(perfil=perfil["id"]), tempfile.TemporaryDirectory() as tmp:
+                p = criar(tmp, perfil["id"])
+                for arq in sorted(p.raiz.rglob("*.md")):
+                    rel = p.rel(arq)
+                    achados = estilo.checar(ler(arq), vagos=not rel.endswith("00-briefing.md"))
+                    self.assertEqual(achados, [], rel)
+
+    def test_detecta_excessos(self):
+        longa = " ".join(["palavra"] * 45) + "."
+        texto = ("# T\n\nÉ importante ressaltar que o sistema é intuitivo.\n\n"
+                 f"{longa}\n\n- Termos citados como \"moderno\" não contam.\n"
+                 "- Uma linha qualquer com mais de quarenta caracteres aqui.\n"
+                 "- Uma linha qualquer com mais de quarenta caracteres aqui.\n"
+                 "<!-- a fim de -->\n```\na fim de\n```\n")
+        msgs = [m for _, m in estilo.checar(texto)]
+        self.assertTrue(any("ressaltar" in m for m in msgs))
+        self.assertTrue(any("intuitivo" in m for m in msgs))
+        self.assertTrue(any("frase com mais" in m for m in msgs))
+        self.assertTrue(any("linha repetida" in m for m in msgs))
+        self.assertFalse(any("moderno" in m or "a fim de" in m for m in msgs))
+        self.assertFalse(any("intuitivo" in m for _, m in estilo.checar(texto, vagos=False)))
+
+    def test_validar_mostra_estilo_como_aviso(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "minimo")
+            doc = p.docs / "01-visao.md"
+            gravar(doc, ler(doc) + "\nBasicamente, o sistema deve ser rápido a fim de agradar.\n")
+            estilos = [(g, m) for g, m in validacao.validar(p, estrito=True) if "estilo:" in m]
+            self.assertTrue(estilos)
+            self.assertTrue(all(g == "aviso" for g, _ in estilos))
+
+
 class TestValidacao(unittest.TestCase):
+    def test_uml_completa(self):
+        """Os 13 modelos de 04-uml (+ casos de uso em 03) cobrem a UML 2.5 e têm Mermaid válido."""
+        tipos = {"classes", "objetos", "pacotes", "componentes", "estrutura-composta", "implantacao", "perfil-uml",
+                 "sequencia", "comunicacao", "tempo", "visao-geral-interacao", "estados", "atividades"}
+        disponiveis = set(mp.documentos_disponiveis())
+        self.assertTrue({f"04-uml/{t}" for t in tipos} <= disponiveis)
+        for t in tipos:
+            self.assertIn(f"04-uml/{t}", mp.DESCRICOES)
+            texto = (mp.TEMPLATES / "documentos" / "04-uml" / f"{t}.md").read_text(encoding="utf-8")
+            blocos = validacao.blocos_mermaid(texto)
+            self.assertTrue(blocos, t)
+            for _linha, codigo in blocos:
+                self.assertEqual(validacao.checar_mermaid(codigo), [], t)
+
     def test_mermaid(self):
         self.assertEqual(validacao.checar_mermaid("flowchart LR\n  a --> b"), [])
         self.assertTrue(validacao.checar_mermaid("flowhcart LR\n a-->b"))

@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from . import rastreio
+from . import estilo, rastreio
 from .util import contar_lacunas, gravar, hash_conteudo, ler, sem_comentarios
 
 TIPOS_MERMAID = {
@@ -127,11 +127,21 @@ def validar(projeto, estrito=False, mmdc=False):
                 erros = checar_mermaid_mmdc(codigo) or []
             for e in erros:
                 resultado.append(("erro", f"{rel}:{linha}: Mermaid: {e}"))
+        resultado.extend(_avisos_de_estilo(rel, texto))
 
     analise = rastreio.analisar_projeto(projeto)
     for gravidade, msg in rastreio.problemas(analise, projeto):
         resultado.append(("erro" if estrito and gravidade == "aviso" else gravidade, msg))
     return resultado
+
+
+def _avisos_de_estilo(rel, texto, limite=8):
+    """Avisos de concisão (docs/guia-de-escrita.md). O briefing guarda as palavras do cliente: sem checar termos vagos."""
+    achados = estilo.checar(texto, vagos=not rel.endswith("00-briefing.md"))
+    avisos = [("aviso", f"{rel}:{linha}: estilo: {msg}") for linha, msg in achados[:limite]]
+    if len(achados) > limite:
+        avisos.append(("aviso", f"{rel}: estilo: mais {len(achados) - limite} aviso(s) neste documento"))
+    return avisos
 
 
 # ---------------------------------------------------------------- contexto compacto

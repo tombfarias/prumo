@@ -43,6 +43,8 @@ compatibilidade (navegadores/dispositivos), manutenibilidade, LGPD/privacidade. 
 
 ## 4. Glossário
 
+<!-- Termo do negócio usado mais de uma vez: defina aqui, uma vez. Os outros documentos usam o termo sem redefinir. -->
+
 | Termo | Definição |
 |---|---|
 | [PREENCHER] | [PREENCHER] |

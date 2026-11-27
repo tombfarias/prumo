@@ -21,7 +21,7 @@ CLAUDE.md                 @AGENTS.md + específicos do Claude Code
 | `especificar-projeto` | Conduz a especificação completa, etapa por etapa, com pausa para revisão |
 | `levantar-requisitos` | Briefing → visão e requisitos (RF, RNF, RN), perguntas ao cliente |
 | `especificar-casos-de-uso` | Atores, diagrama e especificação dos casos de uso |
-| `modelar-uml` | Classes, sequência, estados, atividades, componentes, implantação (Mermaid) |
+| `modelar-uml` | Os 14 diagramas da UML 2.5 em Mermaid: classes, objetos, pacotes, componentes, estrutura composta, implantação, perfil, sequência, comunicação, tempo, visão geral de interação, estados e atividades (casos de uso ficam em `03`) |
 | `modelar-banco` | ER, dicionário de dados, índices, DDL, LGPD, migrações |
 | `planejar-arquitetura` | Stack, estrutura, módulos, integrações, segurança, operação, ADRs |
 | `gerar-backlog` | Épicos, histórias com critérios Dado/Quando/Então, estimativas, marcos |

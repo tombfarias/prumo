@@ -16,6 +16,7 @@ Todo projeto do Prumo é configurado para gastar o mínimo de tokens sem sacrifi
 | **Etapas agrupadas em poucas sessões** | `prumo claude especificar` | As etapas rodam em 3 sessões (análise, solução, planejamento), com o texto das skills já no prompt. Cada sessão nova paga de novo o contexto fixo e relê os documentos; em testes com projetos reais, uma sessão por etapa custou de 2 a 5 vezes mais. Use `--sessoes etapa` para o modo antigo |
 | **Proporcionalidade** | prompt da especificação e skills | O tamanho da especificação acompanha o pedido; sugestões que o cliente não pediu entram como Could (opcionais, fora do total do orçamento) |
 | **Skills sob demanda** | `.claude/skills/` | O corpo de uma skill só entra no contexto quando ela é usada |
+| **Guia de escrita** | AGENTS.md → "Escrita dos documentos"; avisos `estilo:` do `prumo validar` | Documentos curtos, sem repetição e sem enchimento: cada leitura posterior custa menos. Veja [guia-de-escrita.md](guia-de-escrita.md) |
 | **Convenções enxutas** | `templates/perfis/convencoes/` | O texto que entra no AGENTS.md (lido em toda sessão) é curto e objetivo |
 
 ## Boas práticas para você

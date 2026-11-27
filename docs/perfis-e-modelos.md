@@ -24,11 +24,22 @@ Cada perfil define os documentos incluídos, as pastas de código, os comandos s
 | `02-requisitos` | RF, RNF, RN, glossário | todos |
 | `03-casos-de-uso` | Atores, diagrama, especificações | todos exceto site e mínimo |
 | `04-uml/classes` | Modelo de domínio | api, web, gestão, mobile |
-| `04-uml/sequencia` | Sequência por caso de uso | api, web, gestão, automação, mobile |
-| `04-uml/estados` | Ciclo de vida | api, web, gestão, mobile |
-| `04-uml/atividades` | Processos de negócio | api, web, gestão, automação, mobile |
-| `04-uml/componentes` | Componentes e integrações | api, web, gestão, mobile, wordpress |
+| `04-uml/objetos` | Instâncias de exemplo que validam classes e RNs | api, web, gestão, mobile |
+| `04-uml/pacotes` | Pacotes/módulos e dependências permitidas | api, web, gestão, automação, mobile |
+| `04-uml/componentes` | Componentes e integrações | api, web, gestão, automação, mobile, wordpress |
+| `04-uml/estrutura-composta` | Partes, portas e conectores internos | api, web, gestão, mobile |
 | `04-uml/implantacao` | Ambientes e infraestrutura | api, web, gestão, automação, mobile, wordpress |
+| `04-uml/perfil-uml` | Estereótipos e valores etiquetados | api, web, gestão, mobile |
+| `04-uml/sequencia` | Sequência por caso de uso | api, web, gestão, automação, mobile |
+| `04-uml/comunicacao` | Mensagens numeradas entre objetos | api, web, gestão, automação, mobile |
+| `04-uml/tempo` | Estados no tempo, prazos, timeouts (tabela + gantt) | api, web, gestão, automação, mobile |
+| `04-uml/visao-geral-interacao` | Jornada entre interações (refs) | api, web, gestão, automação, mobile |
+| `04-uml/estados` | Máquina de estados (ciclo de vida) | api, web, gestão, mobile |
+| `04-uml/atividades` | Processos de negócio | api, web, gestão, automação, mobile |
+
+Os 14 tipos da UML 2.5 estão cobertos: os 13 acima e o diagrama de casos de uso, em `03-casos-de-uso`. A Mermaid não tem
+diagrama de tempo nem de perfil nativos: o de tempo usa tabela + `gantt` em segundos e o de perfil usa `classDiagram`
+com `<<metaclass>>`/`<<stereotype>>`. Qualquer documento pode ser incluído num projeto com `prumo documento <id>`.
 | `05-interface` | Design system, inventário de telas (Figma), navegação | web, gestão, site, mobile, wordpress |
 | `06-banco-de-dados` | ER, dicionário, índices, DDL, LGPD, migrações (no WordPress: tipos de post, meta, taxonomias ou tabelas próprias) | api, web, gestão, automação, mobile, wordpress |
 | `07-arquitetura` | Stack, pastas, módulos, segurança, operação, ADRs | todos exceto mínimo |
