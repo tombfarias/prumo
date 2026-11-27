@@ -71,7 +71,7 @@ def _lab(h, matriz=None):
         c = [min(1, max(0, sum(m * v for m, v in zip(linha, c)))) for linha in matriz]
     xyz = [sum(m * v for m, v in zip(linha[:3], c)) / linha[3] for linha in
            ([.4124564, .3575761, .1804375, .95047], [.2126729, .7151522, .072175, 1], [.0193339, .119192, .9503041, 1.08883])]
-    f = lambda t: math.cbrt(t) if t > .008856 else 7.787 * t + 16 / 116
+    f = lambda t: t ** (1 / 3) if t > .008856 else 7.787 * t + 16 / 116
     fx, fy, fz = map(f, xyz)
     return 116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)
 
