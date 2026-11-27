@@ -286,6 +286,7 @@ def _lista_skills(figma):
             continue
         fm = _frontmatter(ler(skill / "SKILL.md"))
         primeira = fm.get("description", "").split(". ")[0].rstrip(".")
+        primeira = re.sub(r"\s*\([^()]{40,}\)", "", primeira)  # enumerações longas ficam só na skill (AGENTS.md é lido sempre)
         linhas.append(f"| `{skill.name}` | {primeira}. | `.claude/skills/{skill.name}/SKILL.md` |")
     return "\n".join(linhas)
 

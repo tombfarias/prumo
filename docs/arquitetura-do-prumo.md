@@ -16,6 +16,7 @@ flowchart TB
         proj["projeto.py"]
         ras["rastreio.py"]
         val["validacao.py"]
+        est["estilo.py"]
         ges["gestao.py"]
         seg["seguranca.py"]
         fig["figma.py"]
@@ -37,6 +38,7 @@ flowchart TB
     cliPy --> fig
     cliPy --> cla
     val --> ras
+    val --> est
     ges --> ras
     proj --> tpl
     proj --> projeto
@@ -50,7 +52,8 @@ flowchart TB
 | `util.py` | Versão, caminhos (código-fonte × executável), leitura/escrita UTF-8, modelos `{{chave}}`, hash, formatação |
 | `projeto.py` | Perfis, criação de projetos, instalação do kit de agentes, geração do `settings.json`, aprovação, ADR/mudança, Figma |
 | `rastreio.py` | Parser de IDs (definição × referência por bloco), varredura do código, problemas de cobertura, matriz, estimativas |
-| `validacao.py` | Status, validação (aprovados, lacunas, Mermaid leve ou mmdc, rastreabilidade), contexto compacto, extração de diagramas |
+| `validacao.py` | Status, validação (aprovados, lacunas, Mermaid leve ou mmdc, rastreabilidade, estilo), contexto compacto, extração de diagramas |
+| `estilo.py` | Avisos de concisão dos documentos (enchimento, termos vagos, frases e parágrafos longos, repetição); regras em [guia-de-escrita.md](guia-de-escrita.md) |
 | `gestao.py` | Orçamento, horas, exportação para Gemini/Copilot/Cursor |
 | `seguranca.py` | Regras da varredura estática e mascaramento de segredos |
 | `figma.py` | API REST do Figma: telas, IDs estáveis, preservação da coluna de casos de uso, imagens |

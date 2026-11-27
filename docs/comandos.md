@@ -61,8 +61,8 @@ faltam (RF, RN, UC, TL, marcos) sem colidir com os documentos e grava; só erro 
 ## Qualidade da especificação
 
 ### `prumo validar [--estrito] [--mmdc]`
-Erros: documento aprovado alterado ou ausente, Mermaid inválido, ID citado e não definido, ID definido duas vezes. Avisos: lacunas `[PREENCHER]`, marcadores `{{...}}` não substituídos, cobertura incompleta (requisito sem caso de uso ou história, caso de uso sem história, história sem teste, tela sem caso de uso).
-`--estrito` transforma avisos em erros (útil antes de enviar ao cliente). `--mmdc` valida cada diagrama com o mermaid-cli.
+Erros: documento aprovado alterado ou ausente, Mermaid inválido, ID citado e não definido, ID definido duas vezes. Avisos: lacunas `[PREENCHER]`, marcadores `{{...}}` não substituídos, cobertura incompleta (requisito sem caso de uso ou história, caso de uso sem história, história sem teste, tela sem caso de uso) e avisos `estilo:` (enchimento, termos vagos, frases ou parágrafos longos, linhas repetidas; veja o [guia de escrita](guia-de-escrita.md)).
+`--estrito` transforma avisos em erros (exceto os de estilo) (útil antes de enviar ao cliente). `--mmdc` valida cada diagrama com o mermaid-cli.
 
 ### `prumo rastreabilidade`
 Gera `docs/rastreabilidade.md`: requisitos → casos de uso → histórias → testes → código, regras de negócio, casos de uso com telas e histórias, e a lista de problemas. Veja [Rastreabilidade](rastreabilidade.md).

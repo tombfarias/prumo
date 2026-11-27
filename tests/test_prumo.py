@@ -16,7 +16,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
-from prumo_cli import claude, figma, formulario, gestao, projeto as mp, rastreio, seguranca, validacao  # noqa: E402
+from prumo_cli import claude, estilo, figma, formulario, gestao, projeto as mp, rastreio, seguranca, validacao  # noqa: E402
 from prumo_cli.cli import main  # noqa: E402
 from prumo_cli.util import ErroPrumo, gravar, ler  # noqa: E402
 
@@ -262,6 +262,41 @@ class TestRastreio(unittest.TestCase):
                 self.assertIn(esperado, texto)
             self.assertNotIn("RF-002", texto)
             self.assertNotIn("Fluxo principal\n\n1. O ator informa os dados.\n\n## Outra", texto)
+
+
+class TestEstilo(unittest.TestCase):
+    def test_kit_gerado_sem_avisos_de_estilo(self):
+        for perfil in mp.listar_perfis():
+            with self.subTest(perfil=perfil["id"]), tempfile.TemporaryDirectory() as tmp:
+                p = criar(tmp, perfil["id"])
+                for arq in sorted(p.raiz.rglob("*.md")):
+                    rel = p.rel(arq)
+                    achados = estilo.checar(ler(arq), vagos=not rel.endswith("00-briefing.md"))
+                    self.assertEqual(achados, [], rel)
+
+    def test_detecta_excessos(self):
+        longa = " ".join(["palavra"] * 45) + "."
+        texto = ("# T\n\nÉ importante ressaltar que o sistema é intuitivo.\n\n"
+                 f"{longa}\n\n- Termos citados como \"moderno\" não contam.\n"
+                 "- Uma linha qualquer com mais de quarenta caracteres aqui.\n"
+                 "- Uma linha qualquer com mais de quarenta caracteres aqui.\n"
+                 "<!-- a fim de -->\n```\na fim de\n```\n")
+        msgs = [m for _, m in estilo.checar(texto)]
+        self.assertTrue(any("ressaltar" in m for m in msgs))
+        self.assertTrue(any("intuitivo" in m for m in msgs))
+        self.assertTrue(any("frase com mais" in m for m in msgs))
+        self.assertTrue(any("linha repetida" in m for m in msgs))
+        self.assertFalse(any("moderno" in m or "a fim de" in m for m in msgs))
+        self.assertFalse(any("intuitivo" in m for _, m in estilo.checar(texto, vagos=False)))
+
+    def test_validar_mostra_estilo_como_aviso(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "minimo")
+            doc = p.docs / "01-visao.md"
+            gravar(doc, ler(doc) + "\nBasicamente, o sistema deve ser rápido a fim de agradar.\n")
+            estilos = [(g, m) for g, m in validacao.validar(p, estrito=True) if "estilo:" in m]
+            self.assertTrue(estilos)
+            self.assertTrue(all(g == "aviso" for g, _ in estilos))
 
 
 class TestValidacao(unittest.TestCase):

@@ -52,6 +52,7 @@ Requisitos: Python 3.9+ (ou o executável), Git e, para as tarefas com IA, o [Cl
 | [Rastreabilidade](docs/rastreabilidade.md) | Convenção de IDs, matriz, contexto compacto |
 | [Figma](docs/figma.md) | MCP, inventário de telas, FigJam |
 | [Segurança e mudanças](docs/seguranca-e-mudancas.md) | Mudanças significativas, revisão de segurança, aprovação e controle de escopo |
+| [Guia de escrita](docs/guia-de-escrita.md) | Regras de concisão dos documentos gerados e avisos de estilo |
 | [Economia de tokens](docs/economia-de-tokens.md) | Como o Prumo reduz o consumo sem perder qualidade |
 | [Configuração](docs/configuracao.md) | `projeto.prumo.json` e `config/freelancer.json` |
 | [Perfis e modelos](docs/perfis-e-modelos.md) | Perfis disponíveis, documentos e como criar novos |
