@@ -9,18 +9,22 @@ Gravidade: Crítica, Alta, Média, Baixa. Status: aberto, em correção, corrigi
 
 ## 1. Superfície de ataque
 
+<!-- prumo:gerado:superficie -->
 | Ponto de entrada | Exposição | Autenticação | Dados tratados |
 |---|---|---|---|
 | [PREENCHER: API pública, formulário, webhook, painel admin...] | [PREENCHER: internet / rede interna] | [PREENCHER] | [PREENCHER] |
+<!-- prumo:gerado:fim -->
 
 ## 2. Ameaças e controles
 
 <!-- Use STRIDE como roteiro: falsificação de identidade, adulteração, repúdio, vazamento de informação,
 negação de serviço, elevação de privilégio. -->
 
+<!-- prumo:gerado:ameacas -->
 | Ameaça | Onde | Controle adotado | Verificado em |
 |---|---|---|---|
 | [PREENCHER: acesso a dados de outro cliente (IDOR)] | [PREENCHER] | [PREENCHER: checagem de dono em toda consulta] | [PREENCHER: CT-xxx] |
+<!-- prumo:gerado:fim -->
 
 ## 3. Checklist base (OWASP Top 10)
 

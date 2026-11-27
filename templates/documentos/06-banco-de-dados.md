@@ -1,11 +1,13 @@
 # Modelo de Dados — {{projeto}}
 
+<!-- prumo:gerado:cabecalho -->
 | Campo | Valor |
 |---|---|
 | SGBD | [PREENCHER: PostgreSQL 16, MySQL 8, SQLite...] |
 | ORM / migrações | [PREENCHER: Prisma, Drizzle, SQLAlchemy + Alembic, EF Core...] |
 | Convenção de nomes | snake_case, tabelas no singular, chave primária `id` |
 | Versão | 0.1 |
+<!-- prumo:gerado:fim -->
 
 <!--
 Derive as entidades do diagrama de classes (04-uml/classes.md).
@@ -16,6 +18,7 @@ Sintaxe do diagrama: https://mermaid.js.org/syntax/entityRelationshipDiagram.htm
 
 ## 1. Diagrama entidade-relacionamento
 
+<!-- prumo:gerado:er -->
 ```mermaid
 erDiagram
     CLIENTE ||--o{ PEDIDO : realiza
@@ -46,15 +49,18 @@ erDiagram
         decimal preco
     }
 ```
+<!-- prumo:gerado:fim -->
 
 ## 2. Dicionário de dados
 
+<!-- prumo:gerado:dicionario -->
 ### Tabela `[PREENCHER: nome]`
 
 | Coluna | Tipo | Nulo | Padrão | Restrições | Descrição |
 |---|---|---|---|---|---|
 | id | uuid | não | gen_random_uuid() | PK | Identificador |
 | [PREENCHER] | | | | | |
+<!-- prumo:gerado:fim -->
 
 ## 3. Índices e restrições
 
@@ -93,9 +99,11 @@ erDiagram
 
 ## 8. Privacidade e retenção (LGPD)
 
+<!-- prumo:gerado:lgpd -->
 | Dado pessoal | Tabela.coluna | Finalidade | Base legal | Retenção | Proteção |
 |---|---|---|---|---|---|
 | E-mail | cliente.email | [PREENCHER] | [PREENCHER] | [PREENCHER] | [PREENCHER] |
+<!-- prumo:gerado:fim -->
 
 ## 9. Migrações, seeds e backup
 

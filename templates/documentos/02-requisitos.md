@@ -21,30 +21,38 @@ Escreva requisitos verificáveis: "O sistema deve..." com um único comportament
 
 ## 1. Requisitos funcionais
 
+<!-- prumo:gerado:rf -->
 | ID | Descrição | Prioridade | Origem |
 |---|---|---|---|
 | RF-001 | [PREENCHER: O sistema deve permitir...] | Must | Pedido |
+<!-- prumo:gerado:fim -->
 
 ## 2. Requisitos não funcionais
 
 <!-- Categorias usuais: desempenho, segurança, usabilidade, acessibilidade, disponibilidade,
 compatibilidade (navegadores/dispositivos), manutenibilidade, LGPD/privacidade. -->
 
+<!-- prumo:gerado:rnf -->
 | ID | Categoria | Descrição | Métrica / critério |
 |---|---|---|---|
 | RNF-001 | Segurança | [PREENCHER: Senhas armazenadas com hash forte (bcrypt/argon2)] | [PREENCHER] |
 | RNF-002 | Privacidade (LGPD) | [PREENCHER: dados pessoais tratados e base legal] | [PREENCHER] |
+<!-- prumo:gerado:fim -->
 
 ## 3. Regras de negócio
 
+<!-- prumo:gerado:rn -->
 | ID | Regra | Exemplo |
 |---|---|---|
 | RN-001 | [PREENCHER: Um pedido só pode ser cancelado até 24h após a criação] | [PREENCHER] |
+<!-- prumo:gerado:fim -->
 
 ## 4. Glossário
 
 <!-- Termo do negócio usado mais de uma vez: defina aqui, uma vez. Os outros documentos usam o termo sem redefinir. -->
 
+<!-- prumo:gerado:glossario -->
 | Termo | Definição |
 |---|---|
 | [PREENCHER] | [PREENCHER] |
+<!-- prumo:gerado:fim -->

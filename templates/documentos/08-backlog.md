@@ -11,18 +11,23 @@ Estados: a fazer, em andamento, em revisão, concluída.
 
 ## 1. Épicos
 
+<!-- prumo:gerado:epicos -->
 | ID | Épico | Objetivo | Marco de entrega |
 |---|---|---|---|
 | EP-01 | [PREENCHER] | [PREENCHER] | M1 |
+<!-- prumo:gerado:fim -->
 
 ## 2. Marcos de entrega
 
+<!-- prumo:gerado:marcos -->
 | Marco | Conteúdo | Data prevista | % do pagamento |
 |---|---|---|---|
 | M1 | [PREENCHER] | [PREENCHER] | [PREENCHER] |
+<!-- prumo:gerado:fim -->
 
 ## 3. Histórias
 
+<!-- prumo:gerado:historias -->
 ### HU-001 — [PREENCHER: título curto]
 
 **Épico:** EP-01 · **Casos de uso:** UC-001 · **Requisitos:** RF-001
@@ -34,6 +39,7 @@ Estados: a fazer, em andamento, em revisão, concluída.
 - **Dado** [PREENCHER: contexto], **quando** [PREENCHER: ação], **então** [PREENCHER: resultado].
 
 **Estimativa:** [PREENCHER]h · **Prioridade:** Must · **Status:** a fazer
+<!-- prumo:gerado:fim -->
 
 ## 4. Definição de Preparado (DoR)
 

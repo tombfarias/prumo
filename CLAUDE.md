@@ -8,7 +8,7 @@ rastreabilidade e um kit de agentes (skills, subagentes, hooks) para o Claude Co
 - `prumo_cli/` — CLI (`cli.py`), criação de projetos (`projeto.py`), rastreabilidade (`rastreio.py`), validação e
   contexto (`validacao.py`), avisos de estilo (`estilo.py`, regras em `docs/guia-de-escrita.md`), projetos existentes e stacks fora dos perfis (`mapear.py`),
   orçamento/horas/exportação (`gestao.py`), Figma (`figma.py`), segurança (`seguranca.py`),
-  formulário de especificação (`formulario.py`, desenho em `docs/formulario-de-especificacao.md`) e geração dos documentos a partir dele (`geracao.py`, hoje o briefing),
+  formulário de especificação (`formulario.py`, desenho em `docs/formulario-de-especificacao.md`) e geração dos documentos a partir dele (`geracao.py`: marcadores, hash e mesclagem; `geradores.py`: conteúdo de cada bloco),
   ponte com o Claude Code (`claude.py`), servidor da interface (`servidor.py`) e a interface (`gui/index.html`, HTML/CSS/JS puro,
   com o `mermaid.min.js` embutido para desenhar diagramas).
 - `templates/documentos/` — modelos de especificação; `templates/perfis/` — perfis e convenções por stack;
