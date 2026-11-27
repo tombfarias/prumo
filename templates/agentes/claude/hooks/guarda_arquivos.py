@@ -24,7 +24,7 @@ def eh_segredo(caminho):
         return True
     if nome.startswith("id_rsa") or nome.startswith("id_ed25519"):
         return True
-    return nome in {"credentials.json", "secrets.json", "service-account.json"} or nome.startswith("service-account")
+    return nome in {"credentials.json", "secrets.json", "service-account.json", "wp-config.php"} or nome.startswith("service-account")
 
 
 def main():

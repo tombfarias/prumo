@@ -31,7 +31,6 @@ DESCRICOES = {
     "11-entrega": "Implantação, checklist de entrega, manual de operação",
     "12-seguranca": "Superfície de ataque, ameaças, checklist OWASP, achados (SEG) e histórico de revisões",
 }
-SKILLS_FIGMA = {"implementar-tela-figma", "diagramas-figjam"}
 IGNORAR_DOCS = {"rastreabilidade.md", "orcamento.md"}
 
 
@@ -115,6 +114,7 @@ class Projeto:
         ctx = {
             "projeto": c["projeto"],
             "slug": c.get("slug", slug(c["projeto"])),
+            "prefixo": c.get("slug", slug(c["projeto"])).replace("-", "_"),
             "cliente": c.get("cliente", ""),
             "autor": c.get("autor", ""),
             "data": hoje_br(),
@@ -126,7 +126,7 @@ class Projeto:
             "url_prumo": URL_PRUMO,
         }
         ctx["lista_documentos"] = _lista_documentos(c.get("documentos") or [])
-        ctx["lista_skills"] = _lista_skills(figma)
+        ctx["lista_skills"] = _lista_skills(self.skills_do_kit())
         ctx["convencoes"] = renderizar(ler(TEMPLATES / "perfis" / "convencoes" / perfil["convencoes"]), ctx).strip()
         ctx["comandos_figma"] = (
             f"| `{ctx['prumo']} figma telas` | Sincroniza o inventário de telas (TL) de `docs/05-interface.md` com o arquivo do Figma |\n"
@@ -138,6 +138,13 @@ class Projeto:
             if figma else ""
         )
         return ctx
+
+    def skills_do_kit(self):
+        """Skills do kit que este projeto recebe, conforme as condições de templates/agentes/kit.json."""
+        regras = ler_json(TEMPLATES / "agentes" / "kit.json").get("skills", {})
+        fatos = {"figma": self.figma_ativo(), "perfil": self.config.get("perfil", "")}
+        return [d for d in sorted((TEMPLATES / "agentes" / "claude" / "skills").iterdir())
+                if d.is_dir() and condicao_kit(regras.get(d.name, ""), fatos)]
 
     def comando_hook(self, nome, args=""):
         """Linha de comando de um hook: Python (padrão, portátil) ou o próprio prumo.exe (sem Python instalado)."""
@@ -176,9 +183,7 @@ class Projeto:
             gravar(destino, texto)
             escritos.append(self.rel(destino))
 
-        for skill in sorted((base / "claude" / "skills").iterdir()):
-            if skill.name in SKILLS_FIGMA and not self.figma_ativo():
-                continue
+        for skill in self.skills_do_kit():
             escrever(f".claude/skills/{skill.name}/SKILL.md", renderizar(ler(skill / "SKILL.md"), ctx))
         for agente in sorted((base / "claude" / "agents").glob("*.md")):
             escrever(f".claude/agents/{agente.name}", renderizar(ler(agente), ctx))
@@ -212,11 +217,24 @@ def _frontmatter(texto):
     return dados
 
 
-def _lista_skills(figma):
+def condicao_kit(condicao, fatos):
+    """Avalia uma condição do kit.json: vazia (sempre), `figma`, `perfil:<id>`; `!` nega. Desconhecida = falsa."""
+    condicao = (condicao or "").strip()
+    if not condicao:
+        return True
+    if condicao.startswith("!"):
+        return not condicao_kit(condicao[1:], fatos)
+    nome, _, valor = condicao.partition(":")
+    if nome == "figma" and not valor:
+        return bool(fatos.get("figma"))
+    if nome == "perfil" and valor:
+        return fatos.get("perfil") == valor
+    return False
+
+
+def _lista_skills(skills):
     linhas = ["| Skill | Quando usar | Arquivo |", "|---|---|---|"]
-    for skill in sorted((TEMPLATES / "agentes" / "claude" / "skills").iterdir()):
-        if skill.name in SKILLS_FIGMA and not figma:
-            continue
+    for skill in skills:
         fm = _frontmatter(ler(skill / "SKILL.md"))
         primeira = fm.get("description", "").split(". ")[0].rstrip(".")
         linhas.append(f"| `{skill.name}` | {primeira}. | `.claude/skills/{skill.name}/SKILL.md` |")

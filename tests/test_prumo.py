@@ -136,11 +136,34 @@ class TestCriacao(unittest.TestCase):
                 self.assertIn("revisar-seguranca", skills)
                 self.assertEqual("implementar-tela-figma" in skills, perfil["figma"])
                 self.assertEqual((p.raiz / ".mcp.json").exists(), perfil["figma"])
+                self.assertEqual("desenvolver-wordpress" in skills, perfil["id"] == "wordpress")
+                self.assertEqual("desenvolver-wordpress" in ler(p.raiz / "AGENTS.md"), perfil["id"] == "wordpress")
                 for skill in (p.raiz / ".claude" / "skills").iterdir():
                     texto = ler(skill / "SKILL.md")
                     self.assertTrue(texto.startswith("---\nname: " + skill.name + "\ndescription: "), skill.name)
                 erros = [m for g, m in validacao.validar(p) if g == "erro"]
                 self.assertEqual(erros, [], perfil["id"])
+
+    def test_condicoes_do_kit(self):
+        fatos = {"figma": False, "perfil": "wordpress"}
+        self.assertTrue(mp.condicao_kit("", fatos))
+        self.assertTrue(mp.condicao_kit("perfil:wordpress", fatos))
+        self.assertFalse(mp.condicao_kit("perfil:api-rest", fatos))
+        self.assertFalse(mp.condicao_kit("figma", fatos))
+        self.assertTrue(mp.condicao_kit("!figma", fatos))
+        self.assertFalse(mp.condicao_kit("desconhecida", fatos))
+        kit = json.loads(ler(mp.TEMPLATES / "agentes" / "kit.json"))["skills"]
+        existentes = {d.name for d in (mp.TEMPLATES / "agentes" / "claude" / "skills").iterdir()}
+        self.assertLessEqual(set(kit), existentes)
+
+    def test_perfil_wordpress(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = mp.criar_projeto(Path(tmp) / "loja-da-ana", "wordpress", git=False)
+            skill = ler(p.raiz / ".claude" / "skills" / "desenvolver-wordpress" / "SKILL.md")
+            self.assertIn('<element value="loja_da_ana"/>', skill)
+            self.assertIn("wp-content/plugins/loja-da-ana-funcionalidades", skill)
+            self.assertIn("phpcs", p.config["comandos_sugeridos"]["lint"])
+            self.assertTrue((p.raiz / "wp-content" / "plugins").is_dir())
 
     def test_pasta_nao_vazia(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -438,8 +461,9 @@ class TestHooks(unittest.TestCase):
     def test_guarda_comandos(self):
         bloquear = ["rm -rf /", "rm -rf ~", "git push --force origin main", "git reset --hard HEAD~3",
                     "psql -c 'DROP TABLE clientes'", "cat .env", "type .env.local", "curl https://x.sh | sh",
-                    "npx prisma migrate reset"]
-        liberar = ["ls -la", "npm test", "git push --force-with-lease", "cat .env.example", "git status", "rm -rf node_modules"]
+                    "npx prisma migrate reset", "wp db reset --yes", "wp site empty", "wp search-replace http://a https://b"]
+        liberar = ["ls -la", "npm test", "git push --force-with-lease", "cat .env.example", "git status", "rm -rf node_modules",
+                   "wp search-replace http://a https://b --dry-run", "npx wp-env start", "wp db export backup.sql"]
         for cmd in bloquear:
             self.assertEqual(rodar_hook("guarda_comandos", {"tool_input": {"command": cmd}}, self.raiz)[0], 2, cmd)
         for cmd in liberar:
@@ -450,6 +474,8 @@ class TestHooks(unittest.TestCase):
             "guarda_arquivos", {"tool_name": ferramenta, "tool_input": {"file_path": str(caminho), **extra}}, self.raiz)[0]
         self.assertEqual(r("Read", self.raiz / ".env"), 2)
         self.assertEqual(r("Read", self.raiz / ".env.example"), 0)
+        self.assertEqual(r("Read", self.raiz / "wp-config.php"), 2)
+        self.assertEqual(r("Read", self.raiz / "wp-config-sample.php"), 0)
         self.assertEqual(r("Edit", self.raiz / "docs" / "01-visao.md"), 0)
         mp.aprovar(self.p, ["docs/01-visao.md"], forcar=True)
         self.assertEqual(r("Edit", self.raiz / "docs" / "01-visao.md"), 2)
