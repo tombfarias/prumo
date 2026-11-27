@@ -16,10 +16,11 @@ A especificação só é a fonte da verdade se acompanhar o código. Esta skill 
 
 | Mudança no código | Documentos a revisar |
 |---|---|
-| Migrações, schema, models, entidades | `06-banco-de-dados.md` (ER, dicionário, índices, LGPD), `04-uml/classes.md` |
-| Rotas, endpoints, controladores, telas, componentes de página | `03-casos-de-uso.md` (fluxos), `04-uml/sequencia.md`, `05-interface.md` |
+| Migrações, schema, models, entidades | `06-banco-de-dados.md` (ER, dicionário, índices, LGPD), `04-uml/classes.md`, `04-uml/objetos.md` |
+| Rotas, endpoints, controladores, telas, componentes de página | `03-casos-de-uso.md` (fluxos), `04-uml/sequencia.md`, `04-uml/comunicacao.md`, `04-uml/visao-geral-interacao.md`, `05-interface.md` |
 | Regra de negócio nova ou alterada | `02-requisitos.md` (RN), casos de uso que a aplicam |
-| Dependência nova, serviço externo, mudança de estrutura | `07-arquitetura.md` (+ ADR com `{{prumo}} adr`), `04-uml/componentes.md` |
+| Dependência nova, serviço externo, mudança de estrutura | `07-arquitetura.md` (+ ADR com `{{prumo}} adr`), `04-uml/componentes.md`, `04-uml/pacotes.md`, `04-uml/estrutura-composta.md` |
+| Timeout, agendamento, fila, prazo, SLA | `04-uml/tempo.md`, `02-requisitos.md` (RNF/RN) |
 | Docker, CI/CD, hospedagem | `04-uml/implantacao.md`, `07-arquitetura.md`, `11-entrega.md` |
 | Variável de ambiente nova | `.env.example`, `07-arquitetura.md` (segredos), `11-entrega.md`, `README.md` |
 | Testes novos ou alterados | `09-plano-de-testes.md` (CT-xxx com o caminho do teste) |
