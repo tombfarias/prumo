@@ -9,6 +9,7 @@ Sintaxe: https://mermaid.js.org/syntax/classDiagram.html
 
 ## 1. Diagrama
 
+<!-- prumo:gerado:diagrama -->
 ```mermaid
 classDiagram
     direction LR
@@ -33,12 +34,15 @@ classDiagram
     Cliente "1" --> "0..*" Pedido : realiza
     Pedido --> StatusPedido
 ```
+<!-- prumo:gerado:fim -->
 
 ## 2. Responsabilidades
 
+<!-- prumo:gerado:responsabilidades -->
 | Classe | Responsabilidade | Casos de uso relacionados |
 |---|---|---|
 | [PREENCHER] | [PREENCHER] | [PREENCHER: UC-xxx] |
+<!-- prumo:gerado:fim -->
 
 ## 3. Observações de projeto
 

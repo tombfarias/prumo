@@ -968,14 +968,30 @@ const PASSOS_FORM = [
     ["regras", "Regras de negócio", "tabela", [["id", "ID", "id"], ["regra", "Regra"], ["exemplo", "Exemplo"]]],
     ["fora_do_escopo", "Fora do escopo (um por linha)", "lista", "o que o cliente pode presumir que está incluído e não está"],
     ["glossario", "Termos do cliente", "tabela", [["termo", "Termo"], ["definicao", "Definição"]]]]},
-  {id: "tecnico", t: "Integrações", d: "Cada escolha traz perguntas, requisitos de segurança e variáveis de ambiente do catálogo.", campos: [
+  {id: "casos_de_uso", t: "Casos de uso", d: "Um por objetivo do ator (\"Fazer encomenda\"). Os fluxos ficam para o Claude.", sugerir: true, campos: [
+    ["casos_de_uso", "Casos de uso", "tabela", [["id", "ID", "id"], ["nome", "Nome"], ["ator", "Ator", "ator"], ["requisitos", "RFs", "csv"],
+      ["regras", "RNs", "csv"], ["telas", "Telas", "csv"]]]]},
+  {id: "dados", t: "Dados", d: "O que o sistema guarda. Viram o diagrama de classes, o ER, o dicionário e a tabela de LGPD.", campos: [
+    ["entidades", "Entidades", "entidades"]]},
+  {id: "telas", t: "Telas", d: "Inventário, mapa de navegação e uma ficha por tela em 05-interface.md.", campos: [
+    ["interface.telas", "Telas", "tabela", [["id", "ID", "id"], ["nome", "Nome"], ["objetivo", "Objetivo"], ["ator", "Ator", "ator"],
+      ["atende", "Atende (RFs)", "csv"], ["vai_para", "Vai para (TLs)", "csv"]]],
+    ["interface.figma", "Arquivo do Figma (URL)", "texto"], ["interface.biblioteca", "Biblioteca de componentes", "texto", "shadcn/ui, MUI, Tailwind, própria…"],
+    ["interface.tipografia", "Tipografia", "texto"], ["interface.paleta", "Paleta / tokens", "texto"],
+    ["interface.breakpoints", "Breakpoints", "texto", "ex.: 640 / 768 / 1024 / 1280 px"]]},
+  {id: "tecnico", t: "Técnico", d: "Stack, login, integrações e requisitos não funcionais. Cada escolha traz perguntas, RNFs e ameaças do catálogo.", campos: [
+    ["tecnico.stack", "Stack por camada", "stack"],
     ["tecnico.login", "Login", "sel", () => E.formCat.logins], ["tecnico.integracoes", "Integrações", "caixas", () => E.formCat.integracoes],
     ["tecnico.rnf", "Requisitos não funcionais", "caixas", () => E.formCat.rnf]]},
+  {id: "comercial", t: "Comercial", d: "Vai para a proposta e o backlog. Valor da hora e contingência ficam nas configurações.", campos: [
+    ["comercial.validade_dias", "Validade da proposta (dias)", "num"], ["comercial.garantia_dias", "Garantia (dias)", "num"],
+    ["comercial.condicoes", "Condições de pagamento", "texto", "ex.: 40% na assinatura, 60% na entrega"],
+    ["comercial.marcos", "Marcos de entrega", "tabela", [["id", "ID", "id"], ["conteudo", "Conteúdo"], ["data", "Data"], ["percentual", "% do pagamento", "num"]]]]},
   {id: "perguntas", t: "Perguntas", d: "Dúvidas para o cliente. As das integrações escolhidas entram sozinhas no briefing.", campos: [
     ["perguntas", "Perguntas em aberto", "tabela", [["pergunta", "Pergunta"], ["bloqueia", "Bloqueia preço ou escopo", "bool"], ["impacta", "Impacta"]]]]}];
 const pegar = (o, c) => c.split(".").reduce((a, k) => a == null ? a : a[k], o);
 function por(o, c, v) { const k = c.split("."), u = k.pop(); k.reduce((a, x) => a[x] ??= {}, o)[u] = v; }
-const cheio = v => Array.isArray(v) ? v.length > 0 : v != null && String(v).trim() !== "";
+const cheio = v => Array.isArray(v) ? v.length > 0 : v && typeof v === "object" ? Object.values(v).some(cheio) : v != null && String(v).trim() !== "";
 const opcoesDe = f => (typeof f === "function" ? f() : f) || [];
 function preenchidos(p) { const c = p.campos.filter(f => cheio(pegar(E.form, f[0]))).length; return [c, p.campos.length]; }
 
@@ -983,27 +999,31 @@ async function painelForm() {
   $("#painel").innerHTML = `<div class="painel"><div class="carregando">Lendo o formulário…</div></div>`;
   let r; try { r = await prumo(["formulario"], E.projeto); } catch (e) { return falhou(e); }
   E.form = r.formulario; E.formOpc = r.opcoes; E.formCat = r.catalogos; E.formProb = {erros: r.erros, avisos: r.avisos};
-  if (!PASSOS_FORM.some(p => p.id === E.formPasso)) E.formPasso = "negocio";
+  E.formTelas = (r.passos || []).some(p => p.id === "telas");
+  if (!passosForm().some(p => p.id === E.formPasso)) E.formPasso = "negocio";
   desenharForm();
 }
+const passosForm = () => PASSOS_FORM.filter(p => p.id !== "telas" || E.formTelas);
 function desenharForm() {
-  const p = PASSOS_FORM.find(x => x.id === E.formPasso);
+  const PASSOS = passosForm(), p = PASSOS.find(x => x.id === E.formPasso);
   $("#painel").innerHTML = `<div class="painel grade">
     <div class="cartao"><div class="linha-acao"><div style="flex:1;min-width:220px"><b>Formulário de especificação</b>
-      <div class="legenda">Grava sozinho em especificacao.prumo.json. "Gravar no briefing" preenche docs/00-briefing.md sem apagar o que você ou o Claude escreveram.</div></div>
+      <div class="legenda">Grava sozinho em especificacao.prumo.json. "Gerar documentos" mostra o que muda e preenche os documentos sem apagar o que você ou o Claude escreveram.</div></div>
       <span class="legenda" id="f-est">${E.formPend ? "Alterações não gravadas" : "Gravado"}</span>
-      <button class="btn pri" id="f-ger">${ic("salvar")}Gravar no briefing</button><button class="btn" id="f-cla">${ic("claude")}Especificar com o Claude</button></div>
+      <button class="btn pri" id="f-ger">${ic("salvar")}Gerar documentos</button><button class="btn" id="f-cla">${ic("claude")}Especificar com o Claude</button></div>
       <div id="f-res"></div></div>
-    <div class="form-esp"><nav class="cartao lateral-docs linhas" aria-label="Passos">${PASSOS_FORM.map((x, i) => { const [c, t] = preenchidos(x);
+    <div class="form-esp"><nav class="cartao lateral-docs linhas" aria-label="Passos">${PASSOS.map((x, i) => { const [c, t] = preenchidos(x);
       return `<button class="linha clic ${x.id === p.id ? "sel" : ""}" data-p="${x.id}" style="border:0;background:none;text-align:left;font:inherit;color:inherit">
         <span class="ponto ${c === t ? "ok" : c ? "and" : ""}"></span><span class="nome">${i + 1}. ${esc(x.t)}</span><span class="legenda" data-cont="${x.id}">${c}/${t}</span></button>`; }).join("")}</nav>
       <div class="cartao"><h3>${esc(p.t)}</h3><p class="legenda" style="margin-top:-6px">${esc(p.d)}</p>
         <div class="form-sec">${p.campos.map(campoForm).join("")}</div>
-        <div class="linha-acao" style="margin-top:6px">${PASSOS_FORM.indexOf(p) < PASSOS_FORM.length - 1 ? `<button class="btn" id="f-prox">Próximo passo ${ic("seta")}</button>` : ""}</div></div></div>
+        <div class="linha-acao" style="margin-top:6px">${p.sugerir ? `<button class="btn" id="f-sug">Sugerir um por funcionalidade</button>` : ""}
+          ${PASSOS.indexOf(p) < PASSOS.length - 1 ? `<button class="btn" id="f-prox">Próximo passo ${ic("seta")}</button>` : ""}</div></div></div>
     ${problemasForm()}</div>`;
   $$("[data-p]").forEach(b => b.onclick = () => { E.formPasso = b.dataset.p; desenharForm(); });
-  const prox = $("#f-prox"); if (prox) prox.onclick = () => { E.formPasso = PASSOS_FORM[PASSOS_FORM.indexOf(p) + 1].id; desenharForm(); $("#principal").scrollTop = 0; };
-  $("#f-ger").onclick = () => gravarForm(true);
+  const prox = $("#f-prox"); if (prox) prox.onclick = () => { E.formPasso = PASSOS[PASSOS.indexOf(p) + 1].id; desenharForm(); $("#principal").scrollTop = 0; };
+  const sug = $("#f-sug"); if (sug) sug.onclick = sugerirCasos;
+  $("#f-ger").onclick = previaGeracao;
   $("#f-cla").onclick = async () => { await gravarForm(false); irPara("claude", {tarefa: "especificar"}); };
   ligarForm($("#painel"));
 }
@@ -1016,18 +1036,52 @@ function campoForm([c, rot, tipo, extra]) {
   if (tipo === "caixas") return `<div class="campo larga"><label>${esc(rot)}</label><div class="caixas">${opcoesDe(extra).map(o => `<label class="troca" title="${esc(o.metrica ? `${o.categoria}: ${o.metrica}` : o.ator || "")}">
     <input type="checkbox" data-c="${c}" data-t="caixa" value="${esc(o.id)}" ${(v || []).includes(o.id) ? "checked" : ""}><i></i>${esc(o.nome || o.descricao)}</label>`).join("")}</div></div>`;
   if (tipo === "tabela") return `<div class="campo larga"><label>${esc(rot)}</label>${tabelaForm(c, extra, v || [])}</div>`;
+  if (tipo === "num") return `<div class="campo"><label for="${id}">${esc(rot)}</label><input type="number" min="0" id="${id}" data-c="${c}" data-t="num" value="${v ?? ""}">${aj}</div>`;
+  if (tipo === "stack") return `<div class="campo larga"><label>${esc(rot)}</label><div class="form-sec">${E.formOpc.camadas.map(cam => {
+    const ops = (E.formCat.stacks || []).filter(o => o.camadas.includes(cam)), val = (v || {})[cam] || "";
+    return `<div class="campo"><label for="f-st-${cam}">${esc(CAMADAS_NOME[cam] || cam)}</label><input type="text" id="f-st-${cam}" list="f-stl-${cam}" data-c="${c}.${cam}" value="${esc(val)}">
+      <datalist id="f-stl-${cam}">${ops.map(o => `<option value="${esc(o.id)}">${esc(o.nome)}</option>`).join("")}</datalist></div>`; }).join("")}</div>
+    <span class="ajuda">Escolha da lista ou escreva outra tecnologia.</span></div>`;
+  if (tipo === "entidades") return `<div class="campo larga"><label>${esc(rot)}</label>${entidadesForm(c, v || [])}</div>`;
   return `<div class="campo"><label for="${id}">${esc(rot)}</label><input type="text" id="${id}" data-c="${c}" value="${esc(v)}">${aj}</div>`;
 }
-const PRINCIPAIS = ["acao", "regra", "pergunta", "descricao", "definicao"];
+const PRINCIPAIS = ["acao", "regra", "pergunta", "descricao", "definicao", "nome", "conteudo"];
+const CAMADAS_NOME = {frontend: "Frontend", backend: "Backend", mobile: "Mobile", banco: "Banco de dados", orm: "ORM / migrações",
+  autenticacao: "Autenticação", hospedagem: "Hospedagem", testes: "Testes"};
+const COLS_CAMPOS = [["nome", "Campo"], ["tipo", "Tipo", "sel", () => E.formCat["tipos-de-campo"]], ["obrigatorio", "Obrigatório", "bool"],
+  ["unico", "Único", "bool"], ["pessoal", "Dado pessoal", "bool"]];
+const COLS_REL = [["com", "Com a entidade", "ent"], ["cardinalidade", "Cardinalidade", "sel", () => E.formOpc.cardinalidades], ["verbo", "Verbo", "texto"]];
+function entidadesForm(c, ents) {
+  const nomes = (E.form.entidades || []).map(e => e.nome).filter(Boolean);
+  return `<datalist id="f-ents">${nomes.map(n => `<option value="${esc(n)}">`).join("")}</datalist>${ents.map((e, i) => `<div class="cartao" style="padding:12px;margin-bottom:10px">
+    <div class="linha-acao"><input type="text" data-l="${c}" data-i="${i}" data-k="nome" value="${esc(e.nome)}" placeholder="Nome (ex.: Produto)" aria-label="Nome da entidade" style="flex:1;min-width:160px">
+      <input type="text" data-l="${c}" data-i="${i}" data-k="descricao" value="${esc(e.descricao)}" placeholder="Descrição" aria-label="Descrição da entidade" style="flex:2;min-width:200px">
+      <button class="btn fan peq" data-rem="${c}" data-i="${i}" aria-label="Remover entidade">${ic("x")}</button></div>
+    <div class="legenda" style="margin:8px 0 4px">Campos (o id é criado sozinho)</div>${tabelaForm(`${c}.${i}.campos`, COLS_CAMPOS, e.campos || [])}
+    <div class="legenda" style="margin:8px 0 4px">Relações</div>${tabelaForm(`${c}.${i}.relacoes`, COLS_REL, e.relacoes || [])}</div>`).join("")}
+    <button class="btn fan peq" data-add="${c}" style="align-self:flex-start">＋ Entidade</button>`;
+}
+function sugerirCasos() {  // um caso de uso por funcionalidade de escopo que ainda não tem caso de uso
+  const ucs = E.form.casos_de_uso, cobertos = new Set(ucs.flatMap(u => u.requisitos || []));
+  let n = 0;
+  for (const f of E.form.funcionalidades || []) {
+    if (!f.id || !f.acao || f.prioridade === "Won't" || cobertos.has(f.id)) continue;
+    ucs.push({nome: f.acao.trim().replace(/^./, x => x.toUpperCase()), ator: f.ator || "", requisitos: [f.id], regras: [...(f.regras || [])]}); n++;
+  }
+  toast(n ? `${n} caso(s) de uso sugerido(s). Revise os nomes.` : "Todas as funcionalidades já têm caso de uso (as sem ID aparecem depois de gravar).");
+  if (n) { agendarForm(); desenharForm(); }
+}
 function tabelaForm(c, cols, itens) {
   const atores = (E.form.atores || []).map(a => a.nome).filter(Boolean);
   const cel = (k, t, op, it, i) => {
     const v = it[k], d = `data-l="${c}" data-i="${i}" data-k="${k}"`;
     if (t === "id") return `<span class="mono" data-idcel="${c}:${i}">${esc(v || "")}</span>`;
     if (t === "bool") return `<label class="troca"><input type="checkbox" ${d} data-t="bool" ${v ? "checked" : ""}><i></i></label>`;
-    if (t === "sel") return `<select ${d}><option value=""></option>${opcoesDe(op).map(o => `<option ${o === v ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
+    if (t === "sel") return `<select ${d}><option value=""></option>${opcoesDe(op).map(o => { const [val, r] = typeof o === "object" ? [o.id, o.nome] : [o, o];
+      return `<option value="${esc(val)}" ${val === v ? "selected" : ""}>${esc(r)}</option>`; }).join("")}</select>`;
+    if (t === "num") return `<input type="number" min="0" ${d} data-t="num" value="${v ?? ""}" style="width:90px">`;
     if (t === "csv") return `<input type="text" ${d} data-t="csv" value="${esc((v || []).join(", "))}">`;
-    return `<input type="text" ${d} value="${esc(v)}" ${t === "ator" ? 'list="f-atores"' : ""}>`;
+    return `<input type="text" ${d} value="${esc(v)}" ${t === "ator" ? 'list="f-atores"' : t === "ent" ? 'list="f-ents"' : ""}>`;
   };
   return `<datalist id="f-atores">${atores.map(a => `<option value="${esc(a)}">`).join("")}</datalist>
     <div style="overflow-x:auto"><table class="tab-form"><thead><tr>${cols.map(([, r, t]) => `<th class="${t === "id" ? "col-id" : ""}">${esc(r)}</th>`).join("")}<th></th></tr></thead>
@@ -1040,15 +1094,18 @@ function ligarForm(raiz) {
     const c = el.dataset.c;
     if (el.dataset.t === "caixa") por(E.form, c, $$(`[data-c="${c}"]:checked`, raiz).map(x => x.value));
     else if (el.dataset.t === "lista") por(E.form, c, el.value.split("\n").map(s => s.trim()).filter(Boolean));
+    else if (el.dataset.t === "num") por(E.form, c, el.value === "" ? null : Number(el.value));
     else por(E.form, c, el.value);
     agendarForm();
   }));
   $$("[data-l]", raiz).forEach(el => el.addEventListener(el.tagName === "SELECT" || el.type === "checkbox" ? "change" : "input", () => {
     const it = pegar(E.form, el.dataset.l)[+el.dataset.i], k = el.dataset.k, t = el.dataset.t;
-    it[k] = t === "bool" ? el.checked : t === "csv" ? el.value.split(",").map(s => s.trim()).filter(Boolean) : el.value;
+    it[k] = t === "bool" ? el.checked : t === "csv" ? el.value.split(",").map(s => s.trim()).filter(Boolean)
+      : t === "num" ? (el.value === "" ? null : Number(el.value)) : el.value;
     agendarForm();
   }));
-  $$("[data-add]", raiz).forEach(b => b.onclick = () => { const l = pegar(E.form, b.dataset.add); l.push({}); desenharForm();
+  $$("[data-add]", raiz).forEach(b => b.onclick = () => { let l = pegar(E.form, b.dataset.add); if (!l) { l = []; por(E.form, b.dataset.add, l); }
+    l.push(b.dataset.add === "entidades" ? {nome: "", campos: [], relacoes: []} : {}); desenharForm();
     const ult = $$(`[data-l="${b.dataset.add}"][data-i="${l.length - 1}"]`).find(x => x.tagName !== "SPAN"); if (ult) ult.focus(); });
   $$("[data-rem]", raiz).forEach(b => b.onclick = () => { pegar(E.form, b.dataset.rem).splice(+b.dataset.i, 1); agendarForm(); desenharForm(); });
 }
@@ -1060,7 +1117,7 @@ function problemasForm() {
 }
 function agendarForm() {
   E.formPend = true; const st = $("#f-est"); if (st) st.textContent = "Alterações não gravadas";
-  for (const p of PASSOS_FORM) { const el = $(`[data-cont="${p.id}"]`); if (!el) continue; const [c, t] = preenchidos(p);
+  for (const p of passosForm()) { const el = $(`[data-cont="${p.id}"]`); if (!el) continue; const [c, t] = preenchidos(p);
     el.textContent = `${c}/${t}`; el.parentElement.querySelector(".ponto").className = `ponto ${c === t ? "ok" : c ? "and" : ""}`; }
   clearTimeout(E.formTimer); E.formTimer = setTimeout(() => gravarForm(false), 900);
 }
@@ -1088,18 +1145,43 @@ async function copiarIds() {  // os IDs são atribuídos pelo CLI: copia para o 
       local.id = it.id; const el = $(`[data-idcel="${c}:${i}"]`); if (el) el.textContent = it.id; } });
   }
 }
-const ESTADOS_GER = {gerado: ["preenchido agora", ""], atualizado: ["atualizado", ""], igual: ["sem mudança", "cinza"], limpo: ["voltou a ser lacuna", "ambar"],
-  editado: ["editado no documento, mantido", "azul"], vazio: ["sem dados", "cinza"], aprovado: ["aprovado, não tocado", "azul"]};
-const BLOCOS_BRIEFING = {contato: "Contato", contexto: "Contexto", problema: "Problema", objetivos: "Objetivos", usuarios: "Usuários",
-  funcionalidades: "Funcionalidades", restricoes: "Restrições", integracoes: "Integrações", referencias: "Referências", perguntas: "Perguntas", documento: "Documento"};
+const ESTADOS_GER = {gerado: ["preenchido agora", ""], atualizado: ["atualizado", ""], igual: ["sem mudança", "cinza"], limpo: ["voltou ao modelo", "ambar"],
+  editado: ["editado no documento, mantido", "azul"], acrescentado: ["editado; itens novos acrescentados", "azul"], vazio: ["sem dados", "cinza"],
+  aprovado: ["aprovado, não tocado", "azul"]};
+const MUDA = new Set(["gerado", "atualizado", "limpo", "acrescentado"]);
+function chipsGeracao(g) {
+  const docs = Object.entries(g.documentos), parados = docs.filter(([, bl]) => !Object.values(bl).some(e => MUDA.has(e)));
+  return docs.filter(d => !parados.includes(d)).map(([doc, blocos]) => {
+    const itens = Object.entries(blocos), novos = (g.acrescentados || {})[doc] || {};
+    const muda = itens.filter(([, e]) => MUDA.has(e)), resto = itens.filter(([, e]) => !MUDA.has(e));
+    return `<div class="linha-acao" style="margin-top:8px"><b style="min-width:210px">${esc(doc.replace("docs/", ""))}</b>
+      ${muda.map(([b, e]) => `<span class="chip ${ESTADOS_GER[e][1]}">${esc(b)}: ${esc(ESTADOS_GER[e][0])}${novos[b] ? " (" + esc(novos[b].join(", ")) + ")" : ""}</span>`).join("")}
+      ${resto.length ? `<span class="legenda" title="${esc(resto.map(([b, e]) => `${b}: ${(ESTADOS_GER[e] || [e])[0]}`).join("\n"))}">${muda.length ? "+ " : ""}${resto.length} bloco(s) sem mudança</span>` : ""}
+      <button class="btn fan peq" data-ver="${esc(doc)}">ver</button></div>`; }).join("")
+    + (parados.length ? `<div class="legenda" style="margin-top:8px" title="${esc(parados.map(([d]) => d).join("\n"))}">${parados.length} documento(s) sem mudança.</div>` : "");
+}
+function ligarVer(el) { $$("[data-ver]", el).forEach(b => b.onclick = () => irPara("docs", {docSel: b.dataset.ver, modoDoc: "ver"})); }
+async function previaGeracao() {
+  const el = $("#f-res"); if (!el) return;
+  await gravarForm(false);
+  if (E.formPend) return;
+  el.innerHTML = `<div class="carregando" style="margin-top:12px">Calculando o que muda…</div>`;
+  let g; try { g = await prumo(["gerar", "--simular"], E.projeto); } catch (e) { el.innerHTML = ""; return falhou(e); }
+  if (!g.existe) { el.innerHTML = ""; return toast("Preencha o formulário primeiro."); }
+  el.innerHTML = `<div style="margin-top:12px"><div class="legenda">${g.alterados.length ? `Prévia: ${g.alterados.length} documento(s) mudam. Blocos editados no documento ficam como estão.` : "Nada muda nos documentos."}</div>
+    ${chipsGeracao(g)}${g.alterados.length ? `<div class="linha-acao" style="margin-top:10px"><button class="btn pri" id="f-conf">${ic("salvar")}Gravar nos documentos</button>
+    <button class="btn fan" id="f-canc">Cancelar</button></div>` : ""}</div>`;
+  ligarVer(el);
+  const canc = $("#f-canc"); if (canc) canc.onclick = () => { el.innerHTML = ""; };
+  const conf = $("#f-conf"); if (conf) conf.onclick = async () => {
+    conf.disabled = true;
+    try { mostrarGeracao(await prumo(["gerar"], E.projeto)); } catch (e) { conf.disabled = false; falhou(e); } };
+}
 async function mostrarGeracao(g) {
   const el = $("#f-res"); if (!el || !g) return;
-  const blocos = Object.entries(g.documentos["docs/00-briefing.md"] || {});
-  el.innerHTML = `<div class="linha-acao" style="margin-top:12px">${blocos.map(([b, e]) => { const [t, cl] = ESTADOS_GER[e] || [e, "cinza"];
-    return `<span class="chip ${cl}">${esc(BLOCOS_BRIEFING[b] || b)}: ${esc(t)}</span>`; }).join("")}
-    <button class="btn fan peq" id="f-ver">ver o briefing</button></div>`;
-  $("#f-ver").onclick = () => irPara("docs", {docSel: "docs/00-briefing.md", modoDoc: "ver"});
-  toast(g.alterados.length ? "Briefing atualizado." : "Nada mudou no briefing.");
+  el.innerHTML = `<div style="margin-top:12px"><div class="legenda">${g.alterados.length ? `Gravado em ${g.alterados.length} documento(s).` : "Nada mudou."}</div>${chipsGeracao(g)}</div>`;
+  ligarVer(el);
+  toast(g.alterados.length ? "Documentos atualizados." : "Nada mudou nos documentos.");
   await atualizarStatus();
 }
 

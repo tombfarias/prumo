@@ -77,15 +77,20 @@ Sem ação: preenchimento por passo e quantidade de itens; com `--json`, também
 `templates/catalogos/` e as opções fixas (é o que a interface usa). `salvar ARQUIVO`: normaliza, atribui os IDs que
 faltam (RF, RN, UC, TL, marcos) sem colidir com os documentos e grava; só erro de estrutura impede a gravação.
 `validar`: referências soltas, IDs repetidos, campos obrigatórios e valores fora dos catálogos (sai com código 1 se houver erro).
-`salvar ARQUIVO --gerar`: grava e em seguida roda `prumo gerar` (é o que o botão **Gravar no briefing** faz).
+`salvar ARQUIVO --gerar`: grava e em seguida roda `prumo gerar`.
 
-### `prumo gerar [--simular]`
-Preenche os documentos com o formulário. Hoje gera o briefing (`docs/00-briefing.md`): contato, contexto, problema,
-objetivos, usuários, funcionalidades (com regras, fora do escopo e termos), restrições, integrações, referências e
-perguntas (as do formulário e as do catálogo de cada integração e login escolhidos). Cada trecho fica entre
-`<!-- prumo:gerado:<bloco> h=<hash> -->` e `<!-- prumo:gerado:fim -->`: enquanto ninguém o edita, é reescrito a cada
-geração; editado, fica como está. Seção sem marcador só é preenchida se ainda tem apenas `[PREENCHER]`. Documento
-aprovado não é tocado. `--simular` mostra o estado de cada bloco sem gravar.
+### `prumo gerar [--simular] [--sobrescrever DOC:BLOCO]`
+Preenche os documentos com o formulário: briefing, visão, requisitos (RF, RNF do catálogo e LGPD automática, RN,
+glossário), casos de uso (atores, diagrama, cabeçalho de cada UC), diagrama de classes, interface (design system,
+inventário, navegação, ficha de cada tela), banco (SGBD/ORM, ER, dicionário, LGPD), arquitetura (stack, integrações,
+segurança), backlog (épicos, marcos, uma HU por funcionalidade com a estimativa do tamanho), proposta (incluído,
+opcionais, não incluído, cronograma, condições, garantia, perguntas que mudam o preço, validade) e segurança
+(superfície e ameaças do catálogo). Lista completa em [Formulário de especificação](formulario-de-especificacao.md), seção 5.2.
+Cada trecho fica entre `<!-- prumo:gerado:<bloco> h=<hash> -->` e `<!-- prumo:gerado:fim -->`: enquanto ninguém o
+edita, é reescrito a cada geração; editado, fica como está e só recebe os itens novos (linha ou subseção cujo ID ainda
+não aparece). Documento aprovado não é tocado; documento sem marcadores (criado antes desta versão) também não.
+`--simular` mostra o estado de cada bloco sem gravar. `--sobrescrever docs/02-requisitos.md:rf` reescreve o bloco mesmo
+editado (pode repetir).
 
 ## Qualidade da especificação
 

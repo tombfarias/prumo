@@ -216,8 +216,9 @@ def cmd_formulario(args):
 
 
 ESTADOS_GERACAO = {"gerado": "preenchido agora", "atualizado": "atualizado", "igual": "sem mudança",
-                   "limpo": "voltou a ser lacuna", "editado": "editado no documento (mantido)",
-                   "vazio": "sem dados no formulário", "aprovado": "documento aprovado (não tocado)"}
+                   "limpo": "voltou a ser lacuna (ou ao exemplo do modelo)", "editado": "editado no documento (mantido)",
+                   "vazio": "sem dados no formulário", "aprovado": "documento aprovado (não tocado)",
+                   "acrescentado": "editado no documento; itens novos acrescentados"}
 
 
 def _texto_geracao(r):
@@ -226,7 +227,9 @@ def _texto_geracao(r):
     texto = []
     for doc, blocos in r["documentos"].items():
         texto.append(doc + (" (simulação)" if r.get("simulado") else ""))
-        texto += [f"  {b}: {ESTADOS_GERACAO.get(e, e)}" for b, e in blocos.items()]
+        novos = r.get("acrescentados", {}).get(doc, {})
+        texto += [f"  {b}: {ESTADOS_GERACAO.get(e, e)}" + (f" ({', '.join(novos[b])})" if b in novos else "")
+                  for b, e in blocos.items()]
     texto.append("Gravado: " + ", ".join(r["alterados"]) if r["alterados"] and not r.get("simulado")
                  else "Nada a gravar." if not r["alterados"] else "Mudaria: " + ", ".join(r["alterados"]))
     return texto
@@ -234,7 +237,7 @@ def _texto_geracao(r):
 
 def cmd_gerar(args):
     p = abrir_projeto(args)
-    r = geracao.gerar(p, simular=args.simular)
+    r = geracao.gerar(p, simular=args.simular, sobrescrever=args.sobrescrever or ())
     saida(r, "\n".join(_texto_geracao(r)))
     return 0
 
@@ -637,8 +640,10 @@ def montar_parser():
     s.add_argument("acao", nargs="?", default="mostrar", choices=["mostrar", "salvar", "validar"])
     s.add_argument("arquivo", nargs="?", help="em salvar: JSON com o formulário")
     s.add_argument("--gerar", action="store_true", help="em salvar: em seguida preenche os documentos (prumo gerar)")
-    s = novo("gerar", cmd_gerar, "preenche os documentos com o formulário (hoje: o briefing)")
+    s = novo("gerar", cmd_gerar, "preenche os documentos com o formulário (blocos prumo:gerado)")
     s.add_argument("--simular", action="store_true", help="só mostra o que mudaria")
+    s.add_argument("--sobrescrever", action="append", metavar="DOC:BLOCO",
+                   help="reescreve o bloco mesmo editado (ex.: docs/02-requisitos.md:rf); pode repetir")
     novo("rastreabilidade", cmd_rastreabilidade, "gera docs/rastreabilidade.md")
     s = novo("contexto", cmd_contexto, "imprime só a trilha ligada a um ou mais IDs (economiza tokens)")
     s.add_argument("ids", nargs="+")

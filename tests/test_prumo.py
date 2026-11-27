@@ -1179,7 +1179,7 @@ class TestGeracao(unittest.TestCase):
             arq = p.raiz / geracao.BRIEFING
             antes = ler(arq)
             r = geracao.gerar(p, simular=True)
-            self.assertEqual((r["alterados"], ler(arq)), ([geracao.BRIEFING], antes))  # simular não grava
+            self.assertEqual((geracao.BRIEFING in r["alterados"], ler(arq)), (True, antes))  # simular não grava
             r = geracao.gerar(p)
             texto = ler(arq)
             estados = r["documentos"][geracao.BRIEFING]
@@ -1215,7 +1215,105 @@ class TestGeracao(unittest.TestCase):
             dados["negocio"]["proposito"] = "Mudou"
             formulario.salvar(p, dados)
             r = geracao.gerar(mp.Projeto(p.raiz))
-            self.assertEqual((r["alterados"], ler(arq)), ([], texto))
+            self.assertEqual((r["alterados"], ler(arq)), (["docs/01-visao.md"], texto))  # só a visão acompanha
+
+    def test_documentos_gerados_em_todos_os_perfis(self):
+        for perfil in mp.listar_perfis():
+            with self.subTest(perfil=perfil["id"]), tempfile.TemporaryDirectory() as tmp:
+                p = criar(tmp, perfil["id"])
+                formulario.salvar(p, copy.deepcopy(FORMULARIO))
+                r = geracao.gerar(p)
+                self.assertEqual(geracao.gerar(p)["alterados"], [])  # idempotente
+                self.assertEqual([m for g, m in validacao.validar(p) if g == "erro"], [])
+                for rel in r["alterados"]:
+                    texto = ler(p.raiz / rel)
+                    self.assertNotIn("{{", texto, rel)
+                    self.assertNotRegex(texto, r"prumo:gerado:(?!fim)[a-z0-9-]+ -->", rel)  # todo marcador tem hash
+
+    def test_documentos_gerados_conteudo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "web-fullstack")
+            formulario.salvar(p, copy.deepcopy(FORMULARIO))
+            r = geracao.gerar(p)
+            estados = r["documentos"]
+            self.assertEqual(estados["docs/02-requisitos.md"]["rf"], "gerado")
+            req = ler(p.raiz / "docs/02-requisitos.md")
+            self.assertIn("| RF-002 | O sistema deve permitir pagar o pedido por Pix (Cliente). Regras: RN-001. | Must |", req)
+            self.assertIn("Tratamento de dados pessoais conforme a LGPD", req)  # marcado e automático (e-mail do Usuario)
+            self.assertIn("Notificações de pagamento validadas por assinatura", req)  # RNF da integração
+            uc = ler(p.raiz / "docs/03-casos-de-uso.md")
+            self.assertIn("### UC-001 — Fazer encomenda", uc)
+            self.assertIn("| Gateway de pagamento | Secundário (sistema) |", uc)
+            banco = ler(p.raiz / "docs/06-banco-de-dados.md")
+            self.assertIn("PRODUTO }o--|| CATEGORIA", banco)
+            self.assertIn("uuid categoria_id FK", banco)
+            self.assertIn("| SGBD | PostgreSQL |", banco)
+            self.assertIn("usuario.email", banco)  # login sem entidade de usuário cria Usuario; e-mail é pessoal
+            self.assertIn('Produto "0..*" --> "1" Categoria : pertence a', ler(p.raiz / "docs/04-uml/classes.md"))
+            backlog = ler(p.raiz / "docs/08-backlog.md")
+            self.assertIn("### HU-001 — Cadastrar produtos", backlog)
+            self.assertIn("**Estimativa:** 12h", backlog)
+            self.assertNotIn("emitir nota fiscal", backlog)  # Won't não vira história
+            self.assertIn("| M2 | Pedidos |", backlog)
+            orc = gestao.orcamento(p)  # o backlog gerado já alimenta o orçamento (M = 12 h, G = 32 h)
+            self.assertEqual((orc["horas_base"], orc["sem_estimativa"]), (44, []))
+            proposta = ler(p.raiz / "docs/10-proposta-comercial.md")
+            self.assertIn("| Validade da proposta | 15 dias |", proposta)
+            self.assertIn("- Emitir nota fiscal", proposta)  # Won't em "não incluído"
+            self.assertIn("Qual gateway o cliente usa ou prefere", proposta)  # pergunta bloqueante
+            interface = ler(p.raiz / "docs/05-interface.md")
+            self.assertIn("tl1 --> tl2", interface)
+            self.assertIn("| TL-002 | Checkout | — | — | UC-001 | — |", interface)
+            self.assertNotIn("[PREENCHER: nome da tela]", interface)  # linha de exemplo do inventário sai
+            self.assertIn("Webhook de pagamento", ler(p.raiz / "docs/12-seguranca.md"))
+
+    def test_bloco_editado_recebe_so_itens_novos(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "web-fullstack")
+            formulario.salvar(p, copy.deepcopy(FORMULARIO))
+            geracao.gerar(p)
+            arq = p.raiz / "docs/02-requisitos.md"
+            gravar(arq, ler(arq).replace("cadastrar produtos (Administrador).", "cadastrar produtos com foto (texto meu)."))
+            hu = p.raiz / "docs/08-backlog.md"
+            gravar(hu, ler(hu).replace("**quero** cadastrar produtos", "**quero** cadastrar produtos (critério meu)"))
+            dados, _ = formulario.carregar(p)
+            dados["funcionalidades"].append({"acao": "ver o cardápio", "ator": "Cliente", "prioridade": "Should"})
+            formulario.salvar(p, dados)
+            r = geracao.gerar(p)
+            self.assertEqual(r["documentos"]["docs/02-requisitos.md"]["rf"], "acrescentado")
+            self.assertEqual(r["acrescentados"]["docs/02-requisitos.md"]["rf"], ["RF-004"])
+            self.assertEqual(r["acrescentados"]["docs/08-backlog.md"]["historias"], ["RF-004"])
+            texto = ler(arq)
+            self.assertIn("(texto meu)", texto)
+            self.assertIn("| RF-004 | O sistema deve permitir ver o cardápio (Cliente). | Should |", texto)
+            self.assertLess(texto.index("RF-004"), texto.index("<!-- prumo:gerado:fim -->"))
+            self.assertIn("### HU-004 — Ver o cardápio", ler(hu))
+            self.assertIn("(critério meu)", ler(hu))
+            self.assertEqual(geracao.gerar(p)["alterados"], [])
+            # --sobrescrever reescreve o bloco editado
+            r = geracao.gerar(p, sobrescrever=["docs/02-requisitos.md:rf"])
+            self.assertEqual(r["documentos"]["docs/02-requisitos.md"]["rf"], "atualizado")
+            self.assertNotIn("(texto meu)", ler(arq))
+            with self.assertRaises(ErroPrumo):
+                geracao.gerar(p, sobrescrever=["rf"])
+
+    def test_lista_esvaziada_volta_ao_exemplo_e_documento_antigo_intocado(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "web-fullstack")
+            modelo = ler(p.raiz / "docs/02-requisitos.md")
+            formulario.salvar(p, copy.deepcopy(FORMULARIO))
+            geracao.gerar(p)
+            dados, _ = formulario.carregar(p)
+            dados["glossario"] = []
+            formulario.salvar(p, dados)
+            self.assertEqual(geracao.gerar(p)["documentos"]["docs/02-requisitos.md"]["glossario"], "limpo")
+            trecho = modelo[modelo.index("## 4. Glossário"):]
+            self.assertIn(trecho, ler(p.raiz / "docs/02-requisitos.md"))
+            # documento sem marcadores (criado antes desta versão) não muda
+            sem = geracao.INICIO.sub(lambda m: m.group(3).rstrip("\n"), modelo)
+            gravar(p.raiz / "docs/02-requisitos.md", sem)
+            self.assertNotIn("docs/02-requisitos.md", geracao.gerar(p)["alterados"])
+            self.assertEqual(ler(p.raiz / "docs/02-requisitos.md"), sem)
 
     def test_secao_com_texto_proprio_nao_e_sobrescrita(self):
         texto = "# B\n\n## 1. Contexto do negócio\n\nTexto colado do cliente.\n\n## 8. Referências\n\n- [PREENCHER]\n"
