@@ -90,7 +90,8 @@ def orcamento(projeto, valor_hora=None, contingencia=None):
     if sem_estimativa:
         partes += ["## Histórias sem estimativa", "", ", ".join(sem_estimativa), ""]
     destino = projeto.docs / "orcamento.md"
-    gravar(destino, "\n".join(partes))
+    from .i18n import traduzir
+    gravar(destino, traduzir("\n".join(partes), projeto.idioma))  # no idioma do projeto
     return {
         "arquivo": projeto.rel(destino), "horas_base": base, "contingencia": contingencia, "horas_total": total,
         "valor_hora": valor_hora, "valor_total": total * float(valor_hora) if valor_hora else None,
@@ -156,6 +157,7 @@ def exportar_agentes(projeto, alvos=None):
         if alvo not in ALVOS:
             raise ErroPrumo(f"Alvo desconhecido: {alvo}. Opções: {', '.join(ALVOS)}")
         caminho, cabecalho = ALVOS[alvo]
-        gravar(projeto.raiz / caminho, cabecalho + aviso + conteudo)
+        from .i18n import traduzir
+        gravar(projeto.raiz / caminho, traduzir(cabecalho + aviso, projeto.idioma) + conteudo)
         escritos.append(caminho)
     return escritos

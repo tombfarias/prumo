@@ -17,7 +17,7 @@ Por enquanto gera o briefing (docs/00-briefing.md); os demais documentos chegam 
 import re
 
 from . import formulario
-from .util import MARCADOR_LACUNA, ErroPrumo, gravar, hash_texto, ler, sem_comentarios, tabela_markdown
+from .util import MARCADOR_LACUNA, ErroPrumo, tem_lacuna, gravar, hash_texto, ler, sem_comentarios, tabela_markdown
 
 BRIEFING = "docs/00-briefing.md"
 INICIO = re.compile(r"<!-- prumo:gerado:([a-z0-9-]+) h=([0-9a-f]{8}) -->\n(.*?)<!-- prumo:gerado:fim -->", re.S)
@@ -42,7 +42,7 @@ def _so_lacunas(corpo):
     """True se a seção ainda é o modelo: toda linha com conteúdo é lacuna [PREENCHER] ou cabeçalho de tabela."""
     linhas = [l.strip() for l in sem_comentarios(corpo).splitlines()]
     for i, linha in enumerate(linhas):
-        if not linha or MARCADOR_LACUNA in linha or SEPARADOR.match(linha):
+        if not linha or tem_lacuna(linha) or SEPARADOR.match(linha):
             continue
         if linha.startswith("|") and i + 1 < len(linhas) and SEPARADOR.match(linhas[i + 1]):
             continue  # cabeçalho da tabela
@@ -205,7 +205,7 @@ def gerar_briefing(texto, dados, catalogos=None):
     contato = _contato(dados)
     m = CONTATO.search(texto)
     if m and contato:
-        if MARCADOR_LACUNA in m.group(1):
+        if tem_lacuna(m.group(1)):
             texto = texto[:m.start(1)] + _cel(contato) + texto[m.end(1):]
             estados["contato"] = "gerado"
         else:

@@ -8,7 +8,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from .util import ErroPrumo, gravar, ler, progresso
+from . import i18n
+from .util import ErroPrumo, gravar, ler, marcador_lacuna, progresso, tem_lacuna
 
 API = "https://api.figma.com/v1"
 INICIO, FIM = "<!-- prumo:figma:inicio -->", "<!-- prumo:figma:fim -->"
@@ -78,7 +79,7 @@ def _telas_do_inventario(texto):
     saida = {}
     for linha in trecho.splitlines():
         celulas = [c.strip() for c in linha.strip().strip("|").split("|")]
-        if len(celulas) >= 5 and re.fullmatch(r"TL-\d+", celulas[0]) and "[PREENCHER" not in celulas[1]:
+        if len(celulas) >= 5 and re.fullmatch(r"TL-\d+", celulas[0]) and not tem_lacuna(celulas[1]):
             saida[celulas[0]] = {"nome": celulas[1], "ucs": celulas[4]}
     return saida
 
@@ -139,22 +140,24 @@ def sincronizar_telas(projeto, url=None, token=None, imagens=False, escala=1, ab
             f"[png](telas/{tl}.png)" if (projeto.docs / "telas" / f"{tl}.png").exists() else "—")
         nome = tela["nome"].replace("|", "/")
         linhas.append(f"| {tl} | {nome} | {tela['pagina'].replace('|', '/')} | [abrir]({link_do_no(chave, tela['id'])}) | "
-                      f"{ucs.get(tl, '[PREENCHER: UC-xxx]')} | {img} |")
+                      f"{ucs.get(tl, marcador_lacuna(projeto.idioma) + ': UC-xxx]')} | {img} |")
     for node_id, tl in sorted(mapa.items(), key=lambda kv: kv[1]):
         if tl not in vistos:
             vistos.add(tl)
             linhas.append(f"| {tl} | (não encontrada no Figma) | — | — | {ucs.get(tl, '—')} | — |")
     for tl in sorted(t for t in manuais if t not in vistos):
         linhas.append(f"| {tl} | {manuais[tl]['nome']} | (sem frame no Figma) | — | {manuais[tl]['ucs']} | — |")
-    tabela = "\n".join(linhas)
+    tabela = i18n.traduzir("\n".join(linhas), projeto.idioma)  # cabeçalho e rótulos no idioma do projeto
 
     if INICIO in texto and FIM in texto:
         antes, resto = texto.split(INICIO, 1)
         depois = resto.split(FIM, 1)[1]
         texto = f"{antes}{INICIO}\n{tabela}\n{FIM}{depois}"
     else:
-        texto = texto.rstrip() + f"\n\n## Inventário de telas (Figma)\n\n{INICIO}\n{tabela}\n{FIM}\n"
+        titulo = i18n.traduzir("## Inventário de telas (Figma)", projeto.idioma)
+        texto = texto.rstrip() + f"\n\n{titulo}\n\n{INICIO}\n{tabela}\n{FIM}\n"
     texto = texto.replace("| Arquivo do Figma | [PREENCHER: URL] |", f"| Arquivo do Figma | [{nome_arquivo or chave}]({url}) |")
+    texto = texto.replace("| Figma file | [FILL: URL] |", f"| Figma file | [{nome_arquivo or chave}]({url}) |")
     gravar(doc, texto)
     figma["arquivo"] = url
     figma["ativo"] = True

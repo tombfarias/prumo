@@ -6,11 +6,11 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from . import mapear
+from . import i18n, mapear
 from .util import (
     ARQUIVO_PROJETO, CONGELADO, RAIZ_KIT, python_disponivel, TEMPLATES, URL_PRUMO, VERSAO, ErroPrumo, agora_iso, aviso,
     comando_prumo, comando_python, config_freelancer, contar_lacunas, git_usuario, gravar, gravar as _gravar,
-    carimbo, gravar_json, guardar_copia, hash_conteudo, hash_texto, hoje_br, info, ler, ler_json, renderizar, slug,
+    carimbo, gravar_json, guardar_copia, hash_conteudo, hash_texto, hoje_br, info, ler, ler_json, marcador_lacuna, modelo, renderizar, slug,
 )
 
 DESCRICOES = {
@@ -113,10 +113,26 @@ class Projeto:
     def rel(self, caminho):
         return Path(caminho).resolve().relative_to(self.raiz).as_posix()
 
+    @property
+    def idioma(self):
+        """Idioma dos documentos e do kit: pt-BR (padrão) ou en."""
+        return i18n.normalizar(self.config.get("idioma"))
+
+    def modelo(self, rel):
+        return modelo(rel, self.idioma)
+
     def figma_ativo(self):
         return bool((self.config.get("figma") or {}).get("ativo"))
 
     def contexto(self):
+        """Valores dos marcadores {{...}}; os textos gerados aqui saem no idioma do projeto."""
+        ctx = self._contexto()
+        if self.idioma != i18n.PADRAO:
+            for k in ("lista_documentos", "comandos_figma", "figma_claude", "convencoes"):
+                ctx[k] = i18n.traduzir(ctx[k], self.idioma)
+        return ctx
+
+    def _contexto(self):
         c = self.config
         perfil = carregar_perfil(c["perfil"])
         python = c.get("python") or comando_python()
@@ -129,17 +145,18 @@ class Projeto:
             "autor": c.get("autor", ""),
             "data": hoje_br(),
             "perfil": perfil["id"],
-            "perfil_nome": perfil["nome"],
+            "perfil_nome": perfil.get("nome_en") or perfil["nome"] if self.idioma == "en" else perfil["nome"],
             "stack": c.get("stack") or perfil["stack"],
             "python": python,
             "prumo": comando_prumo(python),
             "url_prumo": URL_PRUMO,
         }
-        ctx["projeto_existente"] = ("\n" + renderizar(mapear.BLOCO_AGENTES, dict(ctx, mapa=mapear.MAPA))) if c.get("existente") else ""
+        bloco = i18n.traduzir(mapear.BLOCO_AGENTES, self.idioma)  # traduz antes de trocar os {{...}}
+        ctx["projeto_existente"] = ("\n" + renderizar(bloco, dict(ctx, mapa=mapear.MAPA))) if c.get("existente") else ""
         ctx["lista_documentos"] = _lista_documentos(c.get("documentos") or [])
-        ctx["lista_skills"] = _lista_skills(self.skills_do_kit())
-        ctx["convencoes"] = renderizar(ler(TEMPLATES / "perfis" / "convencoes" / perfil["convencoes"]), ctx).strip()
-        extras = mapear.convencoes_das_ferramentas(c.get("ferramentas") or [])
+        ctx["lista_skills"] = _lista_skills(self.skills_do_kit(), self.idioma)
+        ctx["convencoes"] = renderizar(ler(self.modelo(f"perfis/convencoes/{perfil['convencoes']}")), ctx).strip()
+        extras = mapear.convencoes_das_ferramentas(c.get("ferramentas") or [], self.idioma)
         if extras:
             ctx["convencoes"] += "\n\n### Ferramentas da stack deste projeto\n\n" + extras
         ctx["comandos_figma"] = (
@@ -193,6 +210,7 @@ class Projeto:
         """
         ctx = self.contexto()
         base = TEMPLATES / "agentes"
+        md = lambda rel: ler(self.modelo(f"agentes/{rel}"))  # skills, subagentes e instruções no idioma do projeto
         arquivo_manifesto = self.raiz / ".prumo" / "kit.json"
         manifesto = ler_json(arquivo_manifesto, {}) if arquivo_manifesto.exists() else {}
         if not isinstance(manifesto, dict):
@@ -222,9 +240,9 @@ class Projeto:
             escritos.append(rel)
 
         for skill in self.skills_do_kit():
-            escrever(f".claude/skills/{skill.name}/SKILL.md", renderizar(ler(skill / "SKILL.md"), ctx))
+            escrever(f".claude/skills/{skill.name}/SKILL.md", renderizar(md(f"claude/skills/{skill.name}/SKILL.md"), ctx))
         for agente in sorted((base / "claude" / "agents").glob("*.md")):
-            escrever(f".claude/agents/{agente.name}", renderizar(ler(agente), ctx))
+            escrever(f".claude/agents/{agente.name}", renderizar(md(f"claude/agents/{agente.name}"), ctx))
         # Hooks importam prumo_comum.py: atualizam juntos ou nenhum (versões misturadas quebrariam as guardas).
         hooks = [(f".claude/hooks/{h.name}", ler(h)) for h in sorted((base / "claude" / "hooks").glob("*.py"))]
 
@@ -254,6 +272,7 @@ class Projeto:
         """Arquivos do kit do Claude neste projeto, com descrição e se diferem do modelo do Prumo."""
         ctx = self.contexto()
         base = TEMPLATES / "agentes"
+        md = lambda rel: ler(self.modelo(f"agentes/{rel}"))
         eventos = {}
         try:
             settings = json.loads(ler(self.raiz / ".claude" / "settings.json"))
@@ -285,10 +304,10 @@ class Projeto:
 
         modelos = {}
         for skill in self.skills_do_kit():
-            texto = renderizar(ler(skill / "SKILL.md"), ctx)
+            texto = renderizar(md(f"claude/skills/{skill.name}/SKILL.md"), ctx)
             modelos[f".claude/skills/{skill.name}/SKILL.md"] = ("skill", skill.name, texto)
         for agente in sorted((base / "claude" / "agents").glob("*.md")):
-            modelos[f".claude/agents/{agente.name}"] = ("subagente", agente.stem, renderizar(ler(agente), ctx))
+            modelos[f".claude/agents/{agente.name}"] = ("subagente", agente.stem, renderizar(md(f"claude/agents/{agente.name}"), ctx))
         for hook in sorted((base / "claude" / "hooks").glob("*.py")):
             texto = ler(hook)
             doc = re.match(r'\s*"""(.*?)"""', texto, flags=re.S)
@@ -304,8 +323,8 @@ class Projeto:
                     item(tipo, nome, rel, None)
         # num projeto mapeado, se o cliente já tinha CLAUDE.md/AGENTS.md, a versão do Prumo fica em *.prumo.md
         lado = lambda nome: nome.replace(".md", ".prumo.md") if (self.raiz / nome.replace(".md", ".prumo.md")).exists() else nome
-        item("instruções", lado("CLAUDE.md"), lado("CLAUDE.md"), renderizar(ler(base / "CLAUDE.md"), ctx), "Instruções que o Claude Code lê em toda sessão")
-        item("instruções", lado("AGENTS.md"), lado("AGENTS.md"), renderizar(ler(base / "AGENTS.md"), ctx), "Regras do projeto para qualquer agente de IA")
+        item("instruções", lado("CLAUDE.md"), lado("CLAUDE.md"), renderizar(md("CLAUDE.md"), ctx), "Instruções que o Claude Code lê em toda sessão")
+        item("instruções", lado("AGENTS.md"), lado("AGENTS.md"), renderizar(md("AGENTS.md"), ctx), "Regras do projeto para qualquer agente de IA")
         item("configuração", "settings.json", ".claude/settings.json", self.settings_claude(), "Permissões e ligação dos hooks aos eventos do Claude Code")
         return itens
 
@@ -346,10 +365,11 @@ def condicao_kit(condicao, fatos):
     return False
 
 
-def _lista_skills(skills):
-    linhas = ["| Skill | Quando usar | Arquivo |", "|---|---|---|"]
+def _lista_skills(skills, idioma=None):
+    linhas = ["| Skill | Quando usar | Arquivo |" if i18n.normalizar(idioma) == i18n.PADRAO else "| Skill | When to use | File |",
+              "|---|---|---|"]
     for skill in skills:
-        fm = _frontmatter(ler(skill / "SKILL.md"))
+        fm = _frontmatter(ler(modelo(f"agentes/claude/skills/{skill.name}/SKILL.md", idioma)))
         primeira = fm.get("description", "").split(". ")[0].rstrip(".")
         primeira = re.sub(r"\s*\([^()]{40,}\)", "", primeira)  # enumerações longas ficam só na skill (AGENTS.md é lido sempre)
         linhas.append(f"| `{skill.name}` | {primeira}. | `.claude/skills/{skill.name}/SKILL.md` |")
@@ -360,7 +380,7 @@ def _lista_skills(skills):
 
 def criar_projeto(destino, perfil_id, nome=None, cliente="", stack=None, autor=None, figma=None,
                   figma_url="", git=True, python=None, hooks_absolutos=False, hooks_via=None, forcar=False,
-                  comandos=None, existente=False, pastas_codigo=None, ferramentas=None):
+                  comandos=None, existente=False, pastas_codigo=None, ferramentas=None, idioma=None):
     """Cria o projeto. Com existente=True (prumo mapear), não sobrescreve nenhum arquivo que já esteja na pasta."""
     destino = Path(destino).resolve()
     if destino.exists() and any(destino.iterdir()) and not forcar:
@@ -369,6 +389,7 @@ def criar_projeto(destino, perfil_id, nome=None, cliente="", stack=None, autor=N
         raise ErroPrumo(f"{destino} já é um projeto do Prumo.")
     perfil = carregar_perfil(perfil_id)
     freelancer = config_freelancer()
+    idioma = i18n.validar(idioma or freelancer.get("idioma_projetos") or i18n.PADRAO)
     nome = nome or destino.name
     usar_figma = perfil.get("figma", False) if figma is None else figma
     usar_figma = usar_figma or bool(figma_url)
@@ -387,7 +408,7 @@ def criar_projeto(destino, perfil_id, nome=None, cliente="", stack=None, autor=N
     try:
         return _criar(destino, perfil, freelancer, nome, cliente, stack, autor, usar_figma, figma_url, documentos,
                       git, python, hooks_absolutos, hooks_via, comandos=comandos, existente=existente,
-                      pastas_codigo=pastas_codigo, ferramentas=ferramentas, sugeridos=sugeridos)
+                      pastas_codigo=pastas_codigo, ferramentas=ferramentas, sugeridos=sugeridos, idioma=idioma)
     except BaseException:
         # Criação interrompida (erro, Ctrl+C): numa pasta que era nova/vazia, não deixa projeto pela metade.
         if vazia and destino.exists():
@@ -401,7 +422,9 @@ def criar_projeto(destino, perfil_id, nome=None, cliente="", stack=None, autor=N
 
 def _criar(destino, perfil, freelancer, nome, cliente, stack, autor, usar_figma, figma_url, documentos,
            git, python, hooks_absolutos, hooks_via, comandos=None, existente=False, pastas_codigo=None,
-           ferramentas=(), sugeridos=None):
+           ferramentas=(), sugeridos=None, idioma=i18n.PADRAO):
+    lac = marcador_lacuna(idioma)
+    ingles = idioma != i18n.PADRAO
     backup = f"backup/{carimbo()}"
 
     def gravar(caminho, texto):
@@ -417,10 +440,11 @@ def _criar(destino, perfil, freelancer, nome, cliente, stack, autor, usar_figma,
         "prumo": VERSAO,
         "projeto": nome,
         "slug": slug(nome),
-        "cliente": cliente or "[PREENCHER: cliente]",
-        "autor": autor or freelancer.get("nome") or git_usuario() or "[PREENCHER: autor]",
+        "idioma": idioma,
+        "cliente": cliente or f"{lac}: {'client' if ingles else 'cliente'}]",
+        "autor": autor or freelancer.get("nome") or git_usuario() or f"{lac}: {'author' if ingles else 'autor'}]",
         "perfil": perfil["id"],
-        "stack": stack or perfil["stack"],
+        "stack": (perfil.get("stack_en") or perfil["stack"]) if ingles and stack in (None, "", perfil["stack"]) else (stack or perfil["stack"]),
         "criado_em": agora_iso(),
         "python": python or comando_python(),
         "hooks_absolutos": bool(hooks_absolutos),
@@ -457,19 +481,21 @@ def _criar(destino, perfil, freelancer, nome, cliente, stack, autor, usar_figma,
 
     escritos, pulados = [], []
     for doc in perfil["documentos"]:
-        texto = renderizar(ler(TEMPLATES / "documentos" / f"{doc}.md"), ctx)
+        texto = renderizar(ler(projeto.modelo(f"documentos/{doc}.md")), ctx)
         if doc == "05-interface" and figma_url:
             texto = texto.replace("| Arquivo do Figma | [PREENCHER: URL] |", f"| Arquivo do Figma | {figma_url} |")
+            texto = texto.replace("| Figma file | [FILL: URL] |", f"| Figma file | {figma_url} |")
         novo_arquivo(f"docs/{doc}.md", texto)
     for pasta, modelo, prefixo in (("adr", "adr", "ADR"), ("mudancas", "mudanca", "CM")):
-        ctx_modelo = dict(ctx, id=f"{prefixo}-NNN", titulo="Título")
-        novo_arquivo(f"docs/{pasta}/_modelo.md", renderizar(ler(TEMPLATES / "documentos" / f"{modelo}.md"), ctx_modelo))
+        ctx_modelo = dict(ctx, id=f"{prefixo}-NNN", titulo="Title" if ingles else "Título")
+        novo_arquivo(f"docs/{pasta}/_modelo.md", renderizar(ler(projeto.modelo(f"documentos/{modelo}.md")), ctx_modelo))
 
     _limpar_exemplos_orfaos(projeto, [destino / r for r in escritos if r.startswith("docs/")])
     base = TEMPLATES / "agentes"
-    agentes = renderizar(ler(base / "AGENTS.md"), ctx)
+    agentes = renderizar(ler(projeto.modelo("agentes/AGENTS.md")), ctx)
+    claude_md = renderizar(ler(projeto.modelo("agentes/CLAUDE.md")), ctx)
     if existente:
-        for arq, texto in (("AGENTS.md", agentes), ("CLAUDE.md", renderizar(ler(base / "CLAUDE.md"), ctx))):
+        for arq, texto in (("AGENTS.md", agentes), ("CLAUDE.md", claude_md)):
             if novo_arquivo(arq, texto):
                 continue
             # O arquivo do cliente fica intacto; o do Prumo vai ao lado e é importado num bloco no fim.
@@ -480,11 +506,12 @@ def _criar(destino, perfil, freelancer, nome, cliente, stack, autor, usar_figma,
         mapear.mesclar_bloco(destino / ".gitignore", ler(base / "gitignore"))
     else:
         gravar(destino / "AGENTS.md", agentes)
-        gravar(destino / "CLAUDE.md", renderizar(ler(base / "CLAUDE.md"), ctx))
+        gravar(destino / "CLAUDE.md", claude_md)
         gravar(destino / ".gitignore", ler(base / "gitignore"))
-    novo_arquivo("README.md", renderizar(ler(base / "README.md"), ctx))
+    novo_arquivo("README.md", renderizar(ler(projeto.modelo("agentes/README.md")), ctx))
     if not (destino / ".env.example").exists():
-        gravar(destino / ".env.example", "# Variáveis de ambiente do projeto (sem valores reais). Copie para .env.\n")
+        gravar(destino / ".env.example", "# Project environment variables (no real values). Copy to .env.\n" if ingles
+               else "# Variáveis de ambiente do projeto (sem valores reais). Copie para .env.\n")
     projeto.instalar_kit_agentes(incluir_settings=not existente)
     if projeto.kit_preservados:
         aviso(f"{len(projeto.kit_preservados)} arquivo(s) do kit já existiam e foram mantidos; "
@@ -537,7 +564,7 @@ def adicionar_documento(projeto, doc_id):
     destino = projeto.docs / f"{doc_id}.md"
     if destino.exists():
         raise ErroPrumo(f"{projeto.rel(destino)} já existe.")
-    gravar(destino, renderizar(ler(TEMPLATES / "documentos" / f"{doc_id}.md"), projeto.contexto()))
+    gravar(destino, renderizar(ler(projeto.modelo(f"documentos/{doc_id}.md")), projeto.contexto()))
     rel = projeto.rel(destino)
     docs = projeto.config.setdefault("documentos", [])
     if rel not in docs:
@@ -567,7 +594,7 @@ def aprovar(projeto, arquivos, forcar=False):
         rel = projeto.rel(caminho)
         lacunas = contar_lacunas(ler(caminho))
         if lacunas and not forcar:
-            raise ErroPrumo(f"{rel} ainda tem {lacunas} lacuna(s) [PREENCHER]. Complete ou use --forcar.")
+            raise ErroPrumo(f"{rel} ainda tem {lacunas} lacuna(s) {marcador_lacuna(projeto.idioma)}]. Complete ou use --forcar.")
         aprovados[rel] = {"data": agora_iso(), "sha256": hash_conteudo(caminho)}
         feitos.append(rel)
     projeto.salvar()
@@ -602,7 +629,7 @@ def novo_registro(projeto, tipo, titulo):
     ident = f"{prefixo}-{(max(numeros) + 1 if numeros else 1):03d}"
     ctx = dict(projeto.contexto(), id=ident, titulo=titulo)
     destino = destino_pasta / f"{ident}-{slug(titulo)}.md"
-    gravar(destino, renderizar(ler(TEMPLATES / "documentos" / f"{modelo}.md"), ctx))
+    gravar(destino, renderizar(ler(projeto.modelo(f"documentos/{modelo}.md")), ctx))
     return ident, projeto.rel(destino)
 
 

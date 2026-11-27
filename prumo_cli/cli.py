@@ -7,7 +7,7 @@ import runpy
 import sys
 from pathlib import Path
 
-from . import claude, figma, geracao, mapear, formulario, gestao, projeto as mod_projeto, rastreio, seguranca, validacao
+from . import i18n, claude, figma, geracao, mapear, formulario, gestao, projeto as mod_projeto, rastreio, seguranca, validacao
 from .util import (
     CONGELADO, RAIZ_KIT, VERSAO, ErroPrumo, configurar_console, formatar_horas, formatar_moeda, info,
     config_freelancer, ler, ler_json, gravar_json, tabela_console, agora_iso,
@@ -61,6 +61,8 @@ def cmd_projetos(args):
 
 def cmd_perfis(args):
     perfis = mod_projeto.listar_perfis()
+    if i18n.idioma_interface() == "en":  # nome e descrição no idioma da interface
+        perfis = [dict(p, nome=p.get("nome_en") or p["nome"], descricao=p.get("descricao_en") or p["descricao"]) for p in perfis]
     saida(perfis, "\n".join(f"{p['id']:<20} {p['nome']}\n{'':<20} {p['descricao']}\n{'':<20} stack: {p['stack']}\n" for p in perfis))
 
 
@@ -81,7 +83,7 @@ def cmd_novo(args):
         args.pasta, args.perfil, nome=args.nome, cliente=args.cliente, stack=args.stack, autor=args.autor,
         figma=figma_flag, figma_url=args.figma or "", git=not args.sem_git, python=args.python,
         hooks_absolutos=args.hooks_absolutos, hooks_via=args.hooks_via, forcar=args.forcar,
-        comandos=_comandos_args(args.comando),
+        comandos=_comandos_args(args.comando), idioma=args.idioma,
     )
     registrar_recente(p)
     if JSON:
@@ -115,7 +117,8 @@ def cmd_mapear(args):
     figma_flag = True if args.com_figma else (False if args.sem_figma else None)
     p, det = mapear.mapear_projeto(pasta, perfil_id=args.perfil, nome=args.nome, cliente=args.cliente,
                                    stack=args.stack, autor=args.autor, comandos=_comandos_args(args.comando),
-                                   python=args.python, hooks_via=args.hooks_via, figma=figma_flag)
+                                   python=args.python, hooks_via=args.hooks_via, figma=figma_flag,
+                                   idioma=args.idioma)
     registrar_recente(p)
     pulados = getattr(p, "pulados", [])
     if JSON:
@@ -249,7 +252,7 @@ def cmd_rastreabilidade(args):
 def cmd_contexto(args):
     p = abrir_projeto(args)
     texto = validacao.contexto(p, [i.upper() for i in args.ids], args.profundidade)
-    saida({"contexto": texto}, texto)
+    saida({"contexto": texto}, i18n.proteger(texto))
 
 
 def cmd_aprovar(args):
@@ -404,10 +407,10 @@ def cmd_claude(args):
         return 1 if any(r.get("erro") for r in resultados) else 0
     r = claude.executar(p, args.tarefa, alvo=alvo, texto=texto, **opcoes)
     if r.get("simulado"):
-        saida(r, "Comando:\n  " + " ".join(r["comando"]) + f"\nPasta: {r['cwd']}\n\nPrompt (enviado pela entrada padrão):\n{r['prompt']}")
+        saida(r, "Comando:\n  " + " ".join(r["comando"]) + f"\nPasta: {r['cwd']}\n\nPrompt (enviado pela entrada padrão):\n" + i18n.proteger(r['prompt']))
         return 0
     custo = f" · US$ {r['custo_usd']:.4f}" if isinstance(r.get("custo_usd"), (int, float)) else ""
-    saida(r, f"\n{r.get('resumo') or '(sem resumo)'}\n\n[{r['duracao_s']}s{custo} · log: {r['log']}]")
+    saida(r, "\n" + (i18n.proteger(r['resumo']) if r.get('resumo') else '(sem resumo)') + f"\n\n[{r['duracao_s']}s{custo} · log: {r['log']}]")
     return 1 if r.get("erro") else 0
 
 
@@ -424,7 +427,7 @@ def cmd_hook(args):
     candidatos.append(mod_projeto.TEMPLATES / "agentes" / "claude" / "hooks" / f"{nome}.py")
     script = next((c for c in candidatos if c.exists()), None)
     if not script:
-        print(f"[Prumo] hook não encontrado: {nome}", file=sys.stderr)
+        print(i18n.t(f"[Prumo] hook não encontrado: {nome}"), file=sys.stderr)
         return 0
     sys.path.insert(0, str(script.parent))
     sys.argv = [str(script), *args.args]
@@ -456,9 +459,10 @@ def cmd_escolher_pasta(args):
 
 # ---------------------------------------------------------------- configurações
 
-FREELANCER = {"nome": str, "email": str, "valor_hora": float, "moeda": str, "contingencia_percentual": float}
+FREELANCER = {"nome": str, "email": str, "valor_hora": float, "moeda": str, "contingencia_percentual": float,
+              "idioma_interface": str, "idioma_projetos": str}
 PROJETO_CAMPOS = {
-    "projeto": str, "cliente": str, "stack": str,
+    "projeto": str, "idioma": str, "cliente": str, "stack": str,
     "comandos.formatar": str, "comandos.lint": str, "comandos.testar": str,
     "hooks.registrar_horas": bool, "hooks.testes_ao_parar": bool, "hooks.revisao_pos_mudanca": bool,
     "hooks.limite_arquivos": int, "hooks.limite_linhas": int, "hooks.comandos_permitidos": list,
@@ -508,6 +512,15 @@ def _converter(valor, tipo, chave):
     return str(valor)
 
 
+def _idioma_campo(campo, valor):
+    """Campos de idioma: pt-BR ou en (idioma_interface aceita também auto, que segue o sistema)."""
+    if campo == "idioma_interface" and str(valor or "").strip().lower() in ("", "auto"):
+        return "auto"
+    if campo in ("idioma_interface", "idioma_projetos", "idioma"):
+        return i18n.validar(valor)
+    return valor
+
+
 def _ler_caminho(dados, chave):
     for parte in chave.split("."):
         if not isinstance(dados, dict):
@@ -543,7 +556,7 @@ def cmd_config(args):
                 campo = chave[len("freelancer."):]
                 if campo not in FREELANCER:
                     raise ErroPrumo(f"Campo desconhecido: {chave}")
-                pessoal[campo] = _converter(valor, FREELANCER[campo], chave)
+                pessoal[campo] = _idioma_campo(campo, _converter(valor, FREELANCER[campo], chave))
                 mudou_freelancer = True
             elif chave.startswith("projeto."):
                 campo = chave[len("projeto."):]
@@ -551,7 +564,7 @@ def cmd_config(args):
                     raise ErroPrumo(f"Campo desconhecido: {chave}")
                 if p is None:
                     raise ErroPrumo("Informe o projeto com --projeto para alterar campos do projeto.")
-                _definir_caminho(p.config, campo, _converter(valor, PROJETO_CAMPOS[campo], chave))
+                _definir_caminho(p.config, campo, _idioma_campo(campo, _converter(valor, PROJETO_CAMPOS[campo], chave)))
                 mudou_projeto = True
             else:
                 raise ErroPrumo(f"A chave deve começar com freelancer. ou projeto. (recebido: {chave})")
@@ -570,7 +583,8 @@ def cmd_config(args):
 
 
 def cmd_versao(args):
-    saida({"versao": VERSAO, "kit": str(RAIZ_KIT), "executavel": CONGELADO}, f"Prumo {VERSAO} ({RAIZ_KIT})")
+    saida({"versao": VERSAO, "kit": str(RAIZ_KIT), "executavel": CONGELADO, "idioma": i18n.idioma_interface()},
+          f"Prumo {VERSAO} ({RAIZ_KIT})")
 
 
 # ---------------------------------------------------------------- parser
@@ -613,6 +627,8 @@ def montar_parser():
     s.add_argument("--forcar", action="store_true")
     s.add_argument("--comando", action="append", metavar="USO=CMD",
                    help='comando dos hooks para stack fora dos perfis: formatar="mix format {arquivo}", lint=..., testar=...')
+    s.add_argument("--idioma", choices=list(i18n.IDIOMAS),
+                   help="idioma dos documentos e do kit do Claude (padrão: freelancer.idioma_projetos ou pt-BR)")
     s = novo("mapear", cmd_mapear, "instala o Prumo num projeto que já existe: detecta a stack e não sobrescreve nada")
     s.add_argument("pasta", nargs="?", help="pasta do projeto (padrão: a atual)")
     s.add_argument("--perfil", "-p", help="padrão: sugerido pela detecção")
@@ -621,6 +637,7 @@ def montar_parser():
     s.add_argument("--stack", help="padrão: a detectada")
     s.add_argument("--autor")
     s.add_argument("--comando", action="append", metavar="USO=CMD", help="sobrepõe um comando detectado")
+    s.add_argument("--idioma", choices=list(i18n.IDIOMAS), help="idioma dos documentos e do kit do Claude")
     s.add_argument("--com-figma", action="store_true")
     s.add_argument("--sem-figma", action="store_true")
     s.add_argument("--python")
@@ -715,7 +732,7 @@ def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     if not argv and CONGELADO:
         argv = ["gui"]  # duplo clique no prumo.exe abre a interface
-    parser = montar_parser()
+    parser = i18n.traduzir_parser(montar_parser())
     args = parser.parse_args(argv)
     JSON = args.json
     if args.versao:
@@ -728,10 +745,10 @@ def main(argv=None):
         return codigo or 0
     except ErroPrumo as e:
         if JSON:
-            print(json.dumps({"erro": str(e)}, ensure_ascii=False))
+            print(json.dumps({"erro": i18n.t(str(e))}, ensure_ascii=False))
         else:
-            print(f"erro: {e}", file=sys.stderr)
+            print(i18n.t(f"erro: {e}"), file=sys.stderr)
         return 2
     except KeyboardInterrupt:
-        print("\ninterrompido.", file=sys.stderr)
+        print(i18n.t("\ninterrompido."), file=sys.stderr)
         return 130

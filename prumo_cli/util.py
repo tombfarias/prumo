@@ -21,8 +21,27 @@ else:
     RAIZ_KIT = Path(__file__).resolve().parent.parent
     RECURSOS = RAIZ_KIT
 TEMPLATES = RECURSOS / "templates"
+TEMPLATES_EN = TEMPLATES / "en"  # mesmos caminhos de templates/, em inglês
 ARQUIVO_PROJETO = "projeto.prumo.json"
 MARCADOR_LACUNA = "[PREENCHER"
+LACUNA_EN = "[FILL"  # marcador dos modelos em inglês (templates/en)
+LACUNA = re.compile(r"\[(?:PREENCHER|FILL)\b")
+
+
+def tem_lacuna(texto):
+    return bool(LACUNA.search(texto or ""))
+
+
+def marcador_lacuna(idioma=None):
+    """Marcador de lacuna do idioma do projeto: [PREENCHER ou [FILL."""
+    return LACUNA_EN if str(idioma or "").lower().startswith("en") else MARCADOR_LACUNA
+
+
+def modelo(rel, idioma=None):
+    """Caminho de um modelo em templates/: a versão em inglês (templates/en/<rel>) se o projeto for em inglês e ela existir."""
+    if str(idioma or "").lower().startswith("en") and (TEMPLATES_EN / rel).exists():
+        return TEMPLATES_EN / rel
+    return TEMPLATES / rel
 
 
 class ErroPrumo(Exception):
@@ -37,16 +56,21 @@ def configurar_console():
             pass
 
 
+def _t(msg):
+    from .i18n import traduzir
+    return traduzir(str(msg))
+
+
 def info(msg=""):
-    print(msg)
+    print(_t(msg))
 
 
 def aviso(msg):
-    print(f"aviso: {msg}", file=sys.stderr)
+    print(_t(f"aviso: {msg}"), file=sys.stderr)
 
 
 def progresso(msg):
-    print(msg, file=sys.stderr, flush=True)
+    print(_t(msg), file=sys.stderr, flush=True)
 
 
 def ler(caminho):
@@ -140,7 +164,7 @@ def sem_comentarios(texto):
 
 
 def contar_lacunas(texto):
-    return sem_comentarios(texto).count(MARCADOR_LACUNA)
+    return len(LACUNA.findall(sem_comentarios(texto)))
 
 
 def comando_python():
@@ -200,6 +224,7 @@ def tabela_markdown(cabecalho, linhas):
 
 
 def tabela_console(cabecalho, linhas):
+    cabecalho = [_t(h) for h in cabecalho]
     linhas = [[str(c) for c in l] for l in linhas]
     larguras = [max(len(str(h)), *(len(l[i]) for l in linhas)) if linhas else len(str(h)) for i, h in enumerate(cabecalho)]
     fmt = "  ".join("{:<%d}" % w for w in larguras)

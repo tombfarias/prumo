@@ -19,7 +19,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from .util import CONGELADO, RAIZ_KIT, VERSAO, executavel_console, progresso
+from . import i18n
+from .util import CONGELADO, RAIZ_KIT, VERSAO, config_freelancer, executavel_console, progresso
 
 PAGINA = Path(__file__).resolve().parent / "gui" / "index.html"
 PERMITIDOS = {"perfis", "projetos", "novo", "mapear", "ferramentas", "status", "validar", "rastreabilidade", "contexto", "aprovar",
@@ -156,7 +157,11 @@ def criar_handler(estado):
                 return self._responder(HTTPStatus.FORBIDDEN, {"erro": "token inválido"})
             if url.path == "/api/ping":
                 estado.ultimo_ping = time.time()
-                return self._responder(200, {"ok": True, "versao": VERSAO, "projeto_inicial": estado.projeto_inicial})
+                idioma = i18n.idioma_interface()
+                return self._responder(200, {"ok": True, "versao": VERSAO, "projeto_inicial": estado.projeto_inicial,
+                                             "idioma": idioma,  # catálogo só no primeiro ping (?i18n=1)
+                                             "textos": i18n.catalogo(idioma) if parse_qs(url.query).get("i18n") else {},
+                                             "idioma_projetos": i18n.normalizar(config_freelancer().get("idioma_projetos"))})
             if url.path.startswith("/api/tarefas/"):
                 tarefa = estado.tarefas.get(url.path.rsplit("/", 1)[-1])
                 if not tarefa:

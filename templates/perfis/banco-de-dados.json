@@ -2,7 +2,10 @@
   "id": "banco-de-dados",
   "nome": "Banco de dados (modelagem, SQL e relatórios)",
   "descricao": "Modelagem e criação de bancos, migrações, otimização de consultas, cargas/ETL, views e relatórios em SQL, sem aplicação própria.",
+  "nome_en": "Database (modeling, SQL and reports)",
+  "descricao_en": "Database modeling and creation, migrations, query tuning, loads/ETL, views and SQL reports, with no application of its own.",
   "stack": "PostgreSQL 16+ + dbmate (migrações em SQL) + SQLFluff (formatação e lint) + pgTAP (testes) (alternativa: MySQL 8 + Flyway + testes com pytest)",
+  "stack_en": "PostgreSQL 16+ + dbmate (SQL migrations) + SQLFluff (formatting and lint) + pgTAP (tests) (alternative: MySQL 8 + Flyway + tests with pytest)",
   "stack_padrao": {"banco": "postgresql", "orm": "dbmate", "testes": "pgtap"},
   "documentos": [
     "00-briefing",

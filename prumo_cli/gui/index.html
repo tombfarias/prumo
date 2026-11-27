@@ -334,6 +334,45 @@ const TOKEN = new URLSearchParams(location.search).get("t") || "";
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+/* ------------------------------------------------------------------ idioma (catálogo vem do /api/ping)
+   O código fica em português; com a interface em inglês, os trechos do catálogo são trocados no HTML e no texto que
+   entram na página. Conteúdo do usuário (documentos, editor, saída do Claude) vai entre  e : nunca traduzido. */
+const I18N = {idioma: "pt-BR", mapa: {}, rx: null, pausa: false, idiomaProjetos: "pt-BR"};
+const cru = s => "" + s + "";
+const PROTEGIDO = /([\s\S]*?)(?:|$)/g;
+function prepararI18n(idioma, textos) {
+  I18N.idioma = idioma || "pt-BR"; I18N.mapa = {};
+  const escH = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  for (const [k, v] of Object.entries(textos || {})) { if (!v) continue; I18N.mapa[k] = v; const kh = escH(k); if (kh !== k) I18N.mapa[kh] = escH(v); }
+  const re = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), L = "[\\p{L}\\p{N}_]";
+  const chaves = Object.keys(I18N.mapa).sort((a, b) => b.length - a.length);
+  I18N.rx = chaves.length ? new RegExp(chaves.map(k => (/^[\p{L}\p{N}_]/u.test(k) ? `(?<!${L})` : "") + re(k) + (/[\p{L}\p{N}_]$/u.test(k) ? `(?!${L})` : "")).join("|"), "gu") : null;
+  document.documentElement.lang = I18N.idioma;
+}
+const trTrecho = s => I18N.rx && !I18N.pausa ? s.replace(I18N.rx, m => I18N.mapa[m]) : s;
+function porPartes(s, fn) {  // aplica fn fora dos trechos protegidos e tira os marcadores
+  s = String(s ?? ""); if (!I18N.rx && s.indexOf("") < 0) return s;
+  let out = "", pos = 0;
+  for (const m of s.matchAll(PROTEGIDO)) { out += fn(s.slice(pos, m.index)) + m[1]; pos = m.index + m[0].length; }
+  return out + fn(s.slice(pos));
+}
+const T = s => porPartes(s, trTrecho);
+const TH = h => porPartes(h, parte => parte.replace(/(<[^>]*>)|([^<]+)/g, (m, tag, txt) => txt ? trTrecho(txt)
+  : tag.replace(/\b(title|placeholder|aria-label|alt)="([^"]*)"/g, (a, at, v) => `${at}="${trTrecho(v)}"`)));
+(() => {  // toda inserção de HTML e de texto passa pela tradução
+  const ih = Object.getOwnPropertyDescriptor(Element.prototype, "innerHTML"), tc = Object.getOwnPropertyDescriptor(Node.prototype, "textContent");
+  Object.defineProperty(Element.prototype, "innerHTML", {configurable: true, get() { return ih.get.call(this); }, set(v) { ih.set.call(this, TH(v)); }});
+  Object.defineProperty(Node.prototype, "textContent", {configurable: true, get() { return tc.get.call(this); }, set(v) { tc.set.call(this, T(v)); }});
+  const iah = Element.prototype.insertAdjacentHTML; Element.prototype.insertAdjacentHTML = function (p, h) { return iah.call(this, p, TH(h)); };
+  window.textoCru = (el, v) => tc.set.call(el, v);
+})();
+function traduzirArvore(raiz) {  // HTML estático da página (barra lateral)
+  if (!I18N.rx) return;
+  const w = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT); let n;
+  while ((n = w.nextNode())) { const v = trTrecho(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v; }
+  raiz.querySelectorAll("[title],[placeholder],[aria-label]").forEach(el => ["title", "placeholder", "aria-label"].forEach(a => { if (el.hasAttribute(a)) el.setAttribute(a, trTrecho(el.getAttribute(a))); }));
+}
+const IDIOMAS = [["pt-BR", "Português (Brasil)"], ["en", "English"]];
 const guardar = (k, v) => { try { localStorage.setItem("prumo." + k, JSON.stringify(v)); } catch {} };
 const lembrar = (k, p) => { try { const v = localStorage.getItem("prumo." + k); return v == null ? p : JSON.parse(v); } catch { return p; } };
 const E = {projetos: [], perfis: [], projeto: null, status: null, aba: lembrar("aba", "geral"), docSel: null, modoDoc: "ver",
@@ -455,10 +494,12 @@ async function desenharDiagramas(raiz) {
   m.initialize({startOnLoad: false, securityLevel: "strict", theme: temaEscuro() ? "dark" : "neutral", fontFamily: "Segoe UI, system-ui, sans-serif"});
   for (const b of blocos) {
     const codigo = b.textContent;
+    I18N.pausa = true;  // o Mermaid escreve os rótulos do diagrama (conteúdo do usuário) com innerHTML/textContent
     try { const {svg} = await m.render("mmd-" + b.dataset.mmd + "-" + Date.now(), codigo); b.innerHTML = svg; }
-    catch (e) { b.innerHTML = `<div class="erro-mmd">Diagrama com erro de sintaxe: ${esc((e.message || String(e)).split("\n")[0])}</div><pre><code>${esc(codigo)}</code></pre>`; }
+    catch (e) { b.innerHTML = `<div class="erro-mmd">Diagrama com erro de sintaxe: ${esc((e.message || String(e)).split("\n")[0])}</div><pre><code>${cru(esc(codigo))}</code></pre>`; }
+    I18N.pausa = false;
     b.removeAttribute("data-mmd");
-    if (!b.querySelector("details")) b.insertAdjacentHTML("beforeend", `<details><summary>ver código</summary><pre><code>${esc(codigo)}</code></pre></details>`);
+    if (!b.querySelector("details")) b.insertAdjacentHTML("beforeend", `<details><summary>ver código</summary><pre><code>${cru(esc(codigo))}</code></pre></details>`);
   }
 }
 
@@ -565,7 +606,7 @@ async function painelGeral() {
   const prox = r.docs.find(d => d.estado === "em andamento");
   const etapas = [
     {n: "Criar", t: "Projeto e kit", ok: true, ir: () => irPara("kit")},
-    {n: "Especificar", t: `${r.completos}/${r.docs.length} documentos`, ok: r.completos === r.docs.length, ir: () => irPara("docs", {docSel: prox ? prox.documento : null})},
+    {n: "Especificar", t: `${r.completos}/${r.docs.length} documentos prontos`, ok: r.completos === r.docs.length, ir: () => irPara("docs", {docSel: prox ? prox.documento : null})},
     {n: "Validar", t: r.valOk == null ? "verificando…" : r.valOk ? "sem erros" : `${E.validacao.erros.length} erro(s)`, ok: r.valOk === 1 && r.completos === r.docs.length, ir: () => irPara("qualidade")},
     {n: "Aprovar", t: `${r.aprov}/${r.docs.length} com o cliente`, ok: r.aprov === r.docs.length && !r.alterados, ir: () => irPara("docs")},
     {n: "Executar", t: "Claude implementa", ok: false, ir: () => irPara("claude", {tarefa: "implementar"})}];
@@ -681,8 +722,8 @@ async function mostrarArquivo(arq, alvo, {doc, editavel = true, extraBarra = ""}
       ${E.modoDoc === "editar" ? `<button class="btn pri peq" id="b-salvar" title="Ctrl+S">${ic("salvar")}Salvar</button>` : ""}
       <button class="btn fan peq" id="b-ext" title="Abrir no editor do sistema">${ic("codigo")}Editor externo</button>
       ${doc ? (aprovado ? `<button class="btn peq" id="b-apr" data-a="desaprovar">Liberar edição</button>` : `<button class="btn peq" id="b-apr" data-a="aprovar">Aprovar</button>`) : ""}${extraBarra}</div>
-      ${E.modoDoc === "editar" ? `<textarea class="editor" id="editor" spellcheck="true">${esc(texto)}</textarea>`
-        : ehMd ? `<div class="doc-corpo"><div class="md" id="md">${md(texto)}</div><nav class="toc" id="toc"></nav></div>` : `<pre class="editor" style="min-height:0;white-space:pre-wrap;overflow:auto">${esc(texto)}</pre>`}`;
+      ${E.modoDoc === "editar" ? `<textarea class="editor" id="editor" spellcheck="true">${cru(esc(texto))}</textarea>`
+        : ehMd ? `<div class="doc-corpo"><div class="md" id="md">${cru(md(texto))}</div><nav class="toc" id="toc"></nav></div>` : `<pre class="editor" style="min-height:0;white-space:pre-wrap;overflow:auto">${cru(esc(texto))}</pre>`}`;
     $$(".seg button", alvo).forEach(b => b.onclick = () => { if (b.disabled) return; if (E.modoDoc === "editar") texto = $("#editor").value; E.modoDoc = b.dataset.m; desenhar(); });
     $("#b-ext", alvo).onclick = () => abrirNo("arquivo", arq);
     const ba = $("#b-apr", alvo); if (ba) ba.onclick = () => aprovacao(ba.dataset.a, arq);
@@ -844,7 +885,7 @@ async function acompanhar(id, desde, redesenhar) {
     for (const l of r.linhas) {
       const s = document.createElement("div");
       s.className = /^\s*→/.test(l) ? "f" : /^\[Prumo\]|^===/.test(l) ? "s" : /erro|error/i.test(l) ? "e" : "";
-      s.textContent = l; c.append(s);
+      textoCru(s, l); c.append(s);  // já vem traduzida do CLI; o texto do Claude não se traduz
     }
     if (r.linhas.length && fimVisivel) c.scrollTop = c.scrollHeight;
     if (r.fim) {
@@ -1105,9 +1146,12 @@ async function mostrarGeracao(g) {
 
 /* ------------------------------------------------------------------ configurações */
 const CAMPOS_FREELANCER = [["nome", "Seu nome", "text", "vira o autor dos documentos"], ["email", "E-mail", "email", ""],
-  ["valor_hora", "Valor da hora", "number", "padrão do orçamento"], ["moeda", "Moeda", "text", "BRL, USD, EUR…"], ["contingencia_percentual", "Contingência (%)", "number", "margem sobre as estimativas"]];
+  ["valor_hora", "Valor da hora", "number", "padrão do orçamento"], ["moeda", "Moeda", "text", "BRL, USD, EUR…"], ["contingencia_percentual", "Contingência (%)", "number", "margem sobre as estimativas"],
+  ["idioma_interface", "Idioma da interface", "sel", "Automático segue o idioma do sistema", "", [["auto", "Automático (sistema)"], ...IDIOMAS]],
+  ["idioma_projetos", "Idioma dos novos projetos", "sel", "documentos e kit do Claude; dá para trocar em cada projeto", "", IDIOMAS]];
 const CAMPOS_PROJETO = [
-  ["Projeto", [["projeto", "Nome", "text"], ["cliente", "Cliente", "text"], ["stack", "Stack", "text", "", "larga"]]],
+  ["Projeto", [["projeto", "Nome", "text"], ["cliente", "Cliente", "text"], ["stack", "Stack", "text", "", "larga"],
+    ["idioma", "Idioma dos documentos e do kit", "sel", "Não traduz documentos já escritos; regenere o kit para trocar skills e instruções", "larga", IDIOMAS]]],
   ["Comandos (usados pelos hooks)", [["comandos.formatar", "Formatar", "text", "rodado após cada edição; {arquivo} vira o arquivo"], ["comandos.lint", "Lint", "text", "rodado após cada edição"],
     ["comandos.testar", "Testar", "text", "liberado nas tarefas implementar, revisar e segurança", "larga"]]],
   ["Hooks", [["hooks.registrar_horas", "Registrar horas trabalhadas", "bool"], ["hooks.testes_ao_parar", "Rodar testes antes de o Claude encerrar", "bool"],
@@ -1116,8 +1160,9 @@ const CAMPOS_PROJETO = [
   ["Claude e orçamento", [["claude.modelo", "Modelo do Claude", "text", "vazio = padrão do Claude Code"], ["claude.max_turnos", "Máximo de turnos", "number"],
     ["orcamento.valor_hora", "Valor da hora neste projeto", "number", "vazio = seus dados"], ["orcamento.contingencia_percentual", "Contingência neste projeto (%)", "number"],
     ["pastas_codigo", "Pastas de código (uma por linha)", "lista", "varridas pela rastreabilidade e pela segurança", "larga"]]]];
-function campoHtml(pref, [k, rot, tipo, ajuda = "", cl = ""], v) {
+function campoHtml(pref, [k, rot, tipo, ajuda = "", cl = "", ops = []], v) {
   const id = `${pref}-${k.replace(/\./g, "_")}`;
+  if (tipo === "sel") return `<div class="campo ${cl}"><label for="${id}">${esc(rot)}</label><select id="${id}" data-k="${k}" data-tipo="sel">${ops.map(([o, n]) => `<option value="${esc(o)}" ${o === (v || ops[0][0]) ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>${ajuda ? `<span class="ajuda">${esc(ajuda)}</span>` : ""}</div>`;
   if (tipo === "bool") return `<div class="campo ${cl}" style="justify-content:flex-end"><label class="troca" style="color:var(--texto)"><input type="checkbox" id="${id}" data-k="${k}" data-tipo="bool" ${v ? "checked" : ""}><i></i>${esc(rot)}</label></div>`;
   if (tipo === "lista") return `<div class="campo ${cl}"><label for="${id}">${esc(rot)}</label><textarea id="${id}" data-k="${k}" data-tipo="lista" style="min-height:70px" class="mono">${esc((v || []).join("\n"))}</textarea>${ajuda ? `<span class="ajuda">${esc(ajuda)}</span>` : ""}</div>`;
   return `<div class="campo ${cl}"><label for="${id}">${esc(rot)}</label><input type="${tipo}" id="${id}" data-k="${k}" data-tipo="${tipo}" value="${esc(v ?? "")}" ${tipo === "number" ? 'min="0" step="any"' : ""}>${ajuda ? `<span class="ajuda">${esc(ajuda)}</span>` : ""}</div>`;
@@ -1149,7 +1194,11 @@ async function meusDados() {
     corpo: `<div class="form-sec">${CAMPOS_FREELANCER.map(f => campoHtml("fr", f, c.freelancer[f[0]])).join("")}</div><p class="legenda mono" style="margin:4px 0 0">${esc(c.arquivo_freelancer)}</p>`,
     botoes: [["Cancelar", null], ["Salvar", f => coletar(f, "freelancer"), "pri"]]});
   if (!r) return;
-  try { const args = ["config"]; r.forEach(d => args.push("--definir", d)); await prumo(args); toast("Seus dados foram salvos."); } catch (e) { falhou(e); }
+  try { const args = ["config"]; r.forEach(d => args.push("--definir", d)); await prumo(args); toast("Seus dados foram salvos.");
+    const valor = chave => (r.find(d => d.startsWith(`freelancer.${chave}=`)) || "").split("=")[1];
+    I18N.idiomaProjetos = valor("idioma_projetos") || I18N.idiomaProjetos;
+    if ((valor("idioma_interface") || "auto") !== (c.freelancer.idioma_interface || "auto")) setTimeout(() => location.reload(), 600);  // aplica o idioma novo
+  } catch (e) { falhou(e); }
 }
 
 /* ------------------------------------------------------------------ abrir / novo */
@@ -1171,7 +1220,7 @@ function camposComandos(pref, valores = {}) {
     <span class="legenda">{arquivo} é o arquivo editado. Em branco, o hook não roda.</span></details>`;
 }
 function preencherComandos(f, pref, cmds, soAuto) {
-  USOS_CMD.forEach(([k]) => { const i = $(`#${pref}-c-${k}`, f); if (!i || (soAuto && !i.dataset.auto)) return; i.placeholder = cmds[k] || "sem padrão: em branco, não roda"; });
+  USOS_CMD.forEach(([k]) => { const i = $(`#${pref}-c-${k}`, f); if (!i || (soAuto && !i.dataset.auto)) return; i.placeholder = cmds[k] || T("sem padrão: em branco, não roda"); });
 }
 function argsComandos(f, pref) {
   return USOS_CMD.flatMap(([k]) => { const v = ($(`#${pref}-c-${k}`, f) || {}).value?.trim(); return v ? ["--comando", `${k}=${v}`] : []; });
@@ -1200,7 +1249,8 @@ async function abrirMapear() {
           <p class="legenda" style="margin:8px 0 0">${det.arquivos} arquivo(s) lidos${det.truncado ? " (limite atingido)" : ""} · gerenciador: ${esc(det.gerenciador || "—")} · pastas de código: ${det.pastas_codigo.map(esc).join(", ")}${det.git ? " · git já existe (nada é commitado)" : ""}</p></div>
           <div class="grade g2" style="gap:10px"><div class="campo"><label for="m-nome">Nome do projeto</label><input type="text" id="m-nome" value="${esc(det.nome)}"></div>
           <div class="campo"><label for="m-cli">Cliente</label><input type="text" id="m-cli" placeholder="Ana Doces Ltda."></div></div>
-          <div class="campo"><label for="m-stack">Stack detectada</label><input type="text" id="m-stack" value="${esc(det.stack)}"></div>
+          <div class="grade g2" style="gap:10px"><div class="campo"><label for="m-stack">Stack detectada</label><input type="text" id="m-stack" value="${esc(det.stack)}"></div>
+          <div class="campo"><label for="m-idioma">Idioma dos documentos e do kit</label><select id="m-idioma">${IDIOMAS.map(([o, n]) => `<option value="${o}" ${o === I18N.idiomaProjetos ? "selected" : ""}>${n}</option>`).join("")}</select></div></div>
           <div class="campo"><label>Perfil (sugerido pela detecção)</label><div class="perfis">${E.perfis.map(p => `<button class="perfil ${p.id === perfil ? "ativo" : ""}" data-p="${p.id}"><b>${esc(p.nome)}</b><span>${esc(p.descricao)}</span></button>`).join("")}</div></div>
           ${camposComandos("m", det.comandos)}`;
         $("details", res).open = true;
@@ -1212,7 +1262,7 @@ async function abrirMapear() {
       $("#m-ok", f).onclick = async () => {
         if (!det) return;
         const args = ["mapear", $("#m-pasta", f).value.trim(), "--perfil", perfil, "--nome", $("#m-nome", f).value.trim() || det.nome,
-                      "--cliente", $("#m-cli", f).value.trim(), "--stack", $("#m-stack", f).value.trim() || det.stack];
+                      "--cliente", $("#m-cli", f).value.trim(), "--stack", $("#m-stack", f).value.trim() || det.stack, "--idioma", $("#m-idioma", f).value];
         USOS_CMD.forEach(([k]) => { const v = $(`#m-c-${k}`, f).value.trim(); if (v !== (det.comandos[k] || "")) args.push("--comando", `${k}=${v}`); });
         const b = $("#m-ok", f); b.disabled = true; b.textContent = "Instalando…";
         try { const r = await prumo(args); fechar(true);
@@ -1231,6 +1281,8 @@ async function abrirNovo() {
     <div class="campo"><label for="n-cli">Cliente</label><input type="text" id="n-cli" placeholder="Ana Doces Ltda."></div></div>
     <div class="campo"><label for="n-pasta">Pasta onde criar</label><div class="linha-acao"><input type="text" id="n-pasta" style="flex:1" placeholder="D:\\Projetos\\loja-da-ana"><button class="btn" id="n-esc">Escolher…</button></div></div>
     <div class="campo"><label>Perfil</label><div class="perfis">${E.perfis.map(p => `<button class="perfil ${p.id === perfil.id ? "ativo" : ""}" data-p="${p.id}"><b>${esc(p.nome)}</b><span>${esc(p.descricao)}</span></button>`).join("")}</div></div>
+    <div class="campo"><label for="n-idioma">Idioma dos documentos e do kit</label><select id="n-idioma">${IDIOMAS.map(([o, n]) => `<option value="${o}" ${o === I18N.idiomaProjetos ? "selected" : ""}>${n}</option>`).join("")}</select>
+      <span class="legenda">Em inglês para clientes de fora do Brasil; a interface continua no seu idioma.</span></div>
     <div class="campo"><label for="n-stack">Stack</label><input type="text" id="n-stack" value="${esc(perfil.stack)}">
       <span class="legenda" id="n-ferr">Pode trocar por qualquer tecnologia pedida pelo cliente (ex.: Elixir + Phoenix, Go + Gin, Rails).</span></div>
     ${camposComandos("n")}
@@ -1256,7 +1308,7 @@ async function abrirNovo() {
       $("#n-ok", f).onclick = async () => {
         const pasta = $("#n-pasta", f).value.trim(), nome = $("#n-nome", f).value.trim();
         if (!pasta || !nome) return toast("Informe o nome e a pasta do projeto.", true);
-        const args = ["novo", pasta, "--perfil", perfil.id, "--nome", nome, "--cliente", $("#n-cli", f).value.trim(), "--stack", $("#n-stack", f).value.trim()];
+        const args = ["novo", pasta, "--perfil", perfil.id, "--nome", nome, "--cliente", $("#n-cli", f).value.trim(), "--stack", $("#n-stack", f).value.trim(), "--idioma", $("#n-idioma", f).value];
         const fig = $("#n-figma", f).value.trim(); if (fig) args.push("--figma", fig);
         args.push(...argsComandos(f, "n"));
         const b = $("#n-ok", f); b.disabled = true; b.textContent = "Criando…";
@@ -1325,15 +1377,16 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => { 
 
 /* ------------------------------------------------------------------ início */
 (async function iniciar() {
-  aplicarTema(lembrar("tema", "sistema"));
   try {
-    const p = await api("/api/ping"); $("#versao").textContent = "v" + p.versao;
+    const p = await api("/api/ping?i18n=1"); prepararI18n(p.idioma, p.textos); I18N.idiomaProjetos = p.idioma_projetos || "pt-BR";
+    traduzirArvore(document.querySelector("aside")); aplicarTema(lembrar("tema", "sistema")); $("#versao").textContent = "v" + p.versao;
     setInterval(() => api("/api/ping").catch(() => {}), 15000);
     await carregarProjetos();
     const ultimo = lembrar("ultimo", "");
     const inicial = p.projeto_inicial || (E.projetos.some(x => x.caminho === ultimo) ? ultimo : E.projetos[0] && E.projetos[0].caminho);
     if (inicial) abrirProjeto(inicial); else telaVazia();
   } catch (e) {
+    aplicarTema(lembrar("tema", "sistema"));
     document.body.innerHTML = `<div class="vazio" style="grid-column:1/-1"><div><h2>Sessão expirada</h2><p>Abra a interface de novo com <span class="mono">prumo gui</span> ou pelo prumo-app.exe.</p></div></div>`;
   }
 })();

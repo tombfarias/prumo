@@ -6,7 +6,8 @@
       "palavras": ["node", "typescript", "javascript", "react", "vue", "svelte", "angular", "next", "nuxt", "express", "nest", "fastify", "astro", "remix", "electron"],
       "extensoes": [".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".vue", ".svelte"],
       "comandos": {"formatar": "npx prettier --write {arquivo}", "lint": "npx eslint {arquivo}", "testar": "npm test"},
-      "convencao": "Use o gerenciador de pacotes do lockfile (npm, pnpm, yarn ou bun); não misture."
+      "convencao": "Use o gerenciador de pacotes do lockfile (npm, pnpm, yarn ou bun); não misture.",
+      "convencao_en": "Use the package manager of the lockfile (npm, pnpm, yarn or bun); do not mix them."
     },
     {
       "id": "deno", "nome": "Deno", "marcadores": ["deno.json", "deno.jsonc"], "palavras": ["deno"],
@@ -18,25 +19,29 @@
       "palavras": ["python", "django", "flask", "fastapi", "pandas", "streamlit"],
       "extensoes": [".py"],
       "comandos": {"formatar": "ruff format {arquivo}", "lint": "ruff check {arquivo}", "testar": "pytest -q"},
-      "convencao": "Ambiente virtual em .venv; dependências declaradas no pyproject.toml ou requirements.txt."
+      "convencao": "Ambiente virtual em .venv; dependências declaradas no pyproject.toml ou requirements.txt.",
+      "convencao_en": "Virtual environment in .venv; dependencies declared in pyproject.toml or requirements.txt."
     },
     {
       "id": "php", "nome": "PHP", "marcadores": ["composer.json"], "palavras": ["php", "laravel", "symfony", "wordpress", "codeigniter"],
       "extensoes": [".php"],
       "comandos": {"formatar": "", "lint": "php -l {arquivo}", "testar": "./vendor/bin/phpunit"},
-      "convencao": "Siga a PSR-12; dependências pelo Composer, sem editar vendor/."
+      "convencao": "Siga a PSR-12; dependências pelo Composer, sem editar vendor/.",
+      "convencao_en": "Follow PSR-12; dependencies through Composer, never edit vendor/."
     },
     {
       "id": "go", "nome": "Go", "marcadores": ["go.mod"], "palavras": ["go", "golang", "gin", "echo", "fiber"],
       "extensoes": [".go"],
       "comandos": {"formatar": "gofmt -w {arquivo}", "lint": "go vet ./...", "testar": "go test ./..."},
-      "convencao": "Erros retornados e tratados explicitamente; pacotes pequenos em internal/ quando não forem públicos."
+      "convencao": "Erros retornados e tratados explicitamente; pacotes pequenos em internal/ quando não forem públicos.",
+      "convencao_en": "Errors returned and handled explicitly; small packages in internal/ when not public."
     },
     {
       "id": "rust", "nome": "Rust", "marcadores": ["Cargo.toml"], "palavras": ["rust", "cargo", "axum", "actix", "tauri"],
       "extensoes": [".rs"],
       "comandos": {"formatar": "rustfmt {arquivo}", "lint": "cargo clippy --quiet", "testar": "cargo test"},
-      "convencao": "Sem unwrap() fora de testes; erros com Result e tipos próprios."
+      "convencao": "Sem unwrap() fora de testes; erros com Result e tipos próprios.",
+      "convencao_en": "No unwrap() outside tests; errors with Result and custom types."
     },
     {
       "id": "elixir", "nome": "Elixir", "marcadores": ["mix.exs"], "palavras": ["elixir", "phoenix", "liveview"],
