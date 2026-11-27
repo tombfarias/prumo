@@ -18,13 +18,23 @@ hash; `selar` grava o hash quando o Prumo cria o documento. O conteúdo de cada 
 
 import re
 
-from . import formulario, geradores
-from .util import (MARCADOR_LACUNA, TEMPLATES, ErroPrumo, gravar, hash_texto, ler, renderizar, sem_comentarios,
-                   tabela_markdown)
+from . import formulario, geradores, i18n
+from .util import (LACUNA_EN, MARCADOR_LACUNA, ErroPrumo, gravar, hash_texto, ler, renderizar, sem_comentarios,
+                   tabela_markdown, tem_lacuna)
 
 BRIEFING = "docs/00-briefing.md"
 INICIO = re.compile(r"<!-- prumo:gerado:([a-z0-9-]+)(?: h=([0-9a-f]{8}))? -->\n(.*?)<!-- prumo:gerado:fim -->", re.S)
 SECAO = re.compile(r"^## (\d+)\. .*$", re.M)
+CELULAS_EN = {"Primário": "Primary", "Secundário": "Secondary", "Sim": "Yes", "Não": "No", "sim": "yes", "não": "no",
+              "aberta": "open", "pública": "public", "Identificador": "Identifier", "Usabilidade": "Usability",
+              "Privacidade": "Privacy", "Segurança": "Security", "Desempenho": "Performance",
+              "Disponibilidade": "Availability", "Acessibilidade": "Accessibility", "Compatibilidade": "Compatibility"}
+ROTULOS_DE_LINHA = {"Ator principal", "Atores secundários", "Requisitos atendidos", "Regras de negócio", "Telas",
+                    "Pré-condições", "Pós-condições", "Gatilho", "Arquivo do Figma", "Biblioteca de componentes",
+                    "Tipografia", "Paleta / tokens", "Convenção de nomes", "ORM / migrações", "Versão"}
+DICAS_EN = {"marco": "milestone", "benefício": "benefit", "contexto": "context", "ação": "action", "resultado": "result",
+            "perfil": "profile", "quem": "who", "O ator...": "The actor...", "O sistema...": "The system..."}  # dicas de uma palavra nas lacunas (fora do catálogo: "contexto" é comando)
+ROTULOS_EN = {"Validade da proposta": "Proposal valid for"}  # rótulo da linha no modelo em inglês
 SEPARADOR = re.compile(r"^\|(\s*:?-{3,}:?\s*\|)+\s*$")
 
 
@@ -45,7 +55,7 @@ def _so_lacunas(corpo):
     """True se a seção ainda é o modelo: toda linha com conteúdo é lacuna [PREENCHER] ou cabeçalho de tabela."""
     linhas = [l.strip() for l in sem_comentarios(corpo).splitlines()]
     for i, linha in enumerate(linhas):
-        if not linha or MARCADOR_LACUNA in linha or SEPARADOR.match(linha):
+        if not linha or tem_lacuna(linha) or SEPARADOR.match(linha):
             continue
         if linha.startswith("|") and i + 1 < len(linhas) and SEPARADOR.match(linhas[i + 1]):
             continue  # cabeçalho da tabela
@@ -173,7 +183,7 @@ SECOES_BRIEFING = {  # número da seção em 00-briefing.md -> (bloco, função)
     8: ("referencias", lambda d, c: _referencias(d)),
     9: ("perguntas", _perguntas),
 }
-CONTATO = re.compile(r"^\| Contato principal \| (.*) \|$", re.M)
+CONTATO = re.compile(r"^\| (?:Contato principal|Main contact) \| (.*) \|$", re.M)
 
 
 def _contato(d):
@@ -214,14 +224,53 @@ def _secao(corpo, nome, novo):
     return "\n\n" + (comentarios + "\n\n" if comentarios else "") + _bloco(nome, novo) + "\n\n", "gerado"
 
 
-def gerar_briefing(texto, dados, catalogos=None):
+def _traduzir_gerado(texto, idioma):
+    """Texto gerado no idioma do projeto. Os geradores escrevem em português e misturam rótulos fixos com dados do
+    formulário e dos catálogos; por isso palavra solta só é traduzida em cabeçalho de tabela ou como primeira
+    célula inteira (rótulo de linha). O resto usa só as frases do catálogo."""
+    cat = i18n.catalogo(idioma)
+    texto = re.sub(re.escape(MARCADOR_LACUNA) + r": ([^\]\n]*)\]",
+                   lambda m: f"{LACUNA_EN}: {DICAS_EN.get(m.group(1)) or i18n.traduzir(m.group(1), idioma)}]", texto)  # dica: texto nosso
+    linhas = texto.split("\n")
+    for i, linha in enumerate(linhas):
+        if linha.startswith("|") and i + 1 < len(linhas) and SEPARADOR.match(linhas[i + 1]):
+            linhas[i] = i18n.traduzir(linha, idioma)
+        elif linha.startswith("|"):
+            celulas = linha.split("|")
+            for j, c in enumerate(celulas):
+                fixo = CELULAS_EN.get(c.strip()) or (cat.get(c.strip()) if c.strip() in ROTULOS_DE_LINHA else None)
+                celulas[j] = f" {fixo} " if fixo else i18n.traduzir(c, idioma, frases=True)
+            linhas[i] = "|".join(celulas)
+        else:
+            linhas[i] = i18n.traduzir(linha, idioma, frases=True)
+    return "\n".join(linhas).replace(MARCADOR_LACUNA, LACUNA_EN)
+
+
+def _no_idioma(idioma):
+    """Função que passa o texto gerado (em português) para o idioma do projeto, com a lacuna [FILL]."""
+    if not str(idioma or "").lower().startswith("en"):
+        return lambda texto: texto
+    return lambda texto: _traduzir_gerado(texto, "en") if texto else texto
+
+
+def _traduzido(funcao, traduzir):
+    def gerar_no_idioma(*args):
+        novo = funcao(*args)
+        if isinstance(novo, geradores.Bloco):
+            return geradores.Bloco(traduzir(novo.texto), [(c, traduzir(f)) for c, f in novo.itens], novo.modo)
+        return traduzir(novo)
+    return gerar_no_idioma
+
+
+def gerar_briefing(texto, dados, catalogos=None, idioma=None):
     """(texto novo, {bloco: estado}) do briefing preenchido com o formulário."""
     catalogos = catalogos or formulario.carregar_catalogos()
+    traduzir = _no_idioma(idioma)
     estados = {}
     contato = _contato(dados)
     m = CONTATO.search(texto)
     if m and contato:
-        if MARCADOR_LACUNA in m.group(1):
+        if tem_lacuna(m.group(1)):
             texto = texto[:m.start(1)] + _cel(contato) + texto[m.end(1):]
             estados["contato"] = "gerado"
         else:
@@ -234,7 +283,7 @@ def gerar_briefing(texto, dados, catalogos=None):
         n = int(num)
         if n in SECOES_BRIEFING:
             nome, funcao = SECOES_BRIEFING[n]
-            corpo, estados[nome] = _secao(corpo, nome, funcao(dados, catalogos))
+            corpo, estados[nome] = _secao(corpo, nome, traduzir(funcao(dados, catalogos)))
         saida += [cabecalhos[i], corpo]
     return "".join(saida), estados
 
@@ -299,11 +348,12 @@ def _preencher_linhas(texto, linhas, dados):
     estados = {}
     for rotulo, funcao in linhas:
         valor = funcao(dados)
-        m = re.search(rf"^\| {re.escape(rotulo)} \| (.*) \|$", texto, re.M)
+        rotulos = "|".join(re.escape(r) for r in (rotulo, ROTULOS_EN.get(rotulo, rotulo)))
+        m = re.search(rf"^\| (?:{rotulos}) \| (.*) \|$", texto, re.M)
         if not m or not valor:
             continue
         nome = geradores.identificador(rotulo, "tabela").replace("_", "-")
-        if MARCADOR_LACUNA in m.group(1):
+        if tem_lacuna(m.group(1)):
             texto = texto[:m.start(1)] + _cel(valor) + texto[m.end(1):]
             estados[nome] = "gerado"
         else:
@@ -311,7 +361,7 @@ def _preencher_linhas(texto, linhas, dados):
     return texto, estados
 
 
-def _inventario(texto, dados, catalogos, ctx):
+def _inventario(texto, dados, catalogos, ctx, traduzir=lambda x: x):
     """Inventário de telas (bloco prumo:figma): acrescenta as telas do formulário que ainda não estão lá.
 
     Enquanto o inventário só tem a linha de exemplo, ela sai. Linhas do Figma e manuais nunca são reescritas.
@@ -323,12 +373,12 @@ def _inventario(texto, dados, catalogos, ctx):
     antes, resto = texto.split(FIG_INICIO, 1)
     trecho, depois = resto.split(FIG_FIM, 1)
     linhas = trecho.strip("\n").split("\n")
-    exemplo = [l for l in linhas[2:] if MARCADOR_LACUNA in l.split("|")[2]] if len(linhas) > 2 else []
+    exemplo = [l for l in linhas[2:] if tem_lacuna(l.split("|")[2])] if len(linhas) > 2 else []
     reais = [l for l in linhas[2:] if l not in exemplo]
     if not reais:
         linhas = linhas[:2]
     presentes = "\n".join(linhas)
-    novos = [l for tl, l in itens if not re.search(rf"\| {tl} \|", presentes)]
+    novos = [traduzir(l) for tl, l in itens if not re.search(rf"\| {tl} \|", presentes)]
     if not novos:
         return texto, "igual"
     linhas += novos
@@ -337,7 +387,7 @@ def _inventario(texto, dados, catalogos, ctx):
 
 def _modelo(projeto, rel):
     """{bloco: marcador} do modelo do documento, renderizado e selado como na criação."""
-    caminho = TEMPLATES / "documentos" / rel[len("docs/"):]
+    caminho = projeto.modelo("documentos/" + rel[len("docs/"):])
     if not caminho.is_file():
         return {}
     texto = selar(renderizar(ler(caminho), projeto.contexto()))
@@ -364,6 +414,7 @@ def gerar(projeto, simular=False, sobrescrever=()):
             raise ErroPrumo(f"Use <documento>:<bloco> em --sobrescrever (ex.: docs/02-requisitos.md:rf), não '{item}'.")
         forcar.setdefault(doc if doc.startswith("docs/") else f"docs/{doc}", set()).add(bloco)
     aprovados = projeto.config.get("aprovados") or {}
+    traduzir = _no_idioma(projeto.idioma)
     resultado, alterados, acrescentados = {}, [], {}
     for rel in [BRIEFING] + list(geradores.DOCUMENTOS):
         caminho = projeto.raiz / rel
@@ -374,14 +425,16 @@ def gerar(projeto, simular=False, sobrescrever=()):
             continue
         antes = ler(caminho)
         if rel == BRIEFING:
-            depois, estados = gerar_briefing(antes, dados, catalogos)
+            depois, estados = gerar_briefing(antes, dados, catalogos, projeto.idioma)
         else:
-            depois, estados, novos = aplicar_blocos(antes, geradores.DOCUMENTOS[rel], dados, catalogos, ctx,
+            docs = {k: _traduzido(f, traduzir) for k, f in geradores.DOCUMENTOS[rel].items()}
+            depois, estados, novos = aplicar_blocos(antes, docs, dados, catalogos, ctx,
                                                     _modelo(projeto, rel), forcar.get(rel, ()))
-            depois, linhas = _preencher_linhas(depois, geradores.LINHAS.get(rel, []), dados)
+            linhas_doc = [(r, _traduzido(f, traduzir)) for r, f in geradores.LINHAS.get(rel, [])]
+            depois, linhas = _preencher_linhas(depois, linhas_doc, dados)
             estados.update(linhas)
             if rel == "docs/05-interface.md":
-                depois, inv = _inventario(depois, dados, catalogos, ctx)
+                depois, inv = _inventario(depois, dados, catalogos, ctx, traduzir)
                 if inv:
                     estados["inventario"] = inv
             if novos:

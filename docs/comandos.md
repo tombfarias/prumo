@@ -38,6 +38,7 @@ Cria um projeto completo.
 | `--nome`, `--cliente`, `--autor` | Metadados usados nos documentos (autor padrão: `config/freelancer.json` ou `git config user.name`) |
 | `--stack` | Substitui a stack sugerida do perfil. Linguagens fora dos perfis (Go, Rust, Elixir, Ruby, Java/Kotlin, .NET, Dart, Swift, C/C++, Deno, PHP) são reconhecidas no texto e trazem comandos sugeridos e convenções (catálogo `templates/catalogos/ferramentas.json`) |
 | `--comando USO=CMD` | Define direto um comando dos hooks (`formatar`, `lint`, `testar`; repetível). Ex.: `--comando testar="busted"`, `--comando formatar="stylua {arquivo}"` |
+| `--idioma pt-BR\|en` | Idioma dos documentos e do kit do Claude (padrão: `idioma_projetos` de `freelancer.json`, senão `pt-BR`) |
 | `--figma URL` | Ativa a integração com o Figma e registra o arquivo |
 | `--com-figma` / `--sem-figma` | Força ligar/desligar o Figma independentemente do perfil |
 | `--sem-git` | Não cria o repositório git |
@@ -60,7 +61,7 @@ Depois, `/mapear-projeto-existente` (ou `prumo claude mapear`) descreve o sistem
 | `--simular` | Só mostra o que foi detectado, sem gravar nada |
 | `--atualizar` | Refaz o mapa num projeto já mapeado (preenche comandos que estiverem vazios) |
 | `--perfil`, `--stack`, `--comando USO=CMD` | Sobrepõem o que foi detectado |
-| `--nome`, `--cliente`, `--autor`, `--com-figma`, `--sem-figma`, `--python`, `--hooks-via` | Como em `prumo novo` |
+| `--nome`, `--cliente`, `--autor`, `--idioma`, `--com-figma`, `--sem-figma`, `--python`, `--hooks-via` | Como em `prumo novo` |
 
 ### `prumo ferramentas [--stack TEXTO]`
 Lista as ferramentas por linguagem. Com `--stack "Elixir + Phoenix"`, mostra o que o texto implica (ferramentas e comandos), sem criar nada.

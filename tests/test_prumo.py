@@ -18,6 +18,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
+os.environ["PRUMO_IDIOMA"] = "pt-BR"  # mensagens em português, qualquer que seja o idioma do sistema
 sys.path.insert(0, str(RAIZ))
 
 from prumo_cli import claude, entrevista, estilo, figma, formulario, geracao, gestao, mapear, projeto as mp, rastreio, seguranca, validacao  # noqa: E402

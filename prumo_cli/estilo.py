@@ -29,8 +29,27 @@ VAGOS = [
     (r"\bde (forma|maneira) (rápida|fácil|simples|eficiente|adequada|intuitiva)\b",
      "termo vago: diga quanto (tempo, cliques, passos)"),
 ]
+# Projetos em inglês (idioma "en"): mesmas regras, expressões do inglês.
+ENCHIMENTO_EN = [
+    (r"\bit is (important|worth|crucial) (to )?(note|noting|mention|mentioning|highlight|highlighting|remember)( that)?", "corte; diga o fato"),
+    (r"\b(it should be|needless to) (noted|say)( that)?", "corte; diga o fato"),
+    (r"\bas (previously |already )?(mentioned|stated|described|noted)( (above|earlier|before|previously))?", "cite o ID ou a seção"),
+    (r"\b(in order to|with the (aim|goal|purpose|intention) of|for the purpose of|so as to)\b", "use \"to\""),
+    (r"\b(with (regard|respect) to|in (relation|regard) to|in terms of)\b", "use \"about\" ou \"for\""),
+    (r"\b(basically|essentially|simply|actually|really)\b", "corte"),
+    (r"\b(in this (sense|context)|in this regard)\b", "corte"),
+    (r"\blast but not least\b", "corte"),
+]
+VAGOS_EN = [
+    (r"\b(intuitive|user[- ]friendly|modern|robust|efficient|seamless|fast|easy to use|scalable)\b",
+     "termo vago: troque por um critério verificável ou registre uma pergunta P-xx"),
+    (r"\b(quickly|easily|adequately|intuitively|efficiently)\b",
+     "termo vago: diga quanto (tempo, cliques, passos)"),
+]
 _ENCHIMENTO = [(re.compile(p, re.I), s) for p, s in ENCHIMENTO]
 _VAGOS = [(re.compile(p, re.I), s) for p, s in VAGOS]
+_ENCHIMENTO_EN = [(re.compile(p, re.I), s) for p, s in ENCHIMENTO_EN]
+_VAGOS_EN = [(re.compile(p, re.I), s) for p, s in VAGOS_EN]
 _FIM_DE_FRASE = re.compile(r"(?<=[.!?;])\s+(?=[A-ZÀ-Ú0-9\"*(\[])")
 _ESTRUTURA = re.compile(r"^\s*(#|\||[-*+] |\d+[.)] |>|!\[|<|---)")
 
@@ -46,15 +65,18 @@ def _limpar(texto):
 
 
 def _palavras(trecho):
-    trecho = re.sub(r"`[^`]*`|\[PREENCHER[^\]]*\]|\{\{\w+\}\}|https?://\S+", " x ", trecho)
+    trecho = re.sub(r"`[^`]*`|\[(?:PREENCHER|FILL)[^\]]*\]|\{\{\w+\}\}|https?://\S+", " x ", trecho)
     return len(re.findall(r"[\wÀ-ú]+", trecho))
 
 
-def checar(texto, vagos=True):
-    """Retorna [(linha, mensagem)] ordenada pela linha."""
+def checar(texto, vagos=True, idioma="pt-BR"):
+    """Retorna [(linha, mensagem)] ordenada pela linha. idioma: pt-BR ou en (regras do inglês)."""
     linhas = _limpar(texto).splitlines()
     avisos = []
-    padroes = _ENCHIMENTO + (_VAGOS if vagos else [])
+    if str(idioma or "").lower().startswith("en"):
+        padroes = _ENCHIMENTO_EN + (_VAGOS_EN if vagos else [])
+    else:
+        padroes = _ENCHIMENTO + (_VAGOS if vagos else [])
     vistas = {}
     paragrafo, inicio = [], 0
 
@@ -82,7 +104,7 @@ def checar(texto, vagos=True):
                     break
         chave = re.sub(r"\s+", " ", bruta.lower())
         if (len(chave) >= MIN_CARACTERES_REPETIDA and _palavras(chave) >= MIN_PALAVRAS_REPETIDA and " · " not in chave
-                and "preencher" not in chave and not chave.startswith(("|-", "#"))):
+                and "preencher" not in chave and "[fill" not in chave and not chave.startswith(("|-", "#"))):
             if chave in vistas:
                 avisos.append((n, f"linha repetida (igual à linha {vistas[chave]}): cite em vez de repetir"))
             else:

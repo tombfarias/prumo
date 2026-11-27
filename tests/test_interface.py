@@ -1,5 +1,6 @@
 """Testes da interface gráfica: comandos novos da CLI usados por ela, rotas do servidor e paleta de cores."""
 
+import os
 import io
 import json
 import sys
@@ -13,6 +14,7 @@ from pathlib import Path
 from unittest import mock
 
 RAIZ = Path(__file__).resolve().parent.parent
+os.environ["PRUMO_IDIOMA"] = "pt-BR"  # mensagens em português, qualquer que seja o idioma do sistema
 sys.path.insert(0, str(RAIZ))
 sys.path.insert(0, str(RAIZ / "tools"))
 

@@ -10,7 +10,7 @@ import copy
 import re
 
 from . import rastreio
-from .util import MARCADOR_LACUNA, TEMPLATES, ErroPrumo, config_freelancer, gravar_json, ler_json
+from .util import MARCADOR_LACUNA, TEMPLATES, tem_lacuna, ErroPrumo, config_freelancer, gravar_json, ler_json
 
 ARQUIVO = "especificacao.prumo.json"
 VERSAO_FORMULARIO = 1
@@ -373,7 +373,7 @@ def estrutura(dados):
 def ids_dos_documentos(projeto):
     """IDs já usados nos documentos do projeto. Os exemplos dos modelos ('[PREENCHER...') não contam."""
     analise = rastreio.analisar_projeto(projeto)
-    usados = {i for i, item in analise.itens.items() if not item.titulo.startswith(MARCADOR_LACUNA)}
+    usados = {i for i, item in analise.itens.items() if not tem_lacuna(item.titulo[:12])}
     return usados | set(analise.indefinidos())
 
 

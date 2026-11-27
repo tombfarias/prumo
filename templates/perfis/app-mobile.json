@@ -2,7 +2,10 @@
   "id": "app-mobile",
   "nome": "Aplicativo mobile",
   "descricao": "App Android/iOS com backend próprio ou BaaS, login, notificações e publicação nas lojas.",
+  "nome_en": "Mobile app",
+  "descricao_en": "Android/iOS app with its own backend or a BaaS, sign-in, notifications and store publishing.",
   "stack": "React Native + Expo + TypeScript (alternativa: Flutter). Backend: ver perfil api-rest ou Supabase/Firebase",
+  "stack_en": "React Native + Expo + TypeScript (alternative: Flutter). Backend: see the api-rest profile or Supabase/Firebase",
   "stack_padrao": {"mobile": "expo", "hospedagem": "eas", "testes": "jest"},
   "documentos": [
     "00-briefing",

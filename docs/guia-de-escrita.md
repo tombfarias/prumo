@@ -34,3 +34,5 @@ O briefing (`00-briefing.md`) é exceção parcial: registra as palavras do clie
 | Linha repetida | linha igual de 40+ caracteres e 8+ palavras no mesmo documento (metadados com " · " não contam) |
 
 Frontmatter de skills, comentários HTML, blocos de código, trechos em crase e lacunas `[PREENCHER]` são ignorados.
+
+Em projetos em inglês (`idioma: en`), as listas são `ENCHIMENTO_EN` ("it is important to note", "in order to", "as mentioned above"...) e `VAGOS_EN` ("intuitive", "user-friendly", "fast", "quickly"...); os limites de frase, parágrafo e repetição são os mesmos, e a lacuna é `[FILL]`.

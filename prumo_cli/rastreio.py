@@ -172,7 +172,7 @@ def _wont(item):
     return bool(re.search(r"\bWon'?t\b", " ".join(item.texto), re.I))
 
 
-_PRIORIDADE = re.compile(r"Prioridade\W{0,4}\s*(Must|Should|Could|Won'?t)\b", re.I)
+_PRIORIDADE = re.compile(r"(?:Prioridade|Priority)\W{0,4}\s*(Must|Should|Could|Won'?t)\b", re.I)  # pt ou en
 
 
 def prioridade(item):
@@ -298,11 +298,12 @@ def gerar_matriz(projeto, analise=None):
     partes += [f"- **{g}:** {m}" for g, m in lista] if lista else ["Nenhum problema de rastreabilidade."]
     partes.append("")
     destino = projeto.docs / "rastreabilidade.md"
-    gravar(destino, "\n".join(partes))
+    from .i18n import traduzir
+    gravar(destino, traduzir("\n".join(partes), getattr(projeto, "idioma", "pt-BR")))  # no idioma do projeto
     return destino, lista
 
 
-_ESTIMATIVA = re.compile(r"Estimativa\W{0,4}\s*(\d+(?:[.,]\d+)?)\s*(h|hs|horas?|d|dias?)\b", re.I)
+_ESTIMATIVA = re.compile(r"(?:Estimativa|Estimate)\W{0,4}\s*(\d+(?:[.,]\d+)?)\s*(h|hs|horas?|hours?|d|dias?|days?)\b", re.I)
 
 
 def estimativa_horas(item, horas_dia=8):

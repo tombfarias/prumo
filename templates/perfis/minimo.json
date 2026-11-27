@@ -2,7 +2,10 @@
   "id": "minimo",
   "nome": "Mínimo (projeto pequeno ou exploratório)",
   "descricao": "Só o essencial: briefing, visão, requisitos e backlog. Bom para orçamentos rápidos e pequenos ajustes.",
+  "nome_en": "Minimal (small or exploratory project)",
+  "descricao_en": "Just the essentials: briefing, vision, requirements and backlog. Good for quick quotes and small fixes.",
   "stack": "[PREENCHER: definir com o cliente]",
+  "stack_en": "[FILL: define with the client]",
   "stack_padrao": {},
   "documentos": [
     "00-briefing",

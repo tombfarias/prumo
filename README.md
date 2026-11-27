@@ -22,6 +22,7 @@ O nome vem do fio de prumo, a ferramenta que mantém a obra alinhada. No Prumo, 
 | **Figma** | Servidor MCP do Figma configurado, inventário de telas sincronizado pela API e diagramas publicados no FigJam |
 | **Gestão freelance** | Orçamento a partir das estimativas do backlog, horas trabalhadas registradas pelos hooks, proposta e checklist de entrega |
 | **Interface gráfica** | Em HTML/CSS/JS puro, abre em janela própria: prontidão do projeto, editor de documentos com diagramas desenhados, kit do Claude, configurações, paleta de comandos (Ctrl+K) e tema claro/escuro com paleta acessível |
+| **Português e inglês** | Interface e CLI no idioma do sistema (ou o que você escolher); projetos com documentos e kit do Claude em inglês com `--idioma en` |
 | **Executável** | `prumo.exe` e `prumo-app.exe` para Windows, gerados pelo GitHub Actions ou pelo `build.ps1` |
 
 ## Começo rápido
@@ -86,6 +87,13 @@ Antes, responda a **Entrevista guiada** (ou `prumo entrevista`) e preencha a aba
 | [Executável](docs/executavel.md) | Geração do `.exe` local e pelo GitHub Actions |
 | [Solução de problemas](docs/solucao-de-problemas.md) | Erros comuns e como resolver |
 | [Arquitetura do Prumo](docs/arquitetura-do-prumo.md) | Para quem vai evoluir o próprio Prumo |
+
+## In English
+
+Prumo speaks English too. The interface and the CLI follow your system language (or `PRUMO_IDIOMA=en`, or **My details → Interface language**),
+and `prumo novo PASTA --idioma en` creates a project whose documents, `AGENTS.md`, `CLAUDE.md`, skills, subagents and hook
+messages are in English (gaps are marked `[FILL: ...]`). IDs (`RF-001`, `UC-001`...), commands and file names stay the same.
+Details in [Configuração](docs/configuracao.md#idioma).
 
 ## Licença
 

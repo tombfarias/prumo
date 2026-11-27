@@ -9,14 +9,14 @@ rastreabilidade e um kit de agentes (skills, subagentes, hooks) para o Claude Co
   contexto (`validacao.py`), avisos de estilo (`estilo.py`, regras em `docs/guia-de-escrita.md`), projetos existentes e stacks fora dos perfis (`mapear.py`),
   orçamento/horas/exportação (`gestao.py`), Figma (`figma.py`), segurança (`seguranca.py`),
   formulário de especificação (`formulario.py`, desenho em `docs/formulario-de-especificacao.md`), entrevista guiada (`entrevista.py`) e geração dos documentos a partir dele (`geracao.py`: marcadores, hash e mesclagem; `geradores.py`: conteúdo de cada bloco),
-  ponte com o Claude Code (`claude.py`), servidor da interface (`servidor.py`) e a interface (`gui/index.html`, HTML/CSS/JS puro,
+  idioma e tradução (`i18n.py`, catálogo `i18n/en.json`), ponte com o Claude Code (`claude.py`), servidor da interface (`servidor.py`) e a interface (`gui/index.html`, HTML/CSS/JS puro,
   com o `mermaid.min.js` embutido para desenhar diagramas).
-- `templates/documentos/` — modelos de especificação; `templates/perfis/` — perfis e convenções por stack;
+- `templates/documentos/` — modelos de especificação; `templates/en/` — os mesmos modelos, kit e convenções em inglês; `templates/perfis/` — perfis e convenções por stack;
   `templates/catalogos/` — opções do formulário (stacks, integrações, logins, RNFs, tipos de campo) e o que cada uma implica, as perguntas da entrevista (`entrevista.json`)
   e `ferramentas.json` (comandos e convenções por linguagem, usados por `prumo mapear` e `--stack`);
   `templates/agentes/` — AGENTS.md, CLAUDE.md, skills, subagentes, hooks e settings copiados para cada projeto.
 - `.githooks/` — guarda de privacidade (`privacidade.py`) usado pelos hooks do git (instalados em `.git/hooks`), pelo hook do Claude (`.claude/settings.json`) e pelo CI.
-- `tools/cores.py` — verifica a paleta da interface (contraste WCAG e daltonismo); roda nos testes.
+- `tools/cores.py` — verifica a paleta da interface (contraste WCAG e daltonismo); roda nos testes. `tools/i18n.py` — lista textos sem tradução no catálogo.
 - `powershell/` — módulo `Prumo.psm1` e instalador. `build.ps1` — executáveis. `.github/workflows/ci.yml` — testes e build.
 
 ## Regras
@@ -24,6 +24,7 @@ rastreabilidade e um kit de agentes (skills, subagentes, hooks) para o Claude Co
 - **O repositório é público (licença MIT).** Nada pessoal do autor ou da máquina dele vai para o GitHub (arquivos, commits, PRs, issues, releases): siga a skill `projeto-publico`. Em cada clone, `python .githooks/privacidade.py instalar`; nunca use `--no-verify`.
 - Sem dependências externas no Prumo: só a biblioteca padrão (o executável empacota tudo).
 - Todo texto voltado ao usuário em português do Brasil, curto e exato: siga `docs/guia-de-escrita.md` em modelos, skills e convenções.
+- Texto novo na CLI ou na interface: tradução em `prumo_cli/i18n/en.json` (`python tools/i18n.py --json`). Modelo, skill, subagente ou convenção nova ou alterada: versão em `templates/en/` no mesmo PR.
 - Mudou modelo, perfil, hook ou skill? Rode `python -m unittest discover -s tests -v` (os testes criam projetos de todos os perfis
   e validam que não sobram marcadores `{{...}}` nem IDs órfãos).
 - Hooks (`templates/agentes/claude/hooks/`) rodam no computador do usuário: só biblioteca padrão, nada de rede, rápidos e

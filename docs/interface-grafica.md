@@ -20,7 +20,7 @@ de cada projeto mostra a prontidão e o próximo passo, e o kit do Claude tem um
 | Área | O que tem |
 |---|---|
 | **Barra lateral** | Novo projeto, busca e lista de projetos recentes (com botão para tirar da lista), **Mapear código existente**, abrir pasta, **Meus dados**, paleta de comandos e tema |
-| **Novo projeto** | Nome, cliente, pasta, perfil e stack. Ao trocar a stack por outra tecnologia (Elixir, Go, Rails...), mostra o que o Prumo reconheceu e os comandos que vão para os hooks; em **Comandos dos hooks** dá para defini-los à mão |
+| **Novo projeto** | Nome, cliente, pasta, perfil, idioma (português ou inglês) e stack. Ao trocar a stack por outra tecnologia (Elixir, Go, Rails...), mostra o que o Prumo reconheceu e os comandos que vão para os hooks; em **Comandos dos hooks** dá para defini-los à mão |
 | **Mapear código existente** | Escolha a pasta de um sistema que já existe e clique em **Analisar**: aparecem linguagens, frameworks, gerenciador, pastas de código, a stack e o perfil sugeridos e os comandos detectados (todos editáveis). **Instalar o Prumo** roda `prumo mapear` sem sobrescrever nada; a visão geral passa a sugerir **Mapear com o Claude** |
 | **Visão geral** | Anel de prontidão para executar (documentos completos, validação, aprovação e kit), a jornada em 5 etapas (Criar, Especificar, Validar, Aprovar, Executar) com o próximo passo, indicadores, documentos e resumo do kit |
 | **Documentos** | Lista filtrável com o estado de cada documento; visualização com índice das seções, IDs destacados e **diagramas Mermaid desenhados**; **editor embutido** (Ctrl+S salva) com botão **Próxima lacuna**; aprovar/liberar; criar ADR, mudança ou documento do catálogo |
@@ -29,7 +29,8 @@ de cada projeto mostra a prontidão e o próximo passo, e o kit do Claude tem um
 | **Executar com o Claude** | Tarefas agrupadas (Especificar, Executar, Figma, Outro; em projeto mapeado, também **Mapear código existente**), alvo, instruções, continuar sessão, saída ao vivo, parar e histórico com duração e custo |
 | **Qualidade** | Validação (roda ao abrir), varredura de segurança e matriz de rastreabilidade |
 | **Gestão** | Orçamento, horas trabalhadas e Figma |
-| **Configurações** | Nome, cliente, stack, comandos usados pelos hooks (com os sugeridos pelo perfil), opções dos hooks, modelo do Claude, orçamento do projeto e pastas de código |
+| **Meus dados** | Seus dados de autor e orçamento, **Idioma da interface** (Automático segue o sistema; a página recarrega ao trocar) e **Idioma dos novos projetos** |
+| **Configurações** | Nome, cliente, stack, idioma do projeto, comandos usados pelos hooks (com os sugeridos pelo perfil), opções dos hooks, modelo do Claude, orçamento do projeto e pastas de código |
 
 Os botões **Pasta**, **VS Code** e **Abrir Claude Code** abrem a pasta do projeto no Explorer, no VS Code ou num terminal já com o `claude` rodando.
 

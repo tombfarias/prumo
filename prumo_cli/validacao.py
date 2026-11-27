@@ -127,7 +127,7 @@ def validar(projeto, estrito=False, mmdc=False):
                 erros = checar_mermaid_mmdc(codigo) or []
             for e in erros:
                 resultado.append(("erro", f"{rel}:{linha}: Mermaid: {e}"))
-        resultado.extend(_avisos_de_estilo(rel, texto))
+        resultado.extend(_avisos_de_estilo(rel, texto, idioma=projeto.idioma))
 
     analise = rastreio.analisar_projeto(projeto)
     for gravidade, msg in rastreio.problemas(analise, projeto):
@@ -135,9 +135,9 @@ def validar(projeto, estrito=False, mmdc=False):
     return resultado
 
 
-def _avisos_de_estilo(rel, texto, limite=8):
+def _avisos_de_estilo(rel, texto, limite=8, idioma="pt-BR"):
     """Avisos de concisão (docs/guia-de-escrita.md). O briefing guarda as palavras do cliente: sem checar termos vagos."""
-    achados = estilo.checar(texto, vagos=not rel.endswith("00-briefing.md"))
+    achados = estilo.checar(texto, vagos=not rel.endswith("00-briefing.md"), idioma=idioma)
     avisos = [("aviso", f"{rel}:{linha}: estilo: {msg}") for linha, msg in achados[:limite]]
     if len(achados) > limite:
         avisos.append(("aviso", f"{rel}: estilo: mais {len(achados) - limite} aviso(s) neste documento"))

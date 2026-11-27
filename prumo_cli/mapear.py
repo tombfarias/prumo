@@ -112,7 +112,7 @@ def comandos_das_ferramentas(ids):
     return saida
 
 
-def convencoes_das_ferramentas(ids):
+def convencoes_das_ferramentas(ids, idioma="pt-BR"):
     por_id = {f["id"]: f for f in _ferramentas()}
     linhas = []
     for i in ids:
@@ -120,7 +120,8 @@ def convencoes_das_ferramentas(ids):
         if not f:
             continue
         cmds = [f"{k}: `{v}`" for k, v in (f.get("comandos") or {}).items() if v]
-        linha = f"- **{f['nome']}:** " + (f.get("convencao", "") + " " if f.get("convencao") else "")
+        conv = (f.get("convencao_en") if str(idioma).startswith("en") else None) or f.get("convencao")
+        linha = f"- **{f['nome']}:** " + (conv + " " if conv else "")
         if cmds:
             linha += "Comandos de referência: " + ", ".join(cmds) + "."
         linhas.append(linha.rstrip())
@@ -383,7 +384,13 @@ def arvore(raiz, profundidade=2, limite=60):
     return "\n".join(linhas)
 
 
-def texto_mapa(det, prumo="prumo"):
+def texto_mapa(det, prumo="prumo", idioma="pt-BR"):
+    """Texto de docs/00-mapa-do-codigo.md, no idioma do projeto (a árvore de pastas nunca é traduzida)."""
+    from .i18n import proteger, traduzir
+    return traduzir(_texto_mapa(det, prumo, proteger), idioma)
+
+
+def _texto_mapa(det, prumo, proteger):
     raiz = Path(det["pasta"])
     p = [
         "# Mapa do código",
@@ -422,7 +429,7 @@ def texto_mapa(det, prumo="prumo"):
     ]
     if det["scripts"]:
         p += ["Scripts do `package.json`: " + ", ".join(f"`{k}`" for k in det["scripts"]) + ".", ""]
-    p += ["## Estrutura", "", "```text", arvore(raiz) or "(vazia)", "```", "", "## Arquivos-chave", ""]
+    p += ["## Estrutura", "", "```text", proteger(arvore(raiz)) if arvore(raiz) else "(vazia)", "```", "", "## Arquivos-chave", ""]
     if det["arquivos_chave"]:
         for rot, lista in det["arquivos_chave"].items():
             p.append(f"- **{rot}:** " + ", ".join(f"`{a}`" for a in lista))
@@ -497,7 +504,7 @@ BLOCO_AGENTES = """## Projeto existente (mapeado pelo Prumo)
 
 
 def mapear_projeto(pasta, perfil_id=None, nome=None, cliente="", stack=None, autor=None, comandos=None,
-                   python=None, hooks_via=None, figma=None):
+                   python=None, hooks_via=None, figma=None, idioma=None):
     """Instala o Prumo num projeto que já tem código: detecta, cria só o que falta e mescla o resto."""
     from . import projeto as mp
     from .util import comando_prumo
@@ -512,11 +519,11 @@ def mapear_projeto(pasta, perfil_id=None, nome=None, cliente="", stack=None, aut
     projeto = mp.criar_projeto(
         raiz, perfil_id, nome=nome or det["nome"], cliente=cliente, stack=stack or det["stack"], autor=autor,
         figma=figma, git=False, python=python, hooks_via=hooks_via, forcar=True, existente=True,
-        comandos=cmds, pastas_codigo=det["pastas_codigo"], ferramentas=det["ferramentas"],
+        comandos=cmds, pastas_codigo=det["pastas_codigo"], ferramentas=det["ferramentas"], idioma=idioma,
     )
     projeto.config["mapeamento"] = _resumo_mapeamento(det)
     projeto.salvar()
-    gravar(raiz / MAPA, texto_mapa(det, comando_prumo(projeto.config.get("python"))))
+    gravar(raiz / MAPA, texto_mapa(det, comando_prumo(projeto.config.get("python")), projeto.idioma))
     return projeto, det
 
 
@@ -529,7 +536,7 @@ def atualizar_mapa(projeto, det=None):
         if v and not atuais.get(k):
             atuais[k] = v
     projeto.salvar()
-    gravar(projeto.raiz / MAPA, texto_mapa(det, comando_prumo(projeto.config.get("python"))))
+    gravar(projeto.raiz / MAPA, texto_mapa(det, comando_prumo(projeto.config.get("python")), projeto.idioma))
     return projeto, det
 
 

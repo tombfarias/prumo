@@ -12,6 +12,7 @@ from datetime import datetime
 from pathlib import Path
 
 from . import validacao
+from .i18n import proteger
 from .util import ErroPrumo, gravar, gravar_json, progresso
 
 LEITURA = ["Read", "Glob", "Grep"]
@@ -144,6 +145,17 @@ def etapa_existe(projeto, tarefa):
     return any(any(d in doc for d in docs) for doc in lista)
 
 
+IDIOMA_EN = ("Idioma do projeto: inglês. Escreva todos os documentos, comentários de código, mensagens de commit e "
+             "textos para o cliente em inglês (en), seguindo os modelos e skills do projeto, que já estão em inglês.")
+
+
+def _aviso_final(projeto):
+    """Instruções do fim do prompt; projetos em inglês ganham a regra de idioma dos entregáveis."""
+    if getattr(projeto, "idioma", "pt-BR") == "en":
+        return IDIOMA_EN + "\n\n" + AVISO_NAO_INTERATIVO
+    return AVISO_NAO_INTERATIVO
+
+
 def montar_prompt_etapas(projeto, etapas, texto=""):
     """Prompt de uma sessão de especificação com uma ou mais etapas, já com o texto das skills transcrito."""
     nome = projeto.config.get("projeto")
@@ -167,7 +179,7 @@ def montar_prompt_etapas(projeto, etapas, texto=""):
     partes.append(REGRAS_ESPECIFICACAO)
     if texto:
         partes.append(f"Instruções adicionais do usuário: {texto.strip()}")
-    partes.append(AVISO_NAO_INTERATIVO)
+    partes.append(_aviso_final(projeto))
     return "\n\n".join(partes)
 
 
@@ -179,7 +191,8 @@ def montar_prompt(projeto, tarefa, alvo="", texto=""):
     if tarefa == "livre":
         if not texto.strip():
             raise ErroPrumo("Informe o comando para o Claude (texto do pedido).")
-        return f"Projeto \"{nome}\" (Prumo; siga AGENTS.md).\n\n{texto.strip()}\n\nTermine com um resumo curto do que foi feito."
+        idioma = ("\n\n" + IDIOMA_EN) if getattr(projeto, "idioma", "pt-BR") == "en" else ""
+        return f"Projeto \"{nome}\" (Prumo; siga AGENTS.md).{idioma}\n\n{texto.strip()}\n\nTermine com um resumo curto do que foi feito."
     partes = [
         f"Projeto \"{nome}\" gerenciado pelo Prumo. Tarefa: {descricao}.",
         f"Siga a skill `{skill}`: leia .claude/skills/{skill}/SKILL.md e execute o procedimento.",
@@ -196,7 +209,7 @@ def montar_prompt(projeto, tarefa, alvo="", texto=""):
             pass
     if tarefa == "mudanca" and not texto:
         raise ErroPrumo("Descreva a mudança pedida pelo cliente (ex.: prumo claude mudanca --texto \"incluir boleto\").")
-    partes.append(AVISO_NAO_INTERATIVO)
+    partes.append(_aviso_final(projeto))
     return "\n\n".join(partes)
 
 
@@ -350,7 +363,7 @@ def _tratar_linha(bruto, eventos_brutos, resultado, emitir, texto_final):
     elif tipo == "assistant":
         for bloco in (ev.get("message") or {}).get("content") or []:
             if bloco.get("type") == "text" and bloco.get("text", "").strip():
-                emitir(bloco["text"].strip())
+                emitir(proteger(bloco["text"].strip()))  # texto do Claude: nunca traduzido
             elif bloco.get("type") == "tool_use":
                 emitir(_resumir_ferramenta(bloco))
     elif tipo == "result":

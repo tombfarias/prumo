@@ -2,7 +2,10 @@
   "id": "wordpress",
   "nome": "WordPress (tema, plugin e WooCommerce)",
   "descricao": "Site ou loja em WordPress que o cliente edita sozinho: tema de blocos próprio, plugin de funcionalidades do projeto e WooCommerce quando houver vendas.",
+  "nome_en": "WordPress (theme, plugin and WooCommerce)",
+  "descricao_en": "WordPress site or store the client edits on their own: custom block theme, project feature plugin and WooCommerce when there are sales.",
   "stack": "WordPress 6.x + PHP 8.1+: tema de blocos e plugin próprios, wp-env, phpcs (WordPress Coding Standards) e PHPUnit; WooCommerce para loja (alternativa: tema filho de um tema comprado)",
+  "stack_en": "WordPress 6.x + PHP 8.1+: custom block theme and plugin, wp-env, phpcs (WordPress Coding Standards) and PHPUnit; WooCommerce for the store (alternative: child theme of a purchased theme)",
   "stack_padrao": {"frontend": "wordpress", "backend": "wordpress", "banco": "mysql", "testes": "phpunit"},
   "documentos": [
     "00-briefing",

@@ -10,11 +10,14 @@ Fica na pasta do Prumo, fora do git. Copie de `config/freelancer.exemplo.json`.
   "email": "voce@exemplo.com",
   "valor_hora": 120,
   "moeda": "BRL",
-  "contingencia_percentual": 20
+  "contingencia_percentual": 20,
+  "idioma_interface": "auto",
+  "idioma_projetos": "pt-BR"
 }
 ```
 
 `nome` vira o autor dos documentos; `valor_hora`, `moeda` e `contingencia_percentual` são o padrão do `prumo orcamento`.
+`idioma_interface` e `idioma_projetos`: veja [Idioma](#idioma).
 
 Na mesma pasta, o Prumo mantém `projetos.json` (projetos recentes) e `.janela/` (perfil da janela da interface).
 
@@ -23,6 +26,7 @@ Na mesma pasta, o Prumo mantém `projetos.json` (projetos recentes) e `.janela/`
 | Campo | Descrição |
 |---|---|
 | `projeto`, `slug`, `cliente`, `autor`, `perfil`, `stack`, `criado_em` | Metadados |
+| `idioma` | Idioma dos documentos e do kit do Claude: `pt-BR` (padrão) ou `en` (veja [Idioma](#idioma)) |
 | `documentos` | Documentos do projeto (atualizado por `prumo doc`) |
 | `aprovados` | Documentos aprovados: `{"docs/01-visao.md": {"data": "...", "sha256": "..."}}`. Altere só com `prumo aprovar`/`desaprovar` |
 | `comandos.formatar` / `comandos.lint` | Rodados pelo hook após cada edição; `{arquivo}` é substituído pelo arquivo editado |
@@ -63,10 +67,30 @@ Exemplo de `comandos` para Node.js:
 
 Para mudar depois: ajuste os campos em `projeto.prumo.json` e rode `prumo agentes atualizar --incluir-settings`.
 
+## Idioma
+
+São dois idiomas independentes:
+
+| | Onde se define | Valores |
+|---|---|---|
+| **Interface e CLI** (telas, mensagens, `--help`) | `PRUMO_IDIOMA`, senão `idioma_interface` em `freelancer.json` (Meus dados), senão o idioma do sistema | `auto` (sistema: português → `pt-BR`, outro → `en`), `pt-BR`, `en` |
+| **Projeto** (documentos, `AGENTS.md`, `CLAUDE.md`, skills, subagentes, convenções e mensagens dos hooks) | `--idioma` em `prumo novo`/`prumo mapear`, senão `idioma_projetos`; fica gravado em `projeto.prumo.json` → `idioma` | `pt-BR`, `en` |
+
+Num projeto em inglês:
+
+- os modelos vêm de `templates/en/` (mesmos caminhos de `templates/`); quem não tem versão em inglês usa a portuguesa;
+- as lacunas são `[FILL: dica]` (o Prumo conta `[PREENCHER]` e `[FILL]`);
+- IDs, comandos (`prumo validar`), nomes de arquivos (`docs/02-requisitos.md`) e chaves de configuração continuam iguais;
+- `prumo validar` usa as regras de estilo em inglês ([guia de escrita](guia-de-escrita.md));
+- `prumo gerar` traduz os rótulos do que escreve; textos do formulário e dos catálogos (RNFs, ameaças, perguntas da entrevista) entram como estão, em português até os catálogos ganharem versão em inglês.
+
+Trocar o idioma de um projeto já criado: mude `idioma` em `projeto.prumo.json` e rode `prumo agentes atualizar`. Isso troca skills e subagentes; `AGENTS.md`, `CLAUDE.md` e os documentos já escritos ficam como estão. Novos documentos (`prumo doc`, `adr`, `mudanca`) já saem no idioma novo.
+
 ## Variáveis de ambiente
 
 | Variável | Uso |
 |---|---|
+| `PRUMO_IDIOMA` | Idioma da interface e da CLI (`pt-BR` ou `en`); vale mais que `idioma_interface` |
 | `FIGMA_TOKEN` | Token pessoal do Figma para `prumo figma telas` |
 | `PRUMO_CLAUDE` | Caminho do executável do Claude Code, se não estiver no PATH |
 | `CLAUDE_PROJECT_DIR` | Definida pelo Claude Code ao rodar os hooks |
