@@ -25,6 +25,8 @@ PAGINA = Path(__file__).resolve().parent / "gui" / "index.html"
 PERMITIDOS = {"perfis", "projetos", "novo", "status", "validar", "rastreabilidade", "contexto", "aprovar",
               "desaprovar", "adr", "mudanca", "doc", "agentes", "orcamento", "horas", "seguranca", "diagramas",
               "figma", "versao"}
+LIMITE_CORPO = 2_000_000  # bytes aceitos no corpo de um POST
+DESCARTE_MAXIMO = 16_000_000  # acima disso a conexão fecha sem ler o resto
 EXT_LEITURA = {".md", ".json", ".txt", ".mmd", ".log"}
 
 
@@ -91,10 +93,26 @@ def criar_handler(estado):
             return secrets.compare_digest(self.headers.get("X-Prumo-Token", ""), estado.token)
 
         def _ler_corpo(self):
-            tamanho = int(self.headers.get("Content-Length") or 0)
-            if tamanho > 2_000_000:
+            """Corpo bruto da requisição, ou None se passar de LIMITE_CORPO.
+
+            Um corpo grande demais é lido e descartado (até DESCARTE_MAXIMO) para a resposta
+            chegar ao cliente: no Windows, fechar o socket com dados pendentes envia RST."""
+            try:
+                tamanho = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                tamanho = 0
+            if tamanho <= 0:  # negativo faria read(-1) esperar o fim da conexão
                 return b""
-            return self.rfile.read(tamanho)
+            if tamanho <= LIMITE_CORPO:
+                return self.rfile.read(tamanho)
+            restante = min(tamanho, DESCARTE_MAXIMO)
+            while restante > 0:
+                bloco = self.rfile.read(min(65536, restante))
+                if not bloco:
+                    break
+                restante -= len(bloco)
+            self.close_connection = True
+            return None
 
         @staticmethod
         def _json(bruto):
@@ -137,6 +155,8 @@ def criar_handler(estado):
             bruto = self._ler_corpo()
             if not self._autorizado():
                 return self._responder(HTTPStatus.FORBIDDEN, {"erro": "token inválido"})
+            if bruto is None:
+                return self._responder(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"erro": "requisição grande demais"})
             corpo = self._json(bruto)
             rota = urlparse(self.path).path
             try:
