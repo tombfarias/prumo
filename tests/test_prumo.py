@@ -265,6 +265,20 @@ class TestRastreio(unittest.TestCase):
 
 
 class TestValidacao(unittest.TestCase):
+    def test_uml_completa(self):
+        """Os 13 modelos de 04-uml (+ casos de uso em 03) cobrem a UML 2.5 e têm Mermaid válido."""
+        tipos = {"classes", "objetos", "pacotes", "componentes", "estrutura-composta", "implantacao", "perfil-uml",
+                 "sequencia", "comunicacao", "tempo", "visao-geral-interacao", "estados", "atividades"}
+        disponiveis = set(mp.documentos_disponiveis())
+        self.assertTrue({f"04-uml/{t}" for t in tipos} <= disponiveis)
+        for t in tipos:
+            self.assertIn(f"04-uml/{t}", mp.DESCRICOES)
+            texto = (mp.TEMPLATES / "documentos" / "04-uml" / f"{t}.md").read_text(encoding="utf-8")
+            blocos = validacao.blocos_mermaid(texto)
+            self.assertTrue(blocos, t)
+            for _linha, codigo in blocos:
+                self.assertEqual(validacao.checar_mermaid(codigo), [], t)
+
     def test_mermaid(self):
         self.assertEqual(validacao.checar_mermaid("flowchart LR\n  a --> b"), [])
         self.assertTrue(validacao.checar_mermaid("flowhcart LR\n a-->b"))
