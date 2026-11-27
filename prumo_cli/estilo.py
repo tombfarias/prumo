@@ -36,7 +36,11 @@ _ESTRUTURA = re.compile(r"^\s*(#|\||[-*+] |\d+[.)] |>|!\[|<|---)")
 
 
 def _limpar(texto):
-    """Troca comentários HTML e blocos de código por linhas vazias (preserva a numeração)."""
+    """Troca frontmatter, comentários HTML e blocos de código por linhas vazias (preserva a numeração).
+
+    O frontmatter das skills fica de fora: a descrição é uma linha longa de propósito (palavras de acionamento).
+    """
+    texto = re.sub(r"\A---\n.*?\n---\n", lambda m: "\n" * m.group(0).count("\n"), texto, flags=re.S)
     texto = re.sub(r"<!--.*?-->", lambda m: "\n" * m.group(0).count("\n"), texto, flags=re.S)
     return re.sub(r"^(```|~~~).*?^\1[^\n]*$", lambda m: "\n" * m.group(0).count("\n"), texto, flags=re.S | re.M)
 

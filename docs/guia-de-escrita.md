@@ -33,4 +33,4 @@ O briefing (`00-briefing.md`) é exceção parcial: registra as palavras do clie
 | Parágrafo longo | mais de 70 palavras de prosa (`MAX_PALAVRAS_PARAGRAFO`) |
 | Linha repetida | linha igual de 40+ caracteres e 8+ palavras no mesmo documento (metadados com " · " não contam) |
 
-Comentários HTML, blocos de código, trechos em crase e lacunas `[PREENCHER]` são ignorados.
+Frontmatter de skills, comentários HTML, blocos de código, trechos em crase e lacunas `[PREENCHER]` são ignorados.
