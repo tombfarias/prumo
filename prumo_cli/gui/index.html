@@ -999,7 +999,7 @@ async function painelForm() {
   $("#painel").innerHTML = `<div class="painel"><div class="carregando">Lendo o formulário…</div></div>`;
   let r; try { r = await prumo(["formulario"], E.projeto); } catch (e) { return falhou(e); }
   E.form = r.formulario; E.formOpc = r.opcoes; E.formCat = r.catalogos; E.formProb = {erros: r.erros, avisos: r.avisos};
-  E.formTelas = (r.passos || []).some(p => p.id === "telas");
+  E.formTelas = (r.passos || []).some(p => p.id === "telas"); E.entrev = null;
   if (!passosForm().some(p => p.id === E.formPasso)) E.formPasso = "negocio";
   desenharForm();
 }
@@ -1010,8 +1010,9 @@ function desenharForm() {
     <div class="cartao"><div class="linha-acao"><div style="flex:1;min-width:220px"><b>Formulário de especificação</b>
       <div class="legenda">Grava sozinho em especificacao.prumo.json. "Gerar documentos" mostra o que muda e preenche os documentos sem apagar o que você ou o Claude escreveram.</div></div>
       <span class="legenda" id="f-est">${E.formPend ? "Alterações não gravadas" : "Gravado"}</span>
-      <button class="btn pri" id="f-ger">${ic("salvar")}Gerar documentos</button><button class="btn" id="f-cla">${ic("claude")}Especificar com o Claude</button></div>
+      <button class="btn" id="f-ent">Entrevista guiada</button><button class="btn pri" id="f-ger">${ic("salvar")}Gerar documentos</button><button class="btn" id="f-cla">${ic("claude")}Especificar com o Claude</button></div>
       <div id="f-res"></div></div>
+    ${E.entrev ? cartaoEntrevista() : ""}
     <div class="form-esp"><nav class="cartao lateral-docs linhas" aria-label="Passos">${PASSOS.map((x, i) => { const [c, t] = preenchidos(x);
       return `<button class="linha clic ${x.id === p.id ? "sel" : ""}" data-p="${x.id}" style="border:0;background:none;text-align:left;font:inherit;color:inherit">
         <span class="ponto ${c === t ? "ok" : c ? "and" : ""}"></span><span class="nome">${i + 1}. ${esc(x.t)}</span><span class="legenda" data-cont="${x.id}">${c}/${t}</span></button>`; }).join("")}</nav>
@@ -1024,6 +1025,8 @@ function desenharForm() {
   const prox = $("#f-prox"); if (prox) prox.onclick = () => { E.formPasso = PASSOS[PASSOS.indexOf(p) + 1].id; desenharForm(); $("#principal").scrollTop = 0; };
   const sug = $("#f-sug"); if (sug) sug.onclick = sugerirCasos;
   $("#f-ger").onclick = previaGeracao;
+  $("#f-ent").onclick = () => entrevistar(["entrevista", "proxima"]);
+  if (E.entrev) ligarEntrevista();
   $("#f-cla").onclick = async () => { await gravarForm(false); irPara("claude", {tarefa: "especificar"}); };
   ligarForm($("#painel"));
 }
@@ -1183,6 +1186,57 @@ async function mostrarGeracao(g) {
   ligarVer(el);
   toast(g.alterados.length ? "Documentos atualizados." : "Nada mudou nos documentos.");
   await atualizarStatus();
+}
+
+/* entrevista guiada: perguntas padronizadas (templates/catalogos/entrevista.json), uma por vez */
+async function entrevistar(args) {
+  await gravarForm(false);
+  if (E.formPend) return;
+  try {
+    const r = await prumo(args, E.projeto);
+    const f = await prumo(["formulario"], E.projeto);
+    E.form = f.formulario; E.formProb = {erros: f.erros, avisos: f.avisos};
+    E.entrev = r;
+    if (r.pergunta) E.formPasso = r.pergunta.passo;
+    desenharForm();
+    if (r.aplicado && r.aplicado.length) toast(`${r.aplicado.length} item(ns) acrescentado(s) ao formulário.`);
+    const alvo = $("#e-val"); if (alvo) alvo.focus();
+  } catch (e) { falhou(e); }
+}
+function cartaoEntrevista() {
+  const r = E.entrev, q = r.pergunta;
+  if (!q) return `<div class="cartao"><div class="linha-acao"><div style="flex:1"><b>Entrevista concluída</b>
+    <div class="legenda">${r.feitas} resposta(s) no formulário. Revise os passos e clique em Gerar documentos.</div></div>
+    <button class="btn fan" id="e-rei">Recomeçar</button><button class="btn" id="e-fim">Fechar</button></div></div>`;
+  const ops = q.opcoes || [];
+  let campo;
+  if (q.tipo === "sim-nao") campo = `<div class="linha-acao"><button class="btn pri" data-resp="sim">Sim</button><button class="btn" data-resp="nao">Não</button></div>`;
+  else if (q.tipo === "escolha") campo = `<div class="linha-acao">${ops.map(o => `<button class="btn" data-resp="${esc(o.valor)}">${esc(o.rotulo)}</button>`).join("")}</div>`;
+  else if (q.tipo === "multipla") campo = `<div class="caixas">${ops.map(o => `<label class="troca"><input type="checkbox" data-mult value="${esc(o.valor)}"><i></i>${esc(o.rotulo)}</label>`).join("")}</div>`;
+  else if (q.tipo === "lista" || q.tipo === "area") campo = `<textarea id="e-val" style="min-height:90px" placeholder="${q.tipo === "lista" ? "Um por linha" : ""}"></textarea>`;
+  else campo = `<input type="${q.tipo === "numero" ? "number" : "text"}" min="0" id="e-val">`;
+  const textual = !["sim-nao", "escolha"].includes(q.tipo);
+  return `<div class="cartao" aria-live="polite"><div class="linha-acao"><b style="flex:1">Entrevista guiada</b>
+      <span class="legenda">pergunta ${r.feitas + 1} de ${r.total}</span><button class="btn fan peq" id="e-fim" aria-label="Fechar a entrevista">${ic("x")}</button></div>
+    <div class="campo larga" style="margin-top:10px"><label for="e-val" style="font-size:1.05em">${esc(q.pergunta)}</label>${campo}${q.ajuda ? `<span class="ajuda">${esc(q.ajuda)}</span>` : ""}</div>
+    <div class="linha-acao" style="margin-top:8px">${textual ? `<button class="btn pri" id="e-ok">Responder</button>` : ""}<button class="btn fan" id="e-pul">Pular</button>
+      <span class="legenda">O que você responder entra no formulário; dá para mudar depois nos passos.</span></div></div>`;
+}
+function ligarEntrevista() {
+  const q = E.entrev.pergunta, fim = $("#e-fim");
+  if (fim) fim.onclick = () => { E.entrev = null; desenharForm(); };
+  const rei = $("#e-rei"); if (rei) rei.onclick = () => entrevistar(["entrevista", "reiniciar"]);
+  if (!q) return;
+  const enviar = v => entrevistar(["entrevista", "responder", q.id, v]);
+  $$("[data-resp]").forEach(b => b.onclick = () => enviar(b.dataset.resp));
+  $("#e-pul").onclick = () => entrevistar(["entrevista", "pular", q.id]);
+  const ok = $("#e-ok"), val = $("#e-val");
+  if (ok) ok.onclick = () => {
+    const v = q.tipo === "multipla" ? JSON.stringify($$("[data-mult]:checked").map(x => x.value)) : q.tipo === "lista" ? JSON.stringify(val.value.split("\n").map(x => x.trim()).filter(Boolean)) : val.value;
+    if (!v.trim() || v === "[]") return entrevistar(["entrevista", "pular", q.id]);
+    enviar(v);
+  };
+  if (val && val.tagName === "INPUT") val.onkeydown = e => { if (e.key === "Enter") ok.click(); };
 }
 
 /* ------------------------------------------------------------------ configurações */

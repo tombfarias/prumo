@@ -79,6 +79,15 @@ faltam (RF, RN, UC, TL, marcos) sem colidir com os documentos e grava; só erro 
 `validar`: referências soltas, IDs repetidos, campos obrigatórios e valores fora dos catálogos (sai com código 1 se houver erro).
 `salvar ARQUIVO --gerar`: grava e em seguida roda `prumo gerar`.
 
+### `prumo entrevista [proxima | responder ID RESPOSTA | pular ID | reiniciar]`
+Entrevista guiada: perguntas padronizadas, uma por vez, que completam o formulário sem IA (catálogo em
+`templates/catalogos/entrevista.json`). Sem ação, num terminal, pergunta até acabar (Enter vazio pula, Ctrl+C pausa).
+Cada resposta é gravada em `especificacao.prumo.json`: texto vai para o campo; sim/não e escolhas acrescentam
+requisitos, atores, integrações e RNFs padrão (ex.: "recuperar a senha por e-mail", Pix, LGPD). Não pergunta o que já
+foi respondido, o que o formulário já tem nem o que não vale para o perfil; perguntas dependem das respostas
+anteriores (sem login, as de acesso somem). Lista: uma por linha ou JSON (`'["Cliente","Atendente"]'`); escolha: valor
+ou número da opção. `reiniciar` esquece as respostas, não o que já foi para o formulário.
+
 ### `prumo gerar [--simular] [--sobrescrever DOC:BLOCO]`
 Preenche os documentos com o formulário: briefing, visão, requisitos (RF, RNF do catálogo e LGPD automática, RN,
 glossário), casos de uso (atores, diagrama, cabeçalho de cada UC), diagrama de classes, interface (design system,
