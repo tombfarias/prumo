@@ -54,10 +54,39 @@ def ler(caminho):
 
 
 def gravar(caminho, texto):
+    """Grava de forma atômica (arquivo temporário + troca): uma interrupção nunca deixa o arquivo pela metade."""
     caminho = Path(caminho)
     caminho.parent.mkdir(parents=True, exist_ok=True)
-    with open(caminho, "w", encoding="utf-8", newline="\n") as f:
-        f.write(texto)
+    temp = caminho.with_name(f".{caminho.name}.{os.getpid()}.tmp")
+    try:
+        with open(temp, "w", encoding="utf-8", newline="\n") as f:
+            f.write(texto)
+            f.flush()
+            os.fsync(f.fileno())
+        try:
+            os.replace(temp, caminho)
+        except PermissionError:  # Windows: destino aberto em outro programa (antivírus, editor)
+            with open(caminho, "w", encoding="utf-8", newline="\n") as f:
+                f.write(texto)
+    finally:
+        if temp.exists():
+            try:
+                temp.unlink()
+            except OSError:
+                pass
+
+
+def guardar_copia(raiz, rel, pasta):
+    """Copia raiz/rel para raiz/.prumo/<pasta>/rel antes de sobrescrever; devolve o caminho relativo da cópia."""
+    origem = Path(raiz) / rel
+    destino = Path(raiz) / ".prumo" / pasta / rel
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(origem, destino)
+    return destino.relative_to(raiz).as_posix()
+
+
+def carimbo():
+    return datetime.now().strftime("%Y%m%d-%H%M%S")
 
 
 def ler_json(caminho, padrao=None):
@@ -99,6 +128,10 @@ def hash_conteudo(caminho):
     """SHA-256 do texto com quebras de linha normalizadas (imune a CRLF/LF do git no Windows)."""
     texto = Path(caminho).read_bytes().replace(b"\r\n", b"\n")
     return hashlib.sha256(texto).hexdigest()
+
+
+def hash_texto(texto):
+    return hashlib.sha256(texto.replace("\r\n", "\n").encode("utf-8")).hexdigest()
 
 
 def sem_comentarios(texto):

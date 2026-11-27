@@ -84,7 +84,7 @@ Horas por dia a partir de `.prumo/atividade.log`, que os hooks gravam a cada ped
 | Comando | Descrição |
 |---|---|
 | `prumo agentes exportar [--alvos gemini,copilot,cursor]` | Gera `GEMINI.md`, `.github/copilot-instructions.md` e `.cursor/rules/prumo.mdc` a partir do `AGENTS.md` |
-| `prumo agentes atualizar [--incluir-settings]` | Recopia skills, subagentes e hooks da versão atual do Prumo para o projeto (o `settings.json` só com a opção) |
+| `prumo agentes atualizar [--incluir-settings] [--forcar]` | Recopia skills, subagentes e hooks da versão atual do Prumo (o `settings.json` só com a opção). Arquivos que você editou ficam; a versão nova vai para `.prumo/kit-novo/`. `--forcar` sobrescreve com cópia em `.prumo/backup/` |
 
 ## Claude Code
 
