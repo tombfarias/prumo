@@ -13,6 +13,7 @@ to read the design of each screen.
 
 ## 1. Design system
 
+<!-- prumo:gerado:design-system -->
 | Item | Value |
 |---|---|
 | Figma file | [FILL: URL] |
@@ -20,6 +21,7 @@ to read the design of each screen.
 | Typography | [FILL] |
 | Palette / tokens | [FILL: Figma variables or CSS tokens] |
 | Breakpoints | [FILL: e.g. 640 / 768 / 1024 / 1280 px] |
+<!-- prumo:gerado:fim -->
 
 ## 2. Screen inventory
 
@@ -33,16 +35,19 @@ to read the design of each screen.
 
 <!-- Replace with the real map: one node per inventory screen plus the external entries (ad, link, email). -->
 
+<!-- prumo:gerado:navegacao -->
 ```mermaid
 flowchart LR
     entrada(["[FILL: where the user comes from]"]) --> tl1["TL-001 [FILL: first screen]"]
     tl1 --> prox["[FILL: next screen]"]
 ```
+<!-- prumo:gerado:fim -->
 
 ## 4. Screens
 
 <!-- One subsection per screen, titled "### Screen TL-00N — Name" (the ID is defined in the inventory above). -->
 
+<!-- prumo:gerado:telas -->
 ### Screen TL-001 — [FILL: name]
 
 - **Goal:** [FILL]
@@ -50,6 +55,7 @@ flowchart LR
 - **Actions:** [FILL: buttons and forms and where they lead]
 - **States:** [FILL: empty, loading, error, success, when they apply]
 - **Covers:** [FILL: RF/RNF/UC]
+<!-- prumo:gerado:fim -->
 
 ## 5. Guidelines
 

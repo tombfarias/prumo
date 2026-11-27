@@ -25,7 +25,7 @@ from .util import CONGELADO, RAIZ_KIT, VERSAO, config_freelancer, executavel_con
 PAGINA = Path(__file__).resolve().parent / "gui" / "index.html"
 PERMITIDOS = {"perfis", "projetos", "novo", "mapear", "ferramentas", "status", "validar", "rastreabilidade", "contexto", "aprovar",
               "desaprovar", "adr", "mudanca", "doc", "agentes", "orcamento", "horas", "seguranca", "diagramas",
-              "figma", "versao", "config", "formulario", "gerar"}
+              "figma", "versao", "config", "formulario", "gerar", "entrevista"}
 LIMITE_CORPO = 2_000_000  # bytes aceitos no corpo de um POST
 DESCARTE_MAXIMO = 16_000_000  # acima disso a conexão fecha sem ler o resto
 EXT_LEITURA = {".md", ".json", ".txt", ".mmd", ".log", ".py"}

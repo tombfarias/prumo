@@ -21,30 +21,38 @@ Write verifiable requirements: "The system must..." with a single behavior per r
 
 ## 1. Functional requirements
 
+<!-- prumo:gerado:rf -->
 | ID | Description | Priority | Source |
 |---|---|---|---|
 | RF-001 | [FILL: The system must allow...] | Must | Request |
+<!-- prumo:gerado:fim -->
 
 ## 2. Non-functional requirements
 
 <!-- Usual categories: performance, security, usability, accessibility, availability,
 compatibility (browsers/devices), maintainability, privacy (LGPD/GDPR). -->
 
+<!-- prumo:gerado:rnf -->
 | ID | Category | Description | Metric / criterion |
 |---|---|---|---|
 | RNF-001 | Security | [FILL: Passwords stored with a strong hash (bcrypt/argon2)] | [FILL] |
 | RNF-002 | Privacy (LGPD/GDPR) | [FILL: personal data processed and legal basis] | [FILL] |
+<!-- prumo:gerado:fim -->
 
 ## 3. Business rules
 
+<!-- prumo:gerado:rn -->
 | ID | Rule | Example |
 |---|---|---|
 | RN-001 | [FILL: An order can only be cancelled up to 24h after it was created] | [FILL] |
+<!-- prumo:gerado:fim -->
 
 ## 4. Glossary
 
 <!-- A business term used more than once: define it here, once. The other documents use the term without redefining it. -->
 
+<!-- prumo:gerado:glossario -->
 | Term | Definition |
 |---|---|
 | [FILL] | [FILL] |
+<!-- prumo:gerado:fim -->

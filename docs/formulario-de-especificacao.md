@@ -1,10 +1,9 @@
 # Formulário de especificação e geração
 
-**Status:** fase 1 implementada (dados e catálogos: `prumo_cli/formulario.py`, `templates/catalogos/`,
-`stack_padrao` nos perfis e `prumo formulario`). Primeira parte das fases 2 e 4: `prumo gerar` (`prumo_cli/geracao.py`)
-preenche o briefing e a interface tem a aba **Formulário** com os passos Negócio, Usuários, Funcionalidades,
-Integrações e Perguntas. Os demais documentos, os outros passos (casos de uso, dados, telas, stack, comercial, kit) e a
-fase 3 ainda são desenho.
+**Status:** fases 1, 2 e 4 implementadas. Dados e catálogos em `prumo_cli/formulario.py` e `templates/catalogos/`;
+`prumo gerar` (`prumo_cli/geracao.py` + `prumo_cli/geradores.py`) preenche todos os blocos da seção 5.2; a aba
+**Formulário** tem os passos 1 a 8 da seção 3 mais Perguntas, a prévia antes de gravar e a entrevista guiada (3.1). Ainda são desenho: o passo
+Kit (9), a fase 3 (kit derivado) e o status por bloco na aba Documentos.
 
 ## Objetivo
 
@@ -145,6 +144,22 @@ retomado e alterado a qualquer momento.
 
 Perguntas em aberto (P-xx) podem ser digitadas em qualquer passo; os catálogos também sugerem perguntas.
 
+### 3.1 Entrevista guiada
+
+Para quem prefere responder a preencher tabelas: `prumo entrevista` (terminal) ou o botão **Entrevista guiada** da aba
+Formulário faz perguntas padronizadas, uma por vez, e grava cada resposta no formulário. Não usa IA nem tokens.
+
+- **Catálogo:** `templates/catalogos/entrevista.json`. Cada pergunta tem `id`, `passo`, `tipo` (texto, area, lista,
+  numero, sim-nao, escolha, multipla), `campo` (onde a resposta vai), `se` (condições) e ações (`se_sim`, `se_nao`,
+  `acoes` por opção ou da lista): `acrescentar` um item numa lista (sem repetir pelo campo principal), `marcar` um
+  valor numa lista de textos, `definir` um campo. Acrescentar uma pergunta é editar o JSON; o teste
+  `test_catalogo_da_entrevista` confere ids, campos, listas e valores dos catálogos.
+- **Condições:** `<id>=<valor>` (resposta anterior), `campo:<caminho>=<valor>` ou `!=`, `perfil:<id>|<id>`.
+- **Não repete:** pergunta respondida (ou pulada), com o campo já preenchido (exceto `acumula`, das listas que as
+  outras respostas também alimentam) ou fora do perfil não é feita. As respostas ficam em `entrevista.respostas`.
+- **Requisitos padrão:** sim/não e escolhas acrescentam funcionalidades com prioridade e tamanho (ex.: cadastro
+  fechado → "convidar usuários por e-mail", ator Administrador), integrações e RNFs do catálogo; os IDs saem ao gravar.
+
 ## 4. Catálogos
 
 `templates/catalogos/*.json` guarda as opções das listas e caixas e **tudo o que cada opção implica**. Acrescentar
@@ -200,14 +215,16 @@ preencher. Dentro do marcador fica o exemplo atual do modelo, usado quando o for
 ```
 
 `h` é o hash do conteúdo **como o Prumo o escreveu**. Ele fica no próprio arquivo: sobrevive a clones e não depende
-de nenhum arquivo extra. O bloco `prumo:figma` do inventário de telas continua como está (seção 5.2).
+de nenhum arquivo extra. Nos modelos o marcador vem sem hash (`<!-- prumo:gerado:rf -->`); ao criar o documento
+(`prumo novo`, `prumo doc`) o Prumo grava o hash do exemplo (`selar`). Marcador sem hash num projeto conta como editado. O bloco `prumo:figma` do inventário de telas continua como está (seção 5.2).
 
 `prumo gerar`, para cada bloco:
 
 | Situação | O que faz |
 |---|---|
 | Conteúdo atual bate com `h` (ninguém mexeu) | Reescreve inteiro a partir do formulário |
-| Alguém editou (o Claude completou critérios, você ajustou um texto) | Não reescreve. **Acrescenta** os itens do formulário cujo ID ainda não aparece no bloco (linha de tabela, seção de HU/UC) e **avisa** os itens que divergem |
+| Alguém editou (o Claude completou critérios, você ajustou um texto) | Não reescreve. **Acrescenta** os itens do formulário cujo ID ainda não aparece no bloco (linha de tabela de RF, RN e marcos; subseção de UC, HU e tela; a HU conta como presente se o RF dela aparece) |
+| Formulário esvaziado (lista apagada) num bloco intocado | Volta o exemplo do modelo |
 | Documento aprovado (`prumo aprovar`) | Não toca; mudanças passam por `prumo mudanca` |
 | `--sobrescrever <documento>:<bloco>` | Reescreve mesmo editado (a interface pede confirmação mostrando o que se perde) |
 
@@ -231,7 +248,7 @@ título `### UC-001 — ...`). O gerador só cita IDs que existem no formulário
 | `06-banco-de-dados` | `cabecalho`, `er`, `dicionario`, `lgpd` | SGBD e ORM do stack; entidades; campos pessoais |
 | `07-arquitetura` | `stack`, `integracoes`, `seguranca` | stack, integrações (com tratamento de falhas do catálogo), login e perfis de acesso |
 | `08-backlog` | `epicos`, `marcos`, `historias` | grupos → EP-01...; marcos; uma HU por funcionalidade Must/Should/Could |
-| `10-proposta-comercial` | `cabecalho`, `incluido`, `opcionais`, `nao-incluido`, `cronograma`, `condicoes`, `garantia` | comercial + padrões de `config/freelancer.json`; Could → opcionais; Won't e fora do escopo → não incluído |
+| `10-proposta-comercial` | `incluido`, `opcionais`, `nao-incluido`, `cronograma`, `condicoes`, `perguntas-valor`, `garantia`; a linha **Validade da proposta** do cabeçalho é preenchida enquanto for lacuna | comercial; Could → opcionais (com horas do tamanho); Won't e fora do escopo → não incluído; perguntas bloqueantes |
 | `12-seguranca` | `superficie`, `ameacas` | catálogos das integrações, login, perfis de acesso e telas públicas |
 
 Ficam inteiramente com o Claude: fluxos dos casos de uso, demais diagramas UML, índices e DDL, estrutura de pastas
@@ -249,9 +266,11 @@ e módulos, plano de testes, entrega, critérios de aceite e textos de convencim
   na visão e na proposta e não gera HU.
 - **Épicos:** cada `grupo` vira um EP, na ordem em que aparece; funcionalidades sem grupo vão para "Funcionalidades
   principais".
-- **Entidades → diagramas:** nomes em MAIÚSCULAS sem acento no ER; `1:N` → `||--o{`, `N:1` invertido, `1:1` →
-  `||--||`, `N:N` → `}o--o{` com aviso para a tabela associativa; chave `id` e chaves estrangeiras criadas a partir
-  das relações; `unico` → `UK`.
+- **Entidades → diagramas:** nomes em MAIÚSCULAS sem acento no ER; `1:N` → `||--o{`, `N:1` → `}o--||`, `1:1` →
+  `||--||` (FK única), `N:N` → tabela associativa `a_b` com as duas FKs; chave `id` e chaves estrangeiras criadas a
+  partir das relações; `unico` → `UK`.
+- **IDs só onde existem:** um gerador só cita UC, TL ou marco se o documento que os define existe no projeto.
+- **RNF e HU:** RNFs são numerados na ordem (marcados, das integrações, do login, LGPD); HU-00N tem o número do RF-00N.
 - **LGPD automática:** campo de tipo pessoal (ou marcado `pessoal`) gera linha na tabela de privacidade do banco
   (finalidade e base legal em `[PREENCHER]`), o RNF de privacidade e a pergunta sobre a base legal.
 - **Login:** se houver login e nenhuma entidade de usuário, o gerador acrescenta `Usuario` com e-mail e hash de senha,
@@ -352,16 +371,16 @@ Cada fase é um PR com testes (`python -m unittest discover -s tests -v`).
 1. **Dados e catálogos:** `prumo_cli/formulario.py` (carregar, validar, atribuir IDs), `templates/catalogos/`,
    `stack_padrao` nos perfis, comando `prumo formulario`. Testes: validação, IDs sem colisão com os documentos,
    catálogos bem formados.
-2. **Geração:** *feito para `00-briefing` (sem marcadores no modelo: a seção só é preenchida se ainda é lacuna; o
-   contato vai na linha da tabela de cabeçalho).* `prumo_cli/geracao.py` (um gerador por bloco, registrados num dicionário), marcadores nos modelos,
+2. **Geração:** *feito para todos os documentos da seção 5.2 (o briefing não tem marcadores no modelo: a seção só é
+   preenchida se ainda é lacuna; o contato vai na linha da tabela de cabeçalho).* `prumo_cli/geracao.py` (um gerador por bloco, registrados num dicionário), marcadores nos modelos,
    `prumo gerar`, regra nas skills. Começar por `02-requisitos`, `06-banco` + `04-uml/classes` e `08-backlog`, que
    são o maior ganho. Testes: todos os perfis com formulário vazio e com formulário completo; sem IDs órfãos; Mermaid
    válido; gerar duas vezes não muda nada; bloco editado preservado; item novo acrescentado; documento aprovado
    intocado.
 3. **Kit derivado:** `kit.json`, linguagem de condição, `{{#se}}`, comandos por extensão e programa ausente nos
    hooks, `.env.example`, `permissions.allow`, primeiras skills de integração.
-4. **Interface:** aba Formulário, prévia e status dos blocos. *Feito:* aba com 5 passos, gravação automática e
-   **Gravar no briefing** (estado de cada bloco). *Falta:* passos 4 a 10 da seção 3 e a prévia `--simular`.
+4. **Interface:** aba Formulário, prévia e status dos blocos. *Feito:* passos 1 a 8 e Perguntas, gravação automática,
+   **Gerar documentos** com prévia `--simular` e confirmação. *Falta:* passo 9 (Kit) e o status por bloco na aba Documentos.
 5. **Opcional:** tarefa do Claude que preenche o formulário a partir das anotações.
 
 Projetos criados antes disto não têm marcadores: `prumo gerar` não altera os documentos deles (só o kit, se pedido).

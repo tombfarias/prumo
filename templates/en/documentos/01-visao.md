@@ -16,16 +16,20 @@ From then on, changes only through change control (`prumo mudanca "title"`).
 
 ## 1. Purpose
 
+<!-- prumo:gerado:proposito -->
 [FILL: in 2 or 3 sentences, what the system is for]
+<!-- prumo:gerado:fim -->
 
 ## 2. Problem statement
 
+<!-- prumo:gerado:problema -->
 | | |
 |---|---|
 | **The problem of** | [FILL] |
 | **affects** | [FILL: who] |
 | **the impact of which is** | [FILL] |
 | **a successful solution would be** | [FILL] |
+<!-- prumo:gerado:fim -->
 
 ## 3. Product positioning
 
@@ -33,9 +37,11 @@ From then on, changes only through change control (`prumo mudanca "title"`).
 
 ## 4. Stakeholders and users
 
+<!-- prumo:gerado:partes-interessadas -->
 | Stakeholder / user | Description | Responsibilities or interests |
 |---|---|---|
 | [FILL] | [FILL] | [FILL] |
+<!-- prumo:gerado:fim -->
 
 ## 5. Product overview
 
@@ -43,7 +49,9 @@ From then on, changes only through change control (`prumo mudanca "title"`).
 
 <!-- High-level capabilities; they become detailed functional requirements in 02-requisitos.md. -->
 
+<!-- prumo:gerado:capacidades -->
 - [FILL]
+<!-- prumo:gerado:fim -->
 
 ### 5.2 Perspective
 
@@ -53,13 +61,17 @@ From then on, changes only through change control (`prumo mudanca "title"`).
 
 ### 6.1 In scope
 
+<!-- prumo:gerado:dentro-do-escopo -->
 - [FILL]
+<!-- prumo:gerado:fim -->
 
 ### 6.2 Out of scope
 
 <!-- Essential in freelance projects: everything the client may assume is included and is not. -->
 
+<!-- prumo:gerado:fora-do-escopo -->
 - [FILL]
+<!-- prumo:gerado:fim -->
 
 ## 7. Assumptions and dependencies
 
@@ -72,13 +84,17 @@ Cite the matching question from section 9 of the briefing (P-xx). Technical sugg
 
 <!-- Only what the client imposed (deadline, budget, technology, hosting, legislation). -->
 
+<!-- prumo:gerado:restricoes -->
 - [FILL: deadline, budget, technology, legislation]
+<!-- prumo:gerado:fim -->
 
 ## 9. Success criteria
 
+<!-- prumo:gerado:criterios-de-sucesso -->
 | Criterion | How to measure | Target |
 |---|---|---|
 | [FILL] | [FILL] | [FILL] |
+<!-- prumo:gerado:fim -->
 
 ## 10. Risks
 

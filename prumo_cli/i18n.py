@@ -96,10 +96,10 @@ def catalogo(idioma):
 _REGEX = {}
 
 
-def _regex(idioma):
-    if idioma not in _REGEX:
+def _regex(idioma, frases=False):
+    if (idioma, frases) not in _REGEX:
         cat = catalogo(idioma)
-        chaves = sorted(cat, key=len, reverse=True)
+        chaves = sorted((k for k in cat if not frases or not re.fullmatch(r"[\w-]+", k)), key=len, reverse=True)
         partes = []
         for k in chaves:
             p = re.escape(k)
@@ -108,16 +108,20 @@ def _regex(idioma):
             if re.search(r"\w$", k):
                 p += r"(?![\w])"
             partes.append(p)
-        _REGEX[idioma] = re.compile("|".join(partes)) if partes else None
-    return _REGEX[idioma]
+        _REGEX[(idioma, frases)] = re.compile("|".join(partes)) if partes else None
+    return _REGEX[(idioma, frases)]
 
 
-def traduzir(texto, idioma=None):
-    """Troca os trechos do catálogo; trechos protegidos passam intactos (e os marcadores saem)."""
+def traduzir(texto, idioma=None, frases=False):
+    """Troca os trechos do catálogo; trechos protegidos passam intactos (e os marcadores saem).
+
+    `frases`: só chaves com mais de uma palavra ou com pontuação, para texto que mistura dados do usuário
+    (uma palavra solta como "Pedido" pode ser dado, não rótulo).
+    """
     if texto is None or not isinstance(texto, str):
         return texto
     idioma = normalizar(idioma or idioma_interface())
-    rx = _regex(idioma) if idioma != PADRAO else None
+    rx = _regex(idioma, frases) if idioma != PADRAO else None
     if rx is None:
         return texto.replace(PROTEGER_INICIO, "").replace(PROTEGER_FIM, "")
     cat = catalogo(idioma)

@@ -17,9 +17,11 @@ become ADRs in docs/adr/ (`prumo adr "title"`) and are listed in section 8.
 
 ## 2. Stack
 
+<!-- prumo:gerado:stack -->
 | Layer | Technology | Version | Rationale |
 |---|---|---|---|
 | [FILL] | [FILL] | [FILL] | [FILL] |
+<!-- prumo:gerado:fim -->
 
 ## 3. Folder structure
 
@@ -35,16 +37,20 @@ become ADRs in docs/adr/ (`prumo adr "title"`) and are listed in section 8.
 
 ## 5. External integrations
 
+<!-- prumo:gerado:integracoes -->
 | System | Purpose | Protocol / authentication | Failure handling |
 |---|---|---|---|
 | [FILL] | [FILL] | [FILL] | [FILL: retry, queue, fallback] |
+<!-- prumo:gerado:fim -->
 
 ## 6. Security
 
+<!-- prumo:gerado:seguranca -->
 - **Authentication:** [FILL]
 - **Authorization / access profiles:** [FILL]
 - **Secrets:** environment variables; never versioned (`.env` stays out of git, `.env.example` documents the keys).
 - **Sensitive data:** [FILL: encryption, masking in logs]
+<!-- prumo:gerado:fim -->
 
 ## 7. Quality and operations
 

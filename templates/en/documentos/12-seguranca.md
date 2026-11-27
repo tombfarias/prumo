@@ -9,18 +9,22 @@ Severity: Critical, High, Medium, Low. Status: open, fixing, fixed, accepted (ri
 
 ## 1. Attack surface
 
+<!-- prumo:gerado:superficie -->
 | Entry point | Exposure | Authentication | Data handled |
 |---|---|---|---|
 | [FILL: public API, form, webhook, admin panel...] | [FILL: internet / internal network] | [FILL] | [FILL] |
+<!-- prumo:gerado:fim -->
 
 ## 2. Threats and controls
 
 <!-- Use STRIDE as a guide: spoofing, tampering, repudiation, information disclosure,
 denial of service, elevation of privilege. -->
 
+<!-- prumo:gerado:ameacas -->
 | Threat | Where | Control adopted | Verified in |
 |---|---|---|---|
 | [FILL: access to another customer's data (IDOR)] | [FILL] | [FILL: owner check on every query] | [FILL: CT-xxx] |
+<!-- prumo:gerado:fim -->
 
 ## 3. Base checklist (OWASP Top 10)
 

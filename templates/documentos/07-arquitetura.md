@@ -17,9 +17,11 @@ viram ADRs em docs/adr/ (`prumo adr "título"`) e são listadas na seção 8.
 
 ## 2. Stack
 
+<!-- prumo:gerado:stack -->
 | Camada | Tecnologia | Versão | Justificativa |
 |---|---|---|---|
 | [PREENCHER] | [PREENCHER] | [PREENCHER] | [PREENCHER] |
+<!-- prumo:gerado:fim -->
 
 ## 3. Estrutura de pastas
 
@@ -35,16 +37,20 @@ viram ADRs em docs/adr/ (`prumo adr "título"`) e são listadas na seção 8.
 
 ## 5. Integrações externas
 
+<!-- prumo:gerado:integracoes -->
 | Sistema | Finalidade | Protocolo / autenticação | Tratamento de falhas |
 |---|---|---|---|
 | [PREENCHER] | [PREENCHER] | [PREENCHER] | [PREENCHER: retry, fila, fallback] |
+<!-- prumo:gerado:fim -->
 
 ## 6. Segurança
 
+<!-- prumo:gerado:seguranca -->
 - **Autenticação:** [PREENCHER]
 - **Autorização / perfis de acesso:** [PREENCHER]
 - **Segredos:** variáveis de ambiente; nunca versionadas (`.env` fica fora do git, `.env.example` documenta as chaves).
 - **Dados sensíveis:** [PREENCHER: criptografia, mascaramento em logs]
+<!-- prumo:gerado:fim -->
 
 ## 7. Qualidade e operação
 

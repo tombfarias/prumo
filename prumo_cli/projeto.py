@@ -491,6 +491,10 @@ def _criar(destino, perfil, freelancer, nome, cliente, stack, autor, usar_figma,
         novo_arquivo(f"docs/{pasta}/_modelo.md", renderizar(ler(projeto.modelo(f"documentos/{modelo}.md")), ctx_modelo))
 
     _limpar_exemplos_orfaos(projeto, [destino / r for r in escritos if r.startswith("docs/")])
+    from .geracao import selar_arquivo
+    for rel in escritos:
+        if rel.startswith("docs/"):
+            selar_arquivo(destino / rel)  # hash dos blocos prumo:gerado: `prumo gerar` sabe que ninguém mexeu
     base = TEMPLATES / "agentes"
     agentes = renderizar(ler(projeto.modelo("agentes/AGENTS.md")), ctx)
     claude_md = renderizar(ler(projeto.modelo("agentes/CLAUDE.md")), ctx)
@@ -564,7 +568,8 @@ def adicionar_documento(projeto, doc_id):
     destino = projeto.docs / f"{doc_id}.md"
     if destino.exists():
         raise ErroPrumo(f"{projeto.rel(destino)} já existe.")
-    gravar(destino, renderizar(ler(projeto.modelo(f"documentos/{doc_id}.md")), projeto.contexto()))
+    from .geracao import selar
+    gravar(destino, selar(renderizar(ler(projeto.modelo(f"documentos/{doc_id}.md")), projeto.contexto())))
     rel = projeto.rel(destino)
     docs = projeto.config.setdefault("documentos", [])
     if rel not in docs:

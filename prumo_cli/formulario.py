@@ -48,6 +48,7 @@ def vazio():
         "interface": {"biblioteca": "", "tipografia": "", "paleta": "", "breakpoints": "", "figma": "", "telas": []},
         "tecnico": {"stack": {}, "login": "", "perfis_acesso": [], "integracoes": [], "rnf": []},
         "comercial": {"validade_dias": None, "condicoes": "", "garantia_dias": None, "marcos": []},
+        "entrevista": {"respostas": {}},  # id da pergunta -> resposta (prumo entrevista)
         "ultimo_id": {},  # maior número já usado por prefixo: ID apagado não volta a ser usado
     }
 

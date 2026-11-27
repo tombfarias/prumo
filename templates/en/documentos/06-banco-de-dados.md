@@ -1,11 +1,13 @@
 # Data Model — {{projeto}}
 
+<!-- prumo:gerado:cabecalho -->
 | Field | Value |
 |---|---|
 | DBMS | [FILL: PostgreSQL 16, MySQL 8, SQLite...] |
 | ORM / migrations | [FILL: Prisma, Drizzle, SQLAlchemy + Alembic, EF Core...] |
 | Naming convention | snake_case, singular table names, primary key `id` |
 | Version | 0.1 |
+<!-- prumo:gerado:fim -->
 
 <!--
 Derive the entities from the class diagram (04-uml/classes.md).
@@ -16,6 +18,7 @@ Diagram syntax: https://mermaid.js.org/syntax/entityRelationshipDiagram.html
 
 ## 1. Entity-relationship diagram
 
+<!-- prumo:gerado:er -->
 ```mermaid
 erDiagram
     CUSTOMER ||--o{ SALES_ORDER : places
@@ -46,15 +49,18 @@ erDiagram
         decimal price
     }
 ```
+<!-- prumo:gerado:fim -->
 
 ## 2. Data dictionary
 
+<!-- prumo:gerado:dicionario -->
 ### Table `[FILL: name]`
 
 | Column | Type | Null | Default | Constraints | Description |
 |---|---|---|---|---|---|
 | id | uuid | no | gen_random_uuid() | PK | Identifier |
 | [FILL] | | | | | |
+<!-- prumo:gerado:fim -->
 
 ## 3. Indexes and constraints
 
@@ -93,9 +99,11 @@ erDiagram
 
 ## 8. Privacy and retention (LGPD/GDPR)
 
+<!-- prumo:gerado:lgpd -->
 | Personal data | Table.column | Purpose | Legal basis | Retention | Protection |
 |---|---|---|---|---|---|
 | Email | customer.email | [FILL] | [FILL] | [FILL] | [FILL] |
+<!-- prumo:gerado:fim -->
 
 ## 9. Migrations, seeds and backup
 

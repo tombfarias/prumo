@@ -9,6 +9,7 @@ Syntax: https://mermaid.js.org/syntax/classDiagram.html
 
 ## 1. Diagram
 
+<!-- prumo:gerado:diagrama -->
 ```mermaid
 classDiagram
     direction LR
@@ -33,12 +34,15 @@ classDiagram
     Customer "1" --> "0..*" Order : places
     Order --> OrderStatus
 ```
+<!-- prumo:gerado:fim -->
 
 ## 2. Responsibilities
 
+<!-- prumo:gerado:responsabilidades -->
 | Class | Responsibility | Related use cases |
 |---|---|---|
 | [FILL] | [FILL] | [FILL: UC-xxx] |
+<!-- prumo:gerado:fim -->
 
 ## 3. Design notes
 

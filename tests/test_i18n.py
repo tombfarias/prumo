@@ -12,6 +12,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 sys.path.insert(0, str(RAIZ / "tools"))
+sys.path.insert(0, str(RAIZ / "tests"))
 os.environ["PRUMO_IDIOMA"] = "pt-BR"
 
 import i18n as ferramenta_i18n  # noqa: E402  (tools/i18n.py)
@@ -107,6 +108,29 @@ class TestProjetoEmIngles(unittest.TestCase):
             self.assertEqual(r.returncode, 2)
             msg = r.stderr.decode("utf-8")
             self.assertNotRegex(msg, r"[ãçõé]", msg)
+
+
+class TestGeracaoEmIngles(unittest.TestCase):
+    def test_formulario_gera_documentos_em_ingles(self):
+        import copy
+        from test_prumo import FORMULARIO
+        from prumo_cli import formulario, geracao
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar_en(tmp, "web-fullstack")
+            formulario.salvar(p, copy.deepcopy(FORMULARIO))
+            r = geracao.gerar(p)
+            self.assertIn("docs/02-requisitos.md", r["alterados"])
+            self.assertEqual(geracao.gerar(p)["alterados"], [])  # idempotente
+            self.assertEqual([m for g, m in validacao.validar(p) if g == "erro"], [])
+            req = ler(p.docs / "02-requisitos.md")
+            self.assertIn("| ID | Description | Priority | Source |", req)
+            self.assertIn("The system must allow users to", req)
+            uc = ler(p.docs / "03-casos-de-uso.md")
+            self.assertIn("#### Main flow", uc)
+            self.assertIn("| Primary actor |", uc)
+            self.assertIn("**Estimate:**", ler(p.docs / "08-backlog.md"))
+            for arq in p.docs.rglob("*.md"):
+                self.assertNotIn("[PREENCHER", ler(arq), p.rel(arq))
 
 
 class TestCliEmIngles(unittest.TestCase):

@@ -1,6 +1,6 @@
 # Arquitetura do Prumo
 
-Para quem vai evoluir o próprio Prumo. Princípios: **só biblioteca padrão do Python**, **tudo em português**, **interface desacoplada** (a GUI só consome `--json`) e **projetos autossuficientes** (cada projeto leva seus hooks e skills; o Prumo não precisa estar instalado para o Claude Code funcionar nele).
+Para quem vai evoluir o próprio Prumo. Princípios: **só biblioteca padrão do Python**, **português primeiro** (o inglês sai de um catálogo e de modelos traduzidos, sem duplicar código), **interface desacoplada** (a GUI só consome `--json`) e **projetos autossuficientes** (cada projeto leva seus hooks e skills; o Prumo não precisa estar instalado para o Claude Code funcionar nele).
 
 ## Componentes
 
@@ -60,7 +60,14 @@ flowchart TB
 | `figma.py` | API REST do Figma: telas, IDs estáveis, preservação da coluna de casos de uso, imagens |
 | `claude.py` | Tarefas, prompts, ferramentas por tarefa, execução em `stream-json`, logs, histórico, especificação em etapas |
 | `servidor.py` | Servidor local da GUI: token, lista de comandos permitidos, tarefas longas, ler e salvar documentos (com proteção de aprovados e de conflito), arquivos estáticos (Mermaid), abrir pasta/arquivo/editor/terminal |
+| `i18n.py` | Idioma da interface (`PRUMO_IDIOMA`, `freelancer.json`, sistema) e tradução por catálogo (`i18n/en.json`, chave = texto em português, trecho mais longo primeiro); `proteger()` marca o que não se traduz (saída do Claude, conteúdo do projeto) |
 | `cli.py` | Argumentos, saída texto/JSON, projetos recentes, `config` (dados do freelancer e do projeto), `hook`, `gui`, `_escolher-pasta` |
+
+## Idioma
+
+- O código e os modelos são escritos em português. As mensagens passam por `i18n.traduzir` nas bordas (`util.info/aviso`, erros da CLI, `--help`); a interface recebe o catálogo em `/api/ping?i18n=1` e traduz o que entra na página.
+- Projeto em inglês: `Projeto.modelo(rel)` escolhe `templates/en/<rel>` quando existe; a lacuna é `[FILL` (`util.LACUNA`); os hooks traduzem as próprias mensagens (`prumo_comum.EN`); `estilo.checar(..., idioma="en")` usa listas próprias.
+- `python tools/i18n.py` lista os textos do código e da interface sem tradução (`--json` gera o trecho para colar no catálogo). Texto que não se traduz vai em `ignorar`. Os testes exigem zero pendências e versão em inglês de todo modelo `.md`.
 
 ## Decisões
 

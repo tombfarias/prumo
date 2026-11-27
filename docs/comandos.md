@@ -38,6 +38,7 @@ Cria um projeto completo.
 | `--nome`, `--cliente`, `--autor` | Metadados usados nos documentos (autor padrão: `config/freelancer.json` ou `git config user.name`) |
 | `--stack` | Substitui a stack sugerida do perfil. Linguagens fora dos perfis (Go, Rust, Elixir, Ruby, Java/Kotlin, .NET, Dart, Swift, C/C++, Deno, PHP) são reconhecidas no texto e trazem comandos sugeridos e convenções (catálogo `templates/catalogos/ferramentas.json`) |
 | `--comando USO=CMD` | Define direto um comando dos hooks (`formatar`, `lint`, `testar`; repetível). Ex.: `--comando testar="busted"`, `--comando formatar="stylua {arquivo}"` |
+| `--idioma pt-BR\|en` | Idioma dos documentos e do kit do Claude (padrão: `idioma_projetos` de `freelancer.json`, senão `pt-BR`) |
 | `--figma URL` | Ativa a integração com o Figma e registra o arquivo |
 | `--com-figma` / `--sem-figma` | Força ligar/desligar o Figma independentemente do perfil |
 | `--sem-git` | Não cria o repositório git |
@@ -60,7 +61,7 @@ Depois, `/mapear-projeto-existente` (ou `prumo claude mapear`) descreve o sistem
 | `--simular` | Só mostra o que foi detectado, sem gravar nada |
 | `--atualizar` | Refaz o mapa num projeto já mapeado (preenche comandos que estiverem vazios) |
 | `--perfil`, `--stack`, `--comando USO=CMD` | Sobrepõem o que foi detectado |
-| `--nome`, `--cliente`, `--autor`, `--com-figma`, `--sem-figma`, `--python`, `--hooks-via` | Como em `prumo novo` |
+| `--nome`, `--cliente`, `--autor`, `--idioma`, `--com-figma`, `--sem-figma`, `--python`, `--hooks-via` | Como em `prumo novo` |
 
 ### `prumo ferramentas [--stack TEXTO]`
 Lista as ferramentas por linguagem. Com `--stack "Elixir + Phoenix"`, mostra o que o texto implica (ferramentas e comandos), sem criar nada.
@@ -77,15 +78,29 @@ Sem ação: preenchimento por passo e quantidade de itens; com `--json`, também
 `templates/catalogos/` e as opções fixas (é o que a interface usa). `salvar ARQUIVO`: normaliza, atribui os IDs que
 faltam (RF, RN, UC, TL, marcos) sem colidir com os documentos e grava; só erro de estrutura impede a gravação.
 `validar`: referências soltas, IDs repetidos, campos obrigatórios e valores fora dos catálogos (sai com código 1 se houver erro).
-`salvar ARQUIVO --gerar`: grava e em seguida roda `prumo gerar` (é o que o botão **Gravar no briefing** faz).
+`salvar ARQUIVO --gerar`: grava e em seguida roda `prumo gerar`.
 
-### `prumo gerar [--simular]`
-Preenche os documentos com o formulário. Hoje gera o briefing (`docs/00-briefing.md`): contato, contexto, problema,
-objetivos, usuários, funcionalidades (com regras, fora do escopo e termos), restrições, integrações, referências e
-perguntas (as do formulário e as do catálogo de cada integração e login escolhidos). Cada trecho fica entre
-`<!-- prumo:gerado:<bloco> h=<hash> -->` e `<!-- prumo:gerado:fim -->`: enquanto ninguém o edita, é reescrito a cada
-geração; editado, fica como está. Seção sem marcador só é preenchida se ainda tem apenas `[PREENCHER]`. Documento
-aprovado não é tocado. `--simular` mostra o estado de cada bloco sem gravar.
+### `prumo entrevista [proxima | responder ID RESPOSTA | pular ID | reiniciar]`
+Entrevista guiada: perguntas padronizadas, uma por vez, que completam o formulário sem IA (catálogo em
+`templates/catalogos/entrevista.json`). Sem ação, num terminal, pergunta até acabar (Enter vazio pula, Ctrl+C pausa).
+Cada resposta é gravada em `especificacao.prumo.json`: texto vai para o campo; sim/não e escolhas acrescentam
+requisitos, atores, integrações e RNFs padrão (ex.: "recuperar a senha por e-mail", Pix, LGPD). Não pergunta o que já
+foi respondido, o que o formulário já tem nem o que não vale para o perfil; perguntas dependem das respostas
+anteriores (sem login, as de acesso somem). Lista: uma por linha ou JSON (`'["Cliente","Atendente"]'`); escolha: valor
+ou número da opção. `reiniciar` esquece as respostas, não o que já foi para o formulário.
+
+### `prumo gerar [--simular] [--sobrescrever DOC:BLOCO]`
+Preenche os documentos com o formulário: briefing, visão, requisitos (RF, RNF do catálogo e LGPD automática, RN,
+glossário), casos de uso (atores, diagrama, cabeçalho de cada UC), diagrama de classes, interface (design system,
+inventário, navegação, ficha de cada tela), banco (SGBD/ORM, ER, dicionário, LGPD), arquitetura (stack, integrações,
+segurança), backlog (épicos, marcos, uma HU por funcionalidade com a estimativa do tamanho), proposta (incluído,
+opcionais, não incluído, cronograma, condições, garantia, perguntas que mudam o preço, validade) e segurança
+(superfície e ameaças do catálogo). Lista completa em [Formulário de especificação](formulario-de-especificacao.md), seção 5.2.
+Cada trecho fica entre `<!-- prumo:gerado:<bloco> h=<hash> -->` e `<!-- prumo:gerado:fim -->`: enquanto ninguém o
+edita, é reescrito a cada geração; editado, fica como está e só recebe os itens novos (linha ou subseção cujo ID ainda
+não aparece). Documento aprovado não é tocado; documento sem marcadores (criado antes desta versão) também não.
+`--simular` mostra o estado de cada bloco sem gravar. `--sobrescrever docs/02-requisitos.md:rf` reescreve o bloco mesmo
+editado (pode repetir).
 
 ## Qualidade da especificação
 

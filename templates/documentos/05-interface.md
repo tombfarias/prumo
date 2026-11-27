@@ -13,6 +13,7 @@ para ler o design de cada tela.
 
 ## 1. Design system
 
+<!-- prumo:gerado:design-system -->
 | Item | Valor |
 |---|---|
 | Arquivo do Figma | [PREENCHER: URL] |
@@ -20,6 +21,7 @@ para ler o design de cada tela.
 | Tipografia | [PREENCHER] |
 | Paleta / tokens | [PREENCHER: variáveis do Figma ou tokens CSS] |
 | Breakpoints | [PREENCHER: ex.: 640 / 768 / 1024 / 1280 px] |
+<!-- prumo:gerado:fim -->
 
 ## 2. Inventário de telas
 
@@ -33,16 +35,19 @@ para ler o design de cada tela.
 
 <!-- Substitua pelo mapa real: um nó por tela do inventário e as entradas externas (anúncio, link, e-mail). -->
 
+<!-- prumo:gerado:navegacao -->
 ```mermaid
 flowchart LR
     entrada(["[PREENCHER: de onde o usuário chega]"]) --> tl1["TL-001 [PREENCHER: tela inicial]"]
     tl1 --> prox["[PREENCHER: próxima tela]"]
 ```
+<!-- prumo:gerado:fim -->
 
 ## 4. Telas
 
 <!-- Uma subseção por tela, com título "### Tela TL-00N — Nome" (o ID é definido no inventário acima). -->
 
+<!-- prumo:gerado:telas -->
 ### Tela TL-001 — [PREENCHER: nome]
 
 - **Objetivo:** [PREENCHER]
@@ -50,6 +55,7 @@ flowchart LR
 - **Ações:** [PREENCHER: botões e formulários e para onde levam]
 - **Estados:** [PREENCHER: vazio, carregando, erro, sucesso, quando se aplicam]
 - **Atende:** [PREENCHER: RF/RNF/UC]
+<!-- prumo:gerado:fim -->
 
 ## 5. Diretrizes
 

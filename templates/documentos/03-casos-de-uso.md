@@ -15,16 +15,19 @@ Use verbos no infinitivo para o nome: "Cadastrar cliente", "Emitir relatório".
 
 ## 1. Atores
 
+<!-- prumo:gerado:atores -->
 | Ator | Tipo | Descrição |
 |---|---|---|
 | [PREENCHER: Administrador] | Primário | [PREENCHER] |
 | [PREENCHER: Gateway de pagamento] | Secundário (sistema) | [PREENCHER] |
+<!-- prumo:gerado:fim -->
 
 ## 2. Diagrama de casos de uso
 
 <!-- O Mermaid não tem diagrama de casos de uso nativo; usamos um flowchart com atores à
 esquerda e casos de uso (elipses) dentro do limite do sistema. -->
 
+<!-- prumo:gerado:diagrama -->
 ```mermaid
 flowchart LR
     admin([Administrador])
@@ -33,9 +36,11 @@ flowchart LR
     end
     admin --- uc1
 ```
+<!-- prumo:gerado:fim -->
 
 ## 3. Especificações
 
+<!-- prumo:gerado:especificacoes -->
 ### UC-001 — [PREENCHER: nome do caso de uso]
 
 | Item | Descrição |
@@ -61,3 +66,4 @@ flowchart LR
 #### Fluxos de exceção
 
 - **FE-01:** [PREENCHER: o que acontece em caso de erro]
+<!-- prumo:gerado:fim -->

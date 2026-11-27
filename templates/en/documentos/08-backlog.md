@@ -11,18 +11,23 @@ States: to do, in progress, in review, done.
 
 ## 1. Epics
 
+<!-- prumo:gerado:epicos -->
 | ID | Epic | Goal | Delivery milestone |
 |---|---|---|---|
 | EP-01 | [FILL] | [FILL] | M1 |
+<!-- prumo:gerado:fim -->
 
 ## 2. Delivery milestones
 
+<!-- prumo:gerado:marcos -->
 | Milestone | Content | Planned date | % of payment |
 |---|---|---|---|
 | M1 | [FILL] | [FILL] | [FILL] |
+<!-- prumo:gerado:fim -->
 
 ## 3. Stories
 
+<!-- prumo:gerado:historias -->
 ### HU-001 — [FILL: short title]
 
 **Epic:** EP-01 · **Use cases:** UC-001 · **Requirements:** RF-001
@@ -34,6 +39,7 @@ States: to do, in progress, in review, done.
 - **Given** [FILL: context], **when** [FILL: action], **then** [FILL: result].
 
 **Estimate:** [FILL]h · **Priority:** Must · **Status:** to do
+<!-- prumo:gerado:fim -->
 
 ## 4. Definition of Ready (DoR)
 

@@ -22,7 +22,8 @@ HOOKS = RAIZ / "templates" / "agentes" / "claude" / "hooks"
 # módulos e nomes fora da interface: prompts do Claude, catálogos de detecção e o próprio i18n
 IGNORAR_MODULOS = {"i18n.py", "__init__.py", "__main__.py"}
 IGNORAR_NOMES = {"AVISO_NAO_INTERATIVO", "REGRAS_ESPECIFICACAO", "DICAS_VALIDACAO", "IDIOMA_EN", "montar_prompt",
-                 "montar_prompt_etapas", "_aviso_final", "_corpo_skill", "RE_LOGIN", "RE_LIMITE"}
+                 "montar_prompt_etapas", "_aviso_final", "_corpo_skill", "RE_LOGIN", "RE_LIMITE",
+                 "CELULAS_EN", "DICAS_EN", "ROTULOS_EN", "ROTULOS_DE_LINHA"}
 PALAVRAS_PT = re.compile(r"\b(de|da|do|das|dos|para|com|sem|não|em|no|na|nos|nas|um|uma|que|ou|os|as|ao|à|é|já|por|se|e|desta|deste|esta|este|cada|mais|sobre|entre|pelo|pela|seu|sua|ainda|gera|lista|cria|mostra)\b", re.I)
 
 

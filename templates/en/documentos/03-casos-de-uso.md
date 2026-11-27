@@ -15,16 +15,19 @@ Use verbs for the name: "Register customer", "Issue report".
 
 ## 1. Actors
 
+<!-- prumo:gerado:atores -->
 | Actor | Type | Description |
 |---|---|---|
 | [FILL: Administrator] | Primary | [FILL] |
 | [FILL: Payment gateway] | Secondary (system) | [FILL] |
+<!-- prumo:gerado:fim -->
 
 ## 2. Use case diagram
 
 <!-- Mermaid has no native use case diagram; we use a flowchart with actors on the
 left and use cases (ellipses) inside the system boundary. -->
 
+<!-- prumo:gerado:diagrama -->
 ```mermaid
 flowchart LR
     admin([Administrator])
@@ -33,9 +36,11 @@ flowchart LR
     end
     admin --- uc1
 ```
+<!-- prumo:gerado:fim -->
 
 ## 3. Specifications
 
+<!-- prumo:gerado:especificacoes -->
 ### UC-001 — [FILL: use case name]
 
 | Item | Description |
@@ -61,3 +66,4 @@ flowchart LR
 #### Exception flows
 
 - **EF-01:** [FILL: what happens on error]
+<!-- prumo:gerado:fim -->

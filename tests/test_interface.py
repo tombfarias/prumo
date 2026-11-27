@@ -172,7 +172,7 @@ class TestServidorInterface(unittest.TestCase):
 
 
     def test_formulario_recusa_sem_projeto_ou_sem_dados(self):
-        self.assertTrue({"formulario", "gerar"} <= servidor.PERMITIDOS)
+        self.assertTrue({"formulario", "gerar", "entrevista"} <= servidor.PERMITIDOS)
         r = self.post("/api/formulario", {"projeto": self._tmp.name, "formulario": {}})
         self.assertEqual(r["codigo"], 2)
         r = self.post("/api/formulario", {"projeto": str(self.p.raiz), "formulario": "x"})
