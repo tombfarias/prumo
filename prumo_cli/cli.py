@@ -212,8 +212,15 @@ def cmd_agentes(args):
         escritos = gestao.exportar_agentes(p, args.alvos.split(",") if args.alvos else None)
         saida({"arquivos": escritos}, "Exportado: " + ", ".join(escritos))
     else:
-        escritos = p.instalar_kit_agentes(incluir_settings=args.incluir_settings)
-        saida({"arquivos": escritos}, f"{len(escritos)} arquivo(s) do kit de agentes atualizados.")
+        escritos = p.instalar_kit_agentes(incluir_settings=args.incluir_settings, forcar=args.forcar)
+        texto = f"{len(escritos)} arquivo(s) do kit de agentes atualizados."
+        if p.kit_preservados:
+            texto += (f"\n{len(p.kit_preservados)} arquivo(s) editados por você foram mantidos: "
+                      + ", ".join(p.kit_preservados)
+                      + "\nA versão nova de cada um está em .prumo/kit-novo/ (compare e junte, ou rode com --forcar).")
+        if p.kit_backups:
+            texto += "\nCópias de segurança antes de sobrescrever: " + ", ".join(p.kit_backups)
+        saida({"arquivos": escritos, "preservados": p.kit_preservados, "backups": p.kit_backups}, texto)
 
 
 def cmd_orcamento(args):
@@ -548,6 +555,8 @@ def montar_parser():
     s.add_argument("acao", choices=["listar", "exportar", "atualizar"])
     s.add_argument("--alvos", help="gemini,copilot,cursor (padrão: todos)")
     s.add_argument("--incluir-settings", action="store_true", help="na atualização, sobrescreve .claude/settings.json")
+    s.add_argument("--forcar", action="store_true",
+                   help="sobrescreve também arquivos do kit editados por você (guarda cópia em .prumo/backup/)")
     s = novo("orcamento", cmd_orcamento, "soma as estimativas do backlog e gera docs/orcamento.md")
     s.add_argument("--valor-hora", type=float)
     s.add_argument("--contingencia", type=float)

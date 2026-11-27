@@ -3,7 +3,7 @@
 import re
 import sys
 
-from prumo_comum import bloquear, carregar_config, ler_entrada, raiz_projeto
+from prumo_comum import aprovados_do, bloquear, carregar_config, ler_entrada, raiz_projeto
 
 I = re.IGNORECASE
 
@@ -37,12 +37,41 @@ REGRAS = [
 ]
 
 
+GERADOS = ("docs/rastreabilidade.md", "docs/orcamento.md")
+ESCRITA = re.compile(
+    r"\bsed\s+(-\w+\s+)*-i|\bperl\s+-\w*i|\btee\b|\b(mv|rm|truncate)\s|"
+    r"\b(Set-Content|Add-Content|Out-File|Clear-Content|Remove-Item|Move-Item|Rename-Item|del|erase|move|ren)\b|"
+    r"\bgit\s+(checkout|restore|rm|mv)\b|\bopen\([^)]*['\"][wa]|write_text|WriteAllText",
+    re.IGNORECASE,
+)
+
+
+def altera_protegido(comando, protegidos):
+    """Devolve o documento protegido que o comando parece alterar (sed -i, >, mv, Set-Content...) ou None."""
+    normal = comando.replace("\\", "/").lower()
+    for rel in protegidos:
+        alvo = rel.lower()
+        if alvo not in normal:
+            continue
+        redireciona = re.search(r">{1,2}\s*['\"]?[^\s'\"|;&]*" + re.escape(alvo), normal)
+        if redireciona or ESCRITA.search(comando):
+            return rel
+    return None
+
+
 def main():
     entrada = ler_entrada()
     comando = (entrada.get("tool_input") or {}).get("command") or ""
     if not comando:
         sys.exit(0)
     config = carregar_config(raiz_projeto())
+    protegido = altera_protegido(comando, list(aprovados_do(config)) + list(GERADOS))
+    if protegido:
+        bloquear(
+            f"Comando bloqueado: altera '{protegido}', que é somente leitura (aprovado pelo cliente ou gerado pelo Prumo).\n"
+            f"Comando: {comando}\n"
+            "Mudança em documento aprovado passa por `prumo mudanca \"título\"`; arquivos gerados se refazem com o comando do Prumo."
+        )
     permitidos = (config.get("hooks") or {}).get("comandos_permitidos") or []
     if any(re.search(p, comando, I) for p in permitidos):
         sys.exit(0)

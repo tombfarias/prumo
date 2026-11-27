@@ -7,7 +7,7 @@ Se os testes falharem, o Claude recebe a saída e continua trabalhando (uma vez;
 import subprocess
 import sys
 
-from prumo_comum import carregar_config, escrever_stderr, ler_entrada, raiz_projeto
+from prumo_comum import carregar_config, escrever_stderr, ferramenta_ausente, ler_entrada, raiz_projeto
 
 
 def main():
@@ -25,6 +25,12 @@ def main():
         r = subprocess.run(testar, shell=True, cwd=str(raiz), capture_output=True, timeout=580)
     except subprocess.TimeoutExpired:
         escrever_stderr("[Prumo] Os testes passaram do tempo limite. Informe o usuário.")
+        sys.exit(2)
+    if ferramenta_ausente(r):
+        escrever_stderr(
+            f"[Prumo] Não foi possível rodar os testes (`{testar}`): o programa não está instalado ou não está no PATH. "
+            "Não instale nada globalmente por conta própria: avise o usuário qual ferramenta falta."
+        )
         sys.exit(2)
     if r.returncode != 0:
         saida = (r.stdout + r.stderr).decode("utf-8", "replace").strip().splitlines()

@@ -5,7 +5,9 @@ import re
 import sys
 from pathlib import PurePath
 
-from prumo_comum import bloquear, carregar_config, ler_entrada, raiz_projeto, relativo
+from prumo_comum import (
+    aprovados_do, bloquear, carregar_config, chave, dados_pessoais, ler_entrada, raiz_projeto, relativo, segredos,
+)
 
 GERADOS = {
     "docs/rastreabilidade.md": "prumo rastreabilidade",
@@ -25,6 +27,30 @@ def eh_segredo(caminho):
     if nome.startswith("id_rsa") or nome.startswith("id_ed25519"):
         return True
     return nome in {"credentials.json", "secrets.json", "service-account.json", "wp-config.php"} or nome.startswith("service-account")
+
+
+def texto_novo(dados):
+    partes = [str(dados.get("content") or ""), str(dados.get("new_string") or "")]
+    partes += [str(e.get("new_string") or "") for e in dados.get("edits") or [] if isinstance(e, dict)]
+    return "\n".join(partes)
+
+
+def verificar_dados_sensiveis(rel, dados, config):
+    """Segredos nunca vão para arquivos do projeto; dados pessoais reais de clientes não vão para docs/."""
+    if (config.get("hooks") or {}).get("bloquear_dados_sensiveis") is False:
+        return
+    texto = texto_novo(dados)
+    if not texto.strip():
+        return
+    achados = segredos(texto)
+    if chave(rel).startswith("docs/"):
+        achados += dados_pessoais(texto)
+    if achados:
+        bloquear(
+            f"O conteúdo para '{rel}' parece conter {', '.join(achados)}. Segredos ficam só no .env (documente o nome "
+            "da variável em .env.example) e a documentação usa dados fictícios, nunca dados reais de clientes. "
+            "Se for um falso positivo, peça ao usuário para desligar a verificação (hooks.bloquear_dados_sensiveis: false)."
+        )
 
 
 def main():
@@ -49,20 +75,26 @@ def main():
     if rel is None:
         sys.exit(0)
     config = carregar_config(raiz)
-    aprovados = config.get("aprovados") or {}
+    aprovados = aprovados_do(config)
+    aprovado = next((a for a in aprovados if chave(a) == chave(rel)), None)
 
-    if rel in aprovados:
-        info = aprovados[rel] or {}
+    if aprovado is not None:
+        rel = aprovado
+        info = aprovados[rel] if isinstance(aprovados[rel], dict) else {}
         bloquear(
             f"'{rel}' foi aprovado pelo cliente em {info.get('data', '?')} e é somente leitura.\n"
             "Para alterar: registre um pedido com `prumo mudanca \"título\"`, faça a análise de impacto e, "
             "depois da aprovação do cliente, o usuário roda `prumo desaprovar " + rel + "`."
         )
 
-    if rel in GERADOS:
+    gerado = next((g for g in GERADOS if chave(g) == chave(rel)), None)
+    if gerado:
+        rel = gerado
         bloquear(f"'{rel}' é gerado automaticamente. Não edite: rode `{GERADOS[rel]}`.")
 
-    if rel == "projeto.prumo.json":
+    verificar_dados_sensiveis(rel, dados, config)
+
+    if chave(rel) == "projeto.prumo.json":
         trechos = [str(dados.get(k, "")) for k in ("old_string", "new_string")]
         trechos += [str(e.get(k, "")) for e in dados.get("edits") or [] for k in ("old_string", "new_string")]
         if any('"aprovados"' in t or any(a in t for a in aprovados) for t in trechos):

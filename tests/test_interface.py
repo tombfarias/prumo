@@ -101,7 +101,7 @@ class TestKit(unittest.TestCase):
             self.assertEqual(estados[skill["nome"]], "modificado")
             self.assertEqual(estados["minha-skill"], "próprio")
             self.assertEqual(estados["testador"], "ausente")
-            p.instalar_kit_agentes(incluir_settings=False)
+            p.instalar_kit_agentes(incluir_settings=False, forcar=True)  # editado pelo usuário: só volta com forcar
             self.assertEqual({i["nome"]: i["estado"] for i in p.listar_kit()}[skill["nome"]], "igual ao kit")
 
 
