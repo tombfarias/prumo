@@ -4,179 +4,351 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Prumo</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cline x1='16' y1='2' x2='16' y2='14' stroke='%236b8f7d' stroke-width='2.5' stroke-linecap='round'/%3E%3Cpath d='M16 13c4 4 6 7 6 10a6 6 0 0 1-12 0c0-3 2-6 6-10z' fill='%236b8f7d'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232f6f68'/%3E%3Cline x1='16' y1='5' x2='16' y2='15' stroke='%23fff' stroke-width='2.2' stroke-linecap='round'/%3E%3Cpath d='M16 14c3.4 3.4 5 6 5 8.6a5 5 0 0 1-10 0c0-2.6 1.6-5.2 5-8.6z' fill='%23fff'/%3E%3C/svg%3E">
 <style>
+/* ------------------------------------------------------------------ paleta
+   IDEIA: um prumo de pedreiro: precisão calma, nada de ruído.
+   COR: papel quente (60), tinta grafite (30), verde-petróleo do prumo (10); terracota como acento.
+   ESTADO: verde = completo, âmbar = lacunas, índigo = aprovado, tijolo = erro (distintos também sob daltonismo).
+   A paleta é verificada por tools/cores.py (contraste WCAG AA e ΔE2000 ≥ 15 sob protanopia,
+   deuteranopia e tritanopia) e pelos testes. Mudou uma cor? Rode python tools/cores.py. */
 :root{
-  --bg:#f6f5f2;--sup:#ffffff;--sup2:#fbfaf8;--borda:#ebe8e2;--texto:#2b2a28;--suave:#8a867f;--fraco:#b9b5ad;
-  --acento:#6b8f7d;--acento-2:#557565;--acento-bg:#e9f0ec;--ambar:#b8893f;--ambar-bg:#f7efe1;
-  --vermelho:#b86464;--vermelho-bg:#f6e8e6;--azul:#6a84a8;--azul-bg:#e8eef6;
-  --sombra:0 1px 2px rgba(40,36,30,.04),0 4px 18px rgba(40,36,30,.05);
-  --raio:14px;--raio-p:10px;--t:180ms cubic-bezier(.2,.7,.2,1);
+  --bg:#f5f3ee;--sup:#ffffff;--sup2:#faf8f4;--sup3:#efece5;--borda:#e6e1d8;--borda-forte:#d3cdc1;
+  --texto:#23211d;--suave:#6f6a61;--fraco:#8d877c;
+  --pri:#2f6f68;--pri-2:#255a54;--pri-bg:#e3efec;--pri-txt:#ffffff;
+  --terra:#a14f2b;--terra-bg:#f8e9e0;
+  --ambar:#986c16;--ambar-txt:#835c11;--ambar-bg:#f8eed6;
+  --verm:#7e2920;--verm-bg:#f8e4e0;
+  --azul:#6c64c4;--azul-txt:#5e56b5;--azul-bg:#ebeafa;
+  --roxo:#8e3d74;--roxo-bg:#f6e6f0;
+  --console:#1b1e1d;--console-txt:#dfe3dc;
+  --sombra:0 1px 2px rgba(35,30,20,.05),0 6px 22px rgba(35,30,20,.06);
+  --sombra-alta:0 24px 70px rgba(25,20,10,.22);
+  --raio:16px;--raio-p:10px;--t:170ms cubic-bezier(.2,.7,.2,1);
   --mono:ui-monospace,"Cascadia Code","JetBrains Mono",Consolas,monospace;
+  color-scheme:light;
 }
-@media (prefers-color-scheme:dark){:root{
-  --bg:#191a19;--sup:#222423;--sup2:#1e201f;--borda:#2e312f;--texto:#e7e5e0;--suave:#9b978f;--fraco:#5e5b56;
-  --acento:#8fb3a0;--acento-2:#a7c6b5;--acento-bg:#26302b;--ambar:#d4a95e;--ambar-bg:#332b1e;
-  --vermelho:#d98c8c;--vermelho-bg:#362423;--azul:#93abcc;--azul-bg:#222a35;
-  --sombra:0 1px 2px rgba(0,0,0,.25),0 6px 20px rgba(0,0,0,.25);
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121514;--sup:#1a1e1d;--sup2:#171a19;--sup3:#222726;--borda:#2a302e;--borda-forte:#3a4240;
+  --texto:#ebe8e1;--suave:#a3a097;--fraco:#6b6a64;
+  --pri:#6fb7a9;--pri-2:#8ccabe;--pri-bg:#1e302c;--pri-txt:#0e1b18;
+  --terra:#e08e66;--terra-bg:#35231a;
+  --ambar:#eac06c;--ambar-txt:#eac06c;--ambar-bg:#33291a;
+  --verm:#da726c;--verm-bg:#382220;
+  --azul:#afa8fa;--azul-txt:#afa8fa;--azul-bg:#25243d;
+  --roxo:#e39ac8;--roxo-bg:#36202f;
+  --console:#0d0f0e;--console-txt:#dfe3dc;
+  --sombra:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);
+  --sombra-alta:0 24px 70px rgba(0,0,0,.55);
+  color-scheme:dark;
 }}
+:root[data-theme="dark"]{
+  --bg:#121514;--sup:#1a1e1d;--sup2:#171a19;--sup3:#222726;--borda:#2a302e;--borda-forte:#3a4240;
+  --texto:#ebe8e1;--suave:#a3a097;--fraco:#6b6a64;
+  --pri:#6fb7a9;--pri-2:#8ccabe;--pri-bg:#1e302c;--pri-txt:#0e1b18;
+  --terra:#e08e66;--terra-bg:#35231a;
+  --ambar:#eac06c;--ambar-txt:#eac06c;--ambar-bg:#33291a;
+  --verm:#da726c;--verm-bg:#382220;
+  --azul:#afa8fa;--azul-txt:#afa8fa;--azul-bg:#25243d;
+  --roxo:#e39ac8;--roxo-bg:#36202f;
+  --console:#0d0f0e;--console-txt:#dfe3dc;
+  --sombra:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);
+  --sombra-alta:0 24px 70px rgba(0,0,0,.55);
+  color-scheme:dark;
+}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{font:14px/1.5 "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,Inter,sans-serif;background:var(--bg);color:var(--texto);
-  display:grid;grid-template-columns:248px 1fr;-webkit-font-smoothing:antialiased}
+  display:grid;grid-template-columns:260px minmax(0,1fr);-webkit-font-smoothing:antialiased;overflow:hidden}
 button,input,select,textarea{font:inherit;color:inherit}
-::selection{background:var(--acento-bg)}
-/* barra lateral */
-aside{background:var(--sup2);border-right:1px solid var(--borda);display:flex;flex-direction:column;padding:20px 14px;gap:18px;min-height:0}
-.marca{display:flex;align-items:center;gap:10px;padding:0 6px;font-weight:600;font-size:17px;letter-spacing:.2px}
-.marca svg{width:22px;height:22px}
-.marca small{font-weight:400;color:var(--fraco);font-size:12px;margin-left:auto}
-.rotulo{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--fraco);padding:0 8px;margin-bottom:6px}
-.lista-proj{display:flex;flex-direction:column;gap:2px;overflow:auto;min-height:0}
-.proj{all:unset;cursor:pointer;padding:9px 10px;border-radius:var(--raio-p);transition:background var(--t),transform var(--t);display:block}
-.proj:hover{background:var(--borda)}
-.proj.ativo{background:var(--acento-bg)}
+::selection{background:var(--pri-bg)}
+:focus-visible{outline:2px solid var(--pri);outline-offset:2px;border-radius:6px}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--borda-forte);border-radius:99px;border:3px solid transparent;background-clip:padding-box}
+svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ------------------------------------------------------------------ barra lateral */
+aside{background:var(--sup2);border-right:1px solid var(--borda);display:flex;flex-direction:column;padding:18px 14px;gap:14px;min-height:0;height:100vh}
+.marca{display:flex;align-items:center;gap:10px;padding:2px 6px 4px;font-weight:650;font-size:17px;letter-spacing:.1px}
+.logo{width:28px;height:28px;border-radius:8px;background:var(--pri);display:grid;place-items:center;flex:none}
+.logo svg{width:18px;height:18px}
+.marca small{font-weight:450;color:var(--fraco);font-size:11.5px;margin-left:auto}
+.rotulo{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--fraco);padding:0 8px;margin:4px 0 6px;font-weight:600}
+.busca{position:relative}
+.busca svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--fraco)}
+.busca input{padding-left:32px!important}
+.lista-proj{display:flex;flex-direction:column;gap:2px;overflow:auto;min-height:0;flex:1}
+.proj{position:relative;display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 10px;border-radius:var(--raio-p);transition:background var(--t);border:0;background:none;text-align:left;width:100%}
+.proj:hover{background:var(--sup3)}
+.proj.ativo{background:var(--pri-bg)}
+.proj .av{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:12px;font-weight:650;flex:none;color:#fff}
+.proj .tx{min-width:0;flex:1}
 .proj b{display:block;font-weight:550;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.proj span{font-size:12px;color:var(--suave)}
-.rodape-lat{margin-top:auto;display:flex;flex-direction:column;gap:6px}
-/* botões */
-.btn{border:1px solid var(--borda);background:var(--sup);padding:8px 14px;border-radius:var(--raio-p);cursor:pointer;
-  transition:background var(--t),border-color var(--t),transform var(--t),box-shadow var(--t);display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
-.btn:hover{border-color:var(--fraco)}
+.proj span{display:block;font-size:12px;color:var(--suave);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj .x{opacity:0;border:0;background:none;color:var(--fraco);cursor:pointer;padding:4px;border-radius:6px;display:grid;place-items:center}
+.proj:hover .x,.proj:focus-within .x{opacity:1}.proj .x:hover{color:var(--verm);background:var(--verm-bg)}
+.rodape-lat{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--borda);padding-top:10px}
+.atalho{margin-left:auto;font-size:11px;color:var(--fraco);border:1px solid var(--borda);border-radius:5px;padding:0 5px;font-family:var(--mono)}
+
+/* ------------------------------------------------------------------ botões */
+.btn{border:1px solid var(--borda);background:var(--sup);padding:7px 13px;border-radius:var(--raio-p);cursor:pointer;line-height:1.35;
+  transition:background var(--t),border-color var(--t),transform var(--t),color var(--t);display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-weight:500}
+.btn:hover{border-color:var(--borda-forte);background:var(--sup2)}
 .btn:active{transform:scale(.98)}
-.btn.pri{background:var(--acento);border-color:var(--acento);color:#fff}
-.btn.pri:hover{background:var(--acento-2);border-color:var(--acento-2)}
-@media (prefers-color-scheme:dark){.btn.pri{color:#142019}}
+.btn.pri{background:var(--pri);border-color:var(--pri);color:var(--pri-txt)}
+.btn.pri:hover{background:var(--pri-2);border-color:var(--pri-2)}
+.btn.perigo{color:var(--verm)}.btn.perigo:hover{background:var(--verm-bg);border-color:var(--verm)}
 .btn.fan{border-color:transparent;background:transparent;color:var(--suave)}
-.btn.fan:hover{background:var(--borda);color:var(--texto)}
+.btn.fan:hover{background:var(--sup3);color:var(--texto)}
+.btn.peq{padding:4px 9px;font-size:12.5px;border-radius:8px}
 .btn[disabled]{opacity:.5;pointer-events:none}
-.btn.larg{width:100%;justify-content:center}
-/* principal */
-main{overflow:auto;min-width:0}
-.conteudo{max-width:1080px;margin:0 auto;padding:34px 40px 60px}
-.cab{display:flex;align-items:flex-start;gap:16px;margin-bottom:22px}
-.cab h1{font-size:24px;font-weight:600;margin:0 0 4px;letter-spacing:-.2px}
+.btn.larg{width:100%;justify-content:flex-start}
+.btn.centro{justify-content:center}
+
+/* ------------------------------------------------------------------ principal */
+main{overflow:auto;min-width:0;height:100vh}
+.conteudo{max-width:1180px;margin:0 auto;padding:30px 40px 70px}
+.cab{display:flex;align-items:flex-start;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.cab h1{font-size:25px;font-weight:650;margin:0 0 6px;letter-spacing:-.3px}
 .cab .meta{color:var(--suave);font-size:13px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .cab .acoes{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:99px;background:var(--acento-bg);color:var(--acento-2);font-size:12px;font-weight:500}
-.chip.ambar{background:var(--ambar-bg);color:var(--ambar)}.chip.verm{background:var(--vermelho-bg);color:var(--vermelho)}
-.chip.azul{background:var(--azul-bg);color:var(--azul)}.chip.cinza{background:var(--borda);color:var(--suave)}
-.abas{display:inline-flex;background:var(--borda);padding:3px;border-radius:12px;gap:2px;margin-bottom:22px;position:relative}
-.aba{all:unset;cursor:pointer;padding:7px 15px;border-radius:9px;color:var(--suave);font-weight:500;font-size:13.5px;transition:color var(--t),background var(--t)}
-.aba.ativa{background:var(--sup);color:var(--texto);box-shadow:var(--sombra)}
-.painel{animation:entra .28s cubic-bezier(.2,.7,.2,1)}
-@keyframes entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.cartao{background:var(--sup);border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra);padding:20px 22px}
-.cartao h3{margin:0 0 12px;font-size:14.5px;font-weight:600}
+.menu-mob{display:none}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:99px;background:var(--pri-bg);color:var(--pri-2);font-size:12px;font-weight:550;white-space:nowrap}
+:root[data-theme="dark"] .chip{color:var(--pri)}
+.chip.ambar{background:var(--ambar-bg);color:var(--ambar-txt)}.chip.verm{background:var(--verm-bg);color:var(--verm)}
+.chip.azul{background:var(--azul-bg);color:var(--azul-txt)}.chip.cinza{background:var(--sup3);color:var(--suave)}
+.chip.terra{background:var(--terra-bg);color:var(--terra)}.chip.roxo{background:var(--roxo-bg);color:var(--roxo)}
+.abas{display:flex;border-bottom:1px solid var(--borda);gap:4px;margin-bottom:22px;overflow-x:auto;scrollbar-width:none}
+.aba{border:0;background:none;cursor:pointer;padding:10px 12px 11px;color:var(--suave);font-weight:550;font-size:13.5px;transition:color var(--t);position:relative;display:inline-flex;gap:7px;align-items:center;white-space:nowrap}
+.aba:hover{color:var(--texto)}
+.aba.ativa{color:var(--texto)}
+.aba.ativa::after{content:"";position:absolute;left:8px;right:8px;bottom:-1px;height:2px;border-radius:2px;background:var(--pri)}
+.aba .cont{font-size:11px;background:var(--ambar-bg);color:var(--ambar-txt);border-radius:99px;padding:0 6px;font-weight:650}
+.painel{animation:entra .26s cubic-bezier(.2,.7,.2,1)}
+@keyframes entra{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.cartao{background:var(--sup);border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra);padding:20px 22px;min-width:0}
+.cartao h3{margin:0 0 12px;font-size:14.5px;font-weight:650;display:flex;align-items:center;gap:8px}
+.cartao h3 .dir{margin-left:auto}
 .grade{display:grid;gap:16px}
 .g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
-@media (max-width:900px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g2{grid-template-columns:1fr}}
-.num{font-size:28px;font-weight:600;letter-spacing:-.5px;line-height:1.1}
-.num small{font-size:13px;color:var(--suave);font-weight:400;margin-left:4px}
+.num{font-size:28px;font-weight:650;letter-spacing:-.6px;line-height:1.1}
+.num small{font-size:13px;color:var(--suave);font-weight:450;margin-left:4px;letter-spacing:0}
 .legenda{color:var(--suave);font-size:12.5px}
-.barra{height:6px;background:var(--borda);border-radius:99px;overflow:hidden;margin-top:12px}
-.barra i{display:block;height:100%;background:var(--acento);border-radius:99px;transition:width .6s cubic-bezier(.2,.7,.2,1)}
+.barra{height:6px;background:var(--sup3);border-radius:99px;overflow:hidden;margin-top:12px}
+.barra i{display:block;height:100%;background:var(--pri);border-radius:99px;transition:width .6s cubic-bezier(.2,.7,.2,1)}
+
+/* jornada (fluxo principal do Prumo) */
+.heroi{display:grid;grid-template-columns:200px minmax(0,1fr);gap:26px;align-items:center;
+  background:linear-gradient(135deg,var(--pri-bg),var(--sup) 70%);border:1px solid var(--borda);border-radius:20px;padding:24px 28px;box-shadow:var(--sombra)}
+.anel{position:relative;width:170px;height:170px;margin:auto}
+.anel svg{width:100%;height:100%;transform:rotate(-90deg)}
+.anel .fundo-anel{stroke:var(--sup3)}.anel .frente{stroke:var(--pri);transition:stroke-dashoffset .9s cubic-bezier(.2,.7,.2,1)}
+.anel .val{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.anel .val b{font-size:38px;font-weight:700;letter-spacing:-1px;display:block;line-height:1}
+.anel .val span{font-size:12px;color:var(--suave)}
+.heroi h2{margin:0 0 4px;font-size:19px;font-weight:650;letter-spacing:-.2px}
+.heroi p{margin:0 0 16px;color:var(--suave)}
+.etapas{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:18px}
+.etapa{border:1px solid var(--borda);background:var(--sup);border-radius:12px;padding:10px 12px;cursor:pointer;transition:border-color var(--t),transform var(--t);text-align:left}
+.etapa:hover{border-color:var(--borda-forte);transform:translateY(-1px)}
+.etapa .n{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--suave);font-weight:600;margin-bottom:3px}
+.etapa .n i{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:11px;background:var(--sup3);color:var(--suave)}
+.etapa.ok .n i{background:var(--pri);color:var(--pri-txt)}
+.etapa.atual{border-color:var(--pri);box-shadow:0 0 0 3px var(--pri-bg)}
+.etapa b{display:block;font-size:13px;font-weight:600}
+.etapa span{font-size:12px;color:var(--suave)}
+
 /* listas */
 .linhas{display:flex;flex-direction:column}
-.linha{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--borda);cursor:default}
+.linha{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--borda)}
 .linha:last-child{border-bottom:0}
-.linha.clic{cursor:pointer;border-radius:8px;transition:background var(--t);padding-left:10px;padding-right:10px}
+.linha.clic{cursor:pointer;border-radius:9px;transition:background var(--t);padding-left:10px;padding-right:10px;border-bottom:0}
 .linha.clic:hover{background:var(--sup2)}
-.linha.sel{background:var(--acento-bg)}
+.linha.sel{background:var(--pri-bg)}
 .linha .nome{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ponto{width:8px;height:8px;border-radius:50%;background:var(--fraco);flex:none}
-.ponto.ok{background:var(--acento)}.ponto.and{background:var(--ambar)}.ponto.apr{background:var(--azul)}.ponto.err{background:var(--vermelho)}
-/* documentos */
-.docs{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
-@media (max-width:1000px){.docs{grid-template-columns:1fr}}
-.preview{min-height:420px;max-height:calc(100vh - 230px);overflow:auto}
-.md{line-height:1.65}
-.md h1{font-size:20px;margin:0 0 12px}.md h2{font-size:16px;margin:22px 0 8px}.md h3{font-size:14.5px;margin:18px 0 6px}.md h4{font-size:13.5px;margin:14px 0 4px;color:var(--suave)}
-.md table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
-.md th,.md td{border:1px solid var(--borda);padding:6px 9px;text-align:left;vertical-align:top}
+.ponto.ok{background:var(--pri)}.ponto.and{background:var(--ambar)}.ponto.apr{background:var(--azul)}.ponto.err{background:var(--verm)}
+
+/* documentos e kit */
+.docs{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start}
+.lateral-docs{position:sticky;top:0;max-height:calc(100vh - 210px);overflow:auto;padding:10px}
+.preview{min-height:480px}
+.barra-doc{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:-4px 0 14px;padding-bottom:12px;border-bottom:1px solid var(--borda)}
+.barra-doc .cam{flex:1;min-width:160px;font-family:var(--mono);font-size:12px;color:var(--suave);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seg{display:inline-flex;background:var(--sup3);border-radius:9px;padding:2px}
+.seg button{border:0;background:none;padding:4px 10px;border-radius:7px;cursor:pointer;color:var(--suave);font-size:12.5px;font-weight:550}
+.seg button.ativo{background:var(--sup);color:var(--texto);box-shadow:var(--sombra)}
+.doc-corpo{display:grid;grid-template-columns:minmax(0,1fr);gap:22px}
+.doc-corpo.com-toc{grid-template-columns:minmax(0,1fr) 190px}
+.toc{position:sticky;top:10px;align-self:start;font-size:12.5px;border-left:1px solid var(--borda);padding-left:12px;max-height:70vh;overflow:auto}
+.toc a{display:block;color:var(--suave);text-decoration:none;padding:3px 0;line-height:1.35;cursor:pointer}
+.toc a:hover{color:var(--pri)}.toc a.h3{padding-left:10px;font-size:12px}
+.editor{width:100%;min-height:62vh;font:13px/1.6 var(--mono);font-variant-ligatures:none;background:var(--sup2);border:1px solid var(--borda);border-radius:var(--raio-p);padding:14px 16px;resize:vertical;outline:none;tab-size:2}
+.editor:focus{border-color:var(--pri);box-shadow:0 0 0 3px var(--pri-bg)}
+.md{line-height:1.7;font-size:14.2px}
+.md h1{font-size:22px;margin:0 0 14px;letter-spacing:-.3px}.md h2{font-size:17px;margin:28px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--borda)}
+.md h3{font-size:15px;margin:20px 0 6px}.md h4{font-size:13.5px;margin:14px 0 4px;color:var(--suave)}
+.md table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px;display:block;overflow-x:auto}
+.md th,.md td{border:1px solid var(--borda);padding:7px 10px;text-align:left;vertical-align:top}
 .md th{background:var(--sup2);font-weight:600}
-.md code{font-family:var(--mono);font-size:12.5px;background:var(--sup2);border:1px solid var(--borda);padding:1px 5px;border-radius:6px}
+.md code{font-family:var(--mono);font-size:12.5px;background:var(--sup3);padding:1px 5px;border-radius:5px}
 .md pre{background:var(--sup2);border:1px solid var(--borda);border-radius:var(--raio-p);padding:12px 14px;overflow:auto}
-.md pre code{border:0;padding:0;background:none}
-.md blockquote{margin:8px 0;padding:4px 14px;border-left:3px solid var(--acento);color:var(--suave)}
-.md .lac{background:var(--ambar-bg);color:var(--ambar);border-radius:5px;padding:0 4px}
-.md a{color:var(--acento-2)}
-/* claude */
-.tarefas{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
-.pill{all:unset;cursor:pointer;padding:6px 12px;border-radius:99px;border:1px solid var(--borda);font-size:13px;transition:all var(--t);background:var(--sup)}
-.pill:hover{border-color:var(--fraco)}
-.pill.ativa{background:var(--acento);border-color:var(--acento);color:#fff}
-@media (prefers-color-scheme:dark){.pill.ativa{color:#142019}}
+.md pre code{padding:0;background:none}
+.md blockquote{margin:10px 0;padding:6px 14px;border-left:3px solid var(--pri);color:var(--suave);background:var(--sup2);border-radius:0 8px 8px 0}
+.md .lac{background:var(--ambar-bg);color:var(--ambar-txt);border-radius:5px;padding:0 4px;font-weight:550}
+.md .lac.foco{outline:2px solid var(--ambar);outline-offset:2px}
+.md a{color:var(--pri)}
+.md .id{font-family:var(--mono);font-size:12px;background:var(--azul-bg);color:var(--azul-txt);padding:0 5px;border-radius:5px;font-weight:600}
+.mmd{background:var(--sup2);border:1px solid var(--borda);border-radius:var(--raio-p);padding:16px;margin:12px 0;overflow:auto;text-align:center}
+.mmd svg{max-width:100%;height:auto}
+.mmd .erro-mmd{color:var(--verm);font-size:12.5px;text-align:left}
+.mmd details{text-align:left;margin-top:8px}
+.mmd summary{cursor:pointer;color:var(--suave);font-size:12px}
+.kit-grupo{margin-bottom:6px}
+.kit-grupo .rotulo{display:flex;align-items:center;gap:6px;margin-top:10px}
+.kit-item .nome small{display:block;color:var(--suave);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eventos{display:flex;gap:4px;flex-wrap:wrap;margin:-4px 0 12px}
+
+/* Claude */
+.grupos-tarefa{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.grupo-t{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.grupo-t .rotulo{width:92px;margin:0;padding:0}
+.pill{cursor:pointer;padding:5px 12px;border-radius:99px;border:1px solid var(--borda);font-size:13px;transition:all var(--t);background:var(--sup)}
+.pill:hover{border-color:var(--borda-forte)}
+.pill.ativa{background:var(--pri);border-color:var(--pri);color:var(--pri-txt)}
 .campo{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
-.campo label{font-size:12.5px;color:var(--suave);font-weight:500}
-input[type=text],input[type=number],select,textarea{background:var(--sup2);border:1px solid var(--borda);border-radius:var(--raio-p);padding:9px 12px;outline:none;transition:border-color var(--t),box-shadow var(--t);width:100%}
-input:focus,select:focus,textarea:focus{border-color:var(--acento);box-shadow:0 0 0 3px var(--acento-bg)}
+.campo label{font-size:12.5px;color:var(--suave);font-weight:550}
+.campo .ajuda{font-size:11.5px;color:var(--fraco)}
+input[type=text],input[type=number],input[type=email],input[type=search],select,textarea{background:var(--sup2);border:1px solid var(--borda);border-radius:var(--raio-p);padding:8px 12px;outline:none;transition:border-color var(--t),box-shadow var(--t);width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px var(--pri-bg)}
 textarea{resize:vertical;min-height:92px}
-.console{background:#1d201e;color:#d9dcd6;font:12.5px/1.55 var(--mono);border-radius:var(--raio);padding:14px 16px;height:340px;overflow:auto;white-space:pre-wrap;word-break:break-word}
-.console .f{color:#8fb3a0}.console .s{color:#d4a95e}.console .e{color:#e09a9a}
+.console{background:var(--console);color:var(--console-txt);font:12.5px/1.6 var(--mono);border-radius:var(--raio);padding:14px 16px;height:360px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+.console .f{color:#8fcdbf}.console .s{color:#e7bd6c}.console .e{color:#f0a196}
 .linha-acao{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .troca{display:inline-flex;align-items:center;gap:8px;color:var(--suave);font-size:13px;cursor:pointer;user-select:none}
-.troca input{display:none}
-.troca i{width:30px;height:18px;border-radius:99px;background:var(--borda);position:relative;transition:background var(--t)}
-.troca i::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--sup);box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform var(--t)}
-.troca input:checked + i{background:var(--acento)}
-.troca input:checked + i::after{transform:translateX(12px)}
-/* vazio, modal, toast */
-.vazio{display:grid;place-items:center;min-height:70vh;text-align:center}
-.vazio h2{font-weight:600;font-size:22px;margin:16px 0 6px}
-.vazio p{color:var(--suave);max-width:460px;margin:0 auto 20px}
-.fundo{position:fixed;inset:0;background:rgba(25,24,22,.28);backdrop-filter:blur(3px);display:grid;place-items:center;z-index:20;animation:fade .2s ease}
+.troca input{position:absolute;opacity:0;width:0;height:0}
+.troca i{width:32px;height:19px;border-radius:99px;background:var(--borda-forte);position:relative;transition:background var(--t);flex:none}
+.troca i::after{content:"";position:absolute;left:2px;top:2px;width:15px;height:15px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform var(--t)}
+.troca input:checked + i{background:var(--pri)}
+.troca input:checked + i::after{transform:translateX(13px)}
+.troca input:focus-visible + i{outline:2px solid var(--pri);outline-offset:2px}
+
+/* vazio, modal, toast, paleta */
+.vazio{display:grid;place-items:center;min-height:78vh;text-align:center}
+.vazio h2{font-weight:650;font-size:24px;margin:18px 0 8px;letter-spacing:-.3px}
+.vazio p{color:var(--suave);max-width:500px;margin:0 auto 22px}
+.passos-vazio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:680px;margin:28px auto 0;text-align:left}
+.passos-vazio div{background:var(--sup);border:1px solid var(--borda);border-radius:14px;padding:14px}
+.passos-vazio b{display:block;font-size:13px;margin-bottom:2px}.passos-vazio span{font-size:12.5px;color:var(--suave)}
+.fundo{position:fixed;inset:0;background:rgba(20,18,14,.36);backdrop-filter:blur(3px);display:grid;place-items:center;z-index:20;animation:fade .18s ease;padding:16px}
 @keyframes fade{from{opacity:0}}
-.modal{background:var(--sup);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.18);width:min(720px,94vw);max-height:90vh;overflow:auto;padding:26px 28px;animation:sobe .28s cubic-bezier(.2,.7,.2,1)}
-@keyframes sobe{from{opacity:0;transform:translateY(12px) scale(.98)}}
-.modal h2{margin:0 0 18px;font-size:18px;font-weight:600}
+.modal{background:var(--sup);border:1px solid var(--borda);border-radius:18px;box-shadow:var(--sombra-alta);width:min(720px,100%);max-height:90vh;overflow:auto;padding:24px 26px;animation:sobe .24s cubic-bezier(.2,.7,.2,1)}
+.modal.peq{width:min(460px,100%)}
+@keyframes sobe{from{opacity:0;transform:translateY(10px) scale(.985)}}
+.modal h2{margin:0 0 8px;font-size:18px;font-weight:650}
+.modal .desc{color:var(--suave);margin:0 0 16px}
+.modal .rodape{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 .perfis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
-.perfil{all:unset;cursor:pointer;border:1px solid var(--borda);border-radius:var(--raio-p);padding:10px 12px;transition:all var(--t)}
-.perfil:hover{border-color:var(--fraco)}
-.perfil.ativo{border-color:var(--acento);background:var(--acento-bg)}
-.perfil b{display:block;font-size:13.5px;font-weight:550}.perfil span{font-size:12px;color:var(--suave)}
-.toasts{position:fixed;right:22px;bottom:22px;display:flex;flex-direction:column;gap:8px;z-index:30}
-.toast{background:var(--sup);border:1px solid var(--borda);box-shadow:var(--sombra);border-radius:12px;padding:10px 14px;max-width:380px;animation:sobe .25s ease;font-size:13.5px}
-.toast.erro{border-color:var(--vermelho);color:var(--vermelho)}
+.perfil{cursor:pointer;border:1px solid var(--borda);border-radius:var(--raio-p);padding:10px 12px;transition:all var(--t);background:var(--sup);text-align:left}
+.perfil:hover{border-color:var(--borda-forte)}
+.perfil.ativo{border-color:var(--pri);background:var(--pri-bg)}
+.perfil b{display:block;font-size:13.5px;font-weight:600}.perfil span{font-size:12px;color:var(--suave)}
+.escolhas{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto}
+.escolha{display:block;text-align:left;cursor:pointer;border:1px solid var(--borda);border-radius:var(--raio-p);padding:10px 12px;background:var(--sup);transition:border-color var(--t)}
+.escolha:hover{border-color:var(--pri)}.escolha b{display:block;font-weight:600;font-size:13.5px}.escolha span{color:var(--suave);font-size:12.5px}
+.toasts{position:fixed;right:22px;bottom:22px;display:flex;flex-direction:column;gap:8px;z-index:40}
+.toast{background:var(--sup);border:1px solid var(--borda);border-left:3px solid var(--pri);box-shadow:var(--sombra);border-radius:12px;padding:10px 14px;max-width:400px;animation:sobe .22s ease;font-size:13.5px}
+.toast.erro{border-left-color:var(--verm)}
 .carregando{color:var(--suave);display:flex;gap:8px;align-items:center}
-.carregando::before{content:"";width:12px;height:12px;border-radius:50%;border:2px solid var(--borda);border-top-color:var(--acento);animation:gira .8s linear infinite}
+.carregando::before{content:"";width:12px;height:12px;border-radius:50%;border:2px solid var(--borda);border-top-color:var(--pri);animation:gira .8s linear infinite;flex:none}
 @keyframes gira{to{transform:rotate(360deg)}}
+.esqueleto{background:linear-gradient(90deg,var(--sup3),var(--sup2),var(--sup3));background-size:200% 100%;animation:brilho 1.2s infinite;border-radius:10px;height:16px;margin:8px 0}
+@keyframes brilho{to{background-position:-200% 0}}
+.paleta{width:min(600px,100%);padding:0;overflow:hidden;align-self:start;margin-top:12vh}
+.paleta input{border:0!important;box-shadow:none!important;border-bottom:1px solid var(--borda)!important;border-radius:0!important;padding:16px 18px!important;font-size:15px;background:var(--sup)!important}
+.paleta .res{max-height:52vh;overflow:auto;padding:6px}
+.paleta .op{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:9px;cursor:pointer}
+.paleta .op.sel{background:var(--pri-bg)}
+.paleta .op small{margin-left:auto;color:var(--fraco);font-size:11.5px}
 .oculto{display:none!important}
 .mono{font-family:var(--mono);font-size:12.5px}
 .tab-simples{width:100%;border-collapse:collapse;font-size:13px}
 .tab-simples td,.tab-simples th{padding:8px 6px;border-bottom:1px solid var(--borda);text-align:left}
-.tab-simples th{color:var(--suave);font-weight:500;font-size:12px}
+.tab-simples th{color:var(--suave);font-weight:550;font-size:12px}
+.form-sec{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px}
+.form-sec .larga{grid-column:1/-1}
+.sujo::after{content:"•";color:var(--terra);margin-left:4px}
+
+/* ------------------------------------------------------------------ responsivo */
+@media (max-width:1100px){.etapas{grid-template-columns:repeat(3,minmax(0,1fr))}.doc-corpo.com-toc{grid-template-columns:1fr}.toc{display:none}}
+@media (max-width:960px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g2{grid-template-columns:1fr}.docs{grid-template-columns:1fr}
+  .lateral-docs{position:static;max-height:none}.heroi{grid-template-columns:1fr}}
+@media (max-width:760px){
+  body{grid-template-columns:1fr}
+  aside{position:fixed;inset:0 auto 0 0;width:280px;z-index:25;transform:translateX(-105%);transition:transform var(--t)}
+  body.menu-aberto aside{transform:none;box-shadow:var(--sombra-alta)}
+  .menu-mob{display:inline-flex}
+  .conteudo{padding:18px 16px 60px}
+  .etapas,.passos-vazio,.perfis,.form-sec{grid-template-columns:1fr}
+  .g4{grid-template-columns:1fr 1fr}
+  .grupo-t .rotulo{width:100%}
+}
 </style>
 </head>
 <body>
 <aside>
   <div class="marca">
-    <svg viewBox="0 0 32 32" aria-hidden="true"><line x1="16" y1="2" x2="16" y2="14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="color:var(--acento)"/><path d="M16 13c4 4 6 7 6 10a6 6 0 0 1-12 0c0-3 2-6 6-10z" fill="var(--acento)"/></svg>
+    <span class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><line x1="16" y1="3" x2="16" y2="15" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M16 14c4 4 6 7 6 10a6 6 0 0 1-12 0c0-3 2-6 6-10z" fill="#fff"/></svg></span>
     Prumo <small id="versao"></small>
   </div>
-  <button class="btn pri larg" onclick="abrirNovo()">＋ Novo projeto</button>
+  <button class="btn pri centro" data-acao="novo"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Novo projeto</button>
+  <div class="busca"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" id="filtro-proj" placeholder="Buscar projeto" aria-label="Buscar projeto"></div>
   <div style="min-height:0;display:flex;flex-direction:column;flex:1">
     <div class="rotulo">Projetos</div>
     <div class="lista-proj" id="lista-proj"></div>
   </div>
   <div class="rodape-lat">
-    <button class="btn fan larg" onclick="abrirExistente()">Abrir pasta de projeto…</button>
+    <button class="btn fan larg" data-acao="abrir-existente"><svg class="i" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Abrir pasta de projeto</button>
+    <button class="btn fan larg" data-acao="meus-dados"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Meus dados</button>
+    <button class="btn fan larg" data-acao="paleta"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h7"/></svg>Comandos<span class="atalho">Ctrl K</span></button>
+    <button class="btn fan larg" data-acao="tema" id="bt-tema"><svg class="i" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg><span>Tema: sistema</span></button>
   </div>
 </aside>
-<main><div class="conteudo" id="app"></div></main>
-<div class="toasts" id="toasts"></div>
+<main id="principal"><div class="conteudo" id="app"></div></main>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 
 <script>
 "use strict";
 const TOKEN = new URLSearchParams(location.search).get("t") || "";
 const $ = (s, el = document) => el.querySelector(s);
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const E = {projetos: [], perfis: [], projeto: null, status: null, aba: "geral", docSel: null, tarefa: "especificar", job: null};
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const guardar = (k, v) => { try { localStorage.setItem("prumo." + k, JSON.stringify(v)); } catch {} };
+const lembrar = (k, p) => { try { const v = localStorage.getItem("prumo." + k); return v == null ? p : JSON.parse(v); } catch { return p; } };
+const E = {projetos: [], perfis: [], projeto: null, status: null, aba: lembrar("aba", "geral"), docSel: null, modoDoc: "ver",
+           tarefa: "especificar", job: null, kit: null, kitSel: null, validacao: null, sujo: false, filtroDoc: ""};
+const ICONES = {
+  doc: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>', kit: '<path d="M12 2 3 7l9 5 9-5z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/>',
+  claude: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/>',
+  geral: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  qualidade: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/>', gestao: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  config: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  pasta: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>', codigo: '<path d="m8 8-4 4 4 4M16 8l4 4-4 4"/>',
+  terminal: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/>', x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>', salvar: '<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/>',
+  seta: '<path d="M5 12h14M13 6l6 6-6 6"/>', alvo: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
+  atualizar: '<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>', exportar: '<path d="M12 3v12M7 8l5-5 5 5M5 21h14"/>',
+};
+const ic = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONES[n] || ""}</svg>`;
+const CORES_AV = ["#2f6f68", "#b85f38", "#3f6496", "#6a55a0", "#9a6b12", "#4e7d4a", "#a0476d"];
+const corDe = s => CORES_AV[[...String(s)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % CORES_AV.length];
+const iniciais = s => String(s || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join("").toUpperCase();
 
+/* ------------------------------------------------------------------ API */
 async function api(rota, corpo) {
   const r = await fetch(rota, {method: corpo ? "POST" : "GET", headers: {"X-Prumo-Token": TOKEN, "Content-Type": "application/json"},
                                 body: corpo ? JSON.stringify(corpo) : undefined});
-  const j = await r.json().catch(() => ({erro: "resposta inválida"}));
+  const j = await r.json().catch(() => ({erro: "resposta inválida do servidor"}));
   if (!r.ok) throw new Error(j.erro || r.statusText);
   return j;
 }
@@ -188,181 +360,448 @@ async function prumo(args, projeto) {
 }
 function toast(msg, erro) {
   const t = document.createElement("div"); t.className = "toast" + (erro ? " erro" : ""); t.textContent = msg;
-  $("#toasts").append(t); setTimeout(() => { t.style.transition = "opacity .3s"; t.style.opacity = 0; setTimeout(() => t.remove(), 300); }, erro ? 6000 : 3200);
+  $("#toasts").append(t); setTimeout(() => { t.style.transition = "opacity .3s"; t.style.opacity = 0; setTimeout(() => t.remove(), 300); }, erro ? 6500 : 3200);
 }
 const falhou = e => toast(e.message || String(e), true);
 
-/* ------------------------------------------------ markdown mínimo */
+/* ------------------------------------------------------------------ diálogos (substituem prompt/confirm) */
+function dialogo({titulo, desc = "", corpo = "", botoes = [["Cancelar", null], ["OK", true, "pri"]], peq = true, aoAbrir}) {
+  return new Promise(resolve => {
+    const f = document.createElement("div"); f.className = "fundo";
+    f.innerHTML = `<div class="modal ${peq ? "peq" : ""}" role="dialog" aria-modal="true" aria-label="${esc(titulo)}"><h2>${esc(titulo)}</h2>
+      ${desc ? `<p class="desc">${desc}</p>` : ""}<div class="corpo-dlg">${corpo}</div>
+      ${botoes.length ? `<div class="rodape">${botoes.map(([n, , cl], i) => `<button class="btn ${cl || ""}" data-i="${i}">${esc(n)}</button>`).join("")}</div>` : ""}</div>`;
+    const anterior = document.activeElement;
+    const fechar = v => { f.remove(); document.removeEventListener("keydown", tecla, true); if (anterior && anterior.focus) anterior.focus(); resolve(v); };
+    const valor = b => typeof b === "function" ? b(f) : b;
+    const tecla = e => {
+      if (e.key === "Escape") { e.stopPropagation(); fechar(null); }
+      if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); const ult = botoes[botoes.length - 1]; if (ult) fechar(valor(ult[1])); }
+    };
+    document.addEventListener("keydown", tecla, true);
+    f.addEventListener("mousedown", e => { if (e.target === f) fechar(null); });
+    $$(".rodape .btn", f).forEach(b => b.onclick = () => fechar(valor(botoes[+b.dataset.i][1])));
+    f.fechar = fechar;
+    document.body.append(f);
+    const foco = $("input,textarea,select", f) || $$(".rodape .btn", f).pop(); if (foco) foco.focus();
+    if (aoAbrir) aoAbrir(f, fechar);
+  });
+}
+const confirmar = (titulo, desc, rotulo = "Confirmar", perigo) => dialogo({titulo, desc: esc(desc), botoes: [["Cancelar", null], [rotulo, true, perigo ? "pri perigo" : "pri"]]});
+const pedirTexto = (titulo, rotulo, dica = "") => dialogo({titulo,
+  corpo: `<div class="campo"><label>${esc(rotulo)}</label><input type="text" id="dlg-txt" placeholder="${esc(dica)}"></div>`,
+  botoes: [["Cancelar", null], ["Criar", f => $("#dlg-txt", f).value.trim() || null, "pri"]]});
+
+/* ------------------------------------------------------------------ Markdown (mínimo) + Mermaid */
+let contMmd = 0;
 function md(texto) {
-  const linhas = texto.replace(/<!--[\s\S]*?-->/g, "").split("\n"); let html = "", i = 0;
-  const inl = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
-    .replace(/\[PREENCHER[^\]]*\]/g, m => `<span class="lac">${m}</span>`).replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  const linhas = texto.replace(/<!--[\s\S]*?-->/g, "").replace(/^---\n[\s\S]*?\n---\n/, "").split("\n"); let html = "", i = 0;
+  const inl = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<i>$2</i>")
+    .replace(/\[PREENCHER[^\]]*\]/g, m => `<span class="lac">${m}</span>`)
+    .replace(/\b((?:RF|RNF|RN|UC|HU|TL|CT|ADR|CM|EP|ENT)-\d{2,4})\b/g, '<span class="id">$1</span>')
+    .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  let nTit = 0;
   while (i < linhas.length) {
-    const l = linhas[i];
-    if (/^```/.test(l)) { const b = []; i++; while (i < linhas.length && !/^```/.test(linhas[i])) b.push(linhas[i++]); i++; html += `<pre><code>${esc(b.join("\n"))}</code></pre>`; continue; }
-    let m;
-    if ((m = l.match(/^(#{1,4})\s+(.*)/))) { html += `<h${m[1].length}>${inl(m[2])}</h${m[1].length}>`; i++; continue; }
-    if (/^\s*\|/.test(l)) { const rows = []; while (i < linhas.length && /^\s*\|/.test(linhas[i])) rows.push(linhas[i++]);
+    const l = linhas[i]; let m;
+    if ((m = l.match(/^```\s*(\w*)/))) {
+      const b = []; i++; while (i < linhas.length && !/^```/.test(linhas[i])) b.push(linhas[i++]); i++;
+      if (m[1] === "mermaid") html += `<div class="mmd" data-mmd="${++contMmd}"><pre><code>${esc(b.join("\n"))}</code></pre></div>`;
+      else html += `<pre><code>${esc(b.join("\n"))}</code></pre>`;
+      continue;
+    }
+    if ((m = l.match(/^(#{1,4})\s+(.*)/))) { const n = m[1].length; html += `<h${n} id="t-${nTit++}">${inl(m[2])}</h${n}>`; i++; continue; }
+    if (/^\s*\|/.test(l)) {
+      const rows = []; while (i < linhas.length && /^\s*\|/.test(linhas[i])) rows.push(linhas[i++]);
       const cel = r => r.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+      const temCab = rows.length > 1 && /^\s*\|[\s:|-]+\|\s*$/.test(rows[1]);
       const corpo = rows.filter(r => !/^\s*\|[\s:|-]+\|\s*$/.test(r));
-      html += "<table>" + corpo.map((r, k) => "<tr>" + cel(r).map(c => k === 0 && rows.length > 1 && /^\s*\|[\s:|-]+\|/.test(rows[1]) ? `<th>${inl(c)}</th>` : `<td>${inl(c)}</td>`).join("") + "</tr>").join("") + "</table>"; continue; }
-    if (/^\s*[-*]\s+/.test(l)) { html += "<ul>"; while (i < linhas.length && /^\s*[-*]\s+/.test(linhas[i])) html += `<li>${inl(linhas[i++].replace(/^\s*[-*]\s+(\[[ x]\]\s*)?/, (a, c) => c ? (c.includes("x") ? "☑ " : "☐ ") : ""))}</li>`; html += "</ul>"; continue; }
+      html += "<table>" + corpo.map((r, k) => "<tr>" + cel(r).map(c => k === 0 && temCab ? `<th>${inl(c)}</th>` : `<td>${inl(c)}</td>`).join("") + "</tr>").join("") + "</table>"; continue;
+    }
+    if (/^\s*[-*]\s+/.test(l)) { html += "<ul>"; while (i < linhas.length && /^\s*[-*]\s+/.test(linhas[i])) html += `<li>${inl(linhas[i++].replace(/^\s*[-*]\s+(\[[ xX]\]\s*)?/, (a, c) => c ? (/x/i.test(c) ? "☑ " : "☐ ") : ""))}</li>`; html += "</ul>"; continue; }
     if (/^\s*\d+\.\s+/.test(l)) { html += "<ol>"; while (i < linhas.length && /^\s*\d+\.\s+/.test(linhas[i])) html += `<li>${inl(linhas[i++].replace(/^\s*\d+\.\s+/, ""))}</li>`; html += "</ol>"; continue; }
-    if (/^>\s?/.test(l)) { html += `<blockquote>${inl(l.replace(/^>\s?/, ""))}</blockquote>`; i++; continue; }
+    if (/^>\s?/.test(l)) { const b = []; while (i < linhas.length && /^>\s?/.test(linhas[i])) b.push(inl(linhas[i++].replace(/^>\s?/, ""))); html += `<blockquote>${b.join("<br>")}</blockquote>`; continue; }
+    if (/^\s*(---|\*\*\*)\s*$/.test(l)) { html += "<hr>"; i++; continue; }
     if (l.trim()) html += `<p>${inl(l)}</p>`;
     i++;
   }
   return html;
 }
 
-/* ------------------------------------------------ barra lateral */
+let mermaidPronto = null;
+function temaEscuro() { const t = document.documentElement.dataset.theme; return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; }
+function carregarMermaid() {
+  if (!mermaidPronto) mermaidPronto = new Promise((ok, erro) => {
+    const s = document.createElement("script"); s.src = "/estatico/mermaid.min.js?t=" + encodeURIComponent(TOKEN);
+    s.onload = () => ok(window.mermaid); s.onerror = () => { mermaidPronto = null; erro(new Error("mermaid.js não carregou")); };
+    document.head.append(s);
+  });
+  return mermaidPronto;
+}
+async function desenharDiagramas(raiz) {
+  const blocos = $$(".mmd[data-mmd]", raiz); if (!blocos.length) return;
+  let m; try { m = await carregarMermaid(); } catch { return; }
+  m.initialize({startOnLoad: false, securityLevel: "strict", theme: temaEscuro() ? "dark" : "neutral", fontFamily: "Segoe UI, system-ui, sans-serif"});
+  for (const b of blocos) {
+    const codigo = b.textContent;
+    try { const {svg} = await m.render("mmd-" + b.dataset.mmd + "-" + Date.now(), codigo); b.innerHTML = svg; }
+    catch (e) { b.innerHTML = `<div class="erro-mmd">Diagrama com erro de sintaxe: ${esc((e.message || String(e)).split("\n")[0])}</div><pre><code>${esc(codigo)}</code></pre>`; }
+    b.removeAttribute("data-mmd");
+    if (!b.querySelector("details")) b.insertAdjacentHTML("beforeend", `<details><summary>ver código</summary><pre><code>${esc(codigo)}</code></pre></details>`);
+  }
+}
+
+/* ------------------------------------------------------------------ tema */
+const TEMAS = ["sistema", "claro", "escuro"];
+function aplicarTema(t) {
+  if (t === "claro") document.documentElement.dataset.theme = "light"; else if (t === "escuro") document.documentElement.dataset.theme = "dark";
+  else delete document.documentElement.dataset.theme;
+  $("#bt-tema span").textContent = "Tema: " + t; guardar("tema", t);
+}
+function trocarTema() { aplicarTema(TEMAS[(TEMAS.indexOf(lembrar("tema", "sistema")) + 1) % 3]); if (E.projeto && (E.aba === "docs" || E.aba === "kit")) desenharProjeto(); }
+
+/* ------------------------------------------------------------------ barra lateral */
 async function carregarProjetos() {
   try { E.projetos = await prumo(["projetos"]) || []; } catch { E.projetos = []; }
-  $("#lista-proj").innerHTML = E.projetos.length ? E.projetos.map(p => `
-    <button class="proj ${E.projeto === p.caminho ? "ativo" : ""}" data-c="${esc(p.caminho)}" title="${esc(p.caminho)}">
-      <b>${esc(p.nome)}</b><span>${esc(p.cliente || p.perfil || "")}</span></button>`).join("")
-    : `<div class="legenda" style="padding:4px 10px">Nenhum projeto ainda.</div>`;
-  document.querySelectorAll(".proj").forEach(b => b.onclick = () => abrirProjeto(b.dataset.c));
+  desenharLista();
+}
+function desenharLista() {
+  const f = ($("#filtro-proj").value || "").toLowerCase();
+  const lista = E.projetos.filter(p => !f || `${p.nome} ${p.cliente} ${p.caminho}`.toLowerCase().includes(f));
+  $("#lista-proj").innerHTML = lista.length ? lista.map(p => `
+    <div class="proj ${E.projeto === p.caminho ? "ativo" : ""}" data-c="${esc(p.caminho)}" title="${esc(p.caminho)}" role="button" tabindex="0">
+      <span class="av" style="background:${corDe(p.nome)}">${esc(iniciais(p.nome))}</span>
+      <span class="tx"><b>${esc(p.nome)}</b><span>${esc(p.cliente && !p.cliente.startsWith("[") ? p.cliente : p.perfil || "")}</span></span>
+      <button class="x" data-rem="${esc(p.caminho)}" title="Tirar da lista (não apaga a pasta)" aria-label="Tirar da lista">${ic("x")}</button></div>`).join("")
+    : `<div class="legenda" style="padding:4px 10px">${E.projetos.length ? "Nenhum projeto encontrado." : "Nenhum projeto ainda."}</div>`;
+  $$(".proj").forEach(b => {
+    b.onclick = e => { if (!e.target.closest(".x")) abrirProjeto(b.dataset.c); };
+    b.onkeydown = e => { if (e.key === "Enter") abrirProjeto(b.dataset.c); };
+  });
+  $$(".proj .x").forEach(b => b.onclick = async () => {
+    if (!await confirmar("Tirar da lista?", "O projeto some dos recentes. A pasta e os arquivos continuam intactos.", "Tirar da lista")) return;
+    try { E.projetos = await prumo(["projetos", "--remover", b.dataset.rem]); if (E.projeto === b.dataset.rem) telaVazia(); desenharLista(); } catch (e) { falhou(e); }
+  });
 }
 
-/* ------------------------------------------------ telas */
+/* ------------------------------------------------------------------ telas */
 function telaVazia() {
-  E.projeto = null;
+  E.projeto = null; desenharLista();
   $("#app").innerHTML = `<div class="vazio painel"><div>
-    <svg viewBox="0 0 32 32" width="56" height="56"><line x1="16" y1="2" x2="16" y2="14" stroke="var(--acento)" stroke-width="2" stroke-linecap="round"/><path d="M16 13c4 4 6 7 6 10a6 6 0 0 1-12 0c0-3 2-6 6-10z" fill="var(--acento)" opacity=".85"/></svg>
-    <h2>Especificação primeiro, código alinhado.</h2>
-    <p>Crie um projeto a partir de um perfil, conduza a especificação com o Claude e acompanhe documentos, rastreabilidade, segurança e orçamento num só lugar.</p>
-    <div class="linha-acao" style="justify-content:center"><button class="btn pri" onclick="abrirNovo()">Novo projeto</button>
-    <button class="btn" onclick="abrirExistente()">Abrir projeto existente</button></div></div></div>`;
+    <button class="btn fan menu-mob" data-acao="menu" style="position:absolute;left:12px;top:12px">${ic("menu")}</button>
+    <span class="logo" style="width:64px;height:64px;border-radius:18px;margin:auto"><svg viewBox="0 0 32 32" style="width:38px;height:38px"><line x1="16" y1="3" x2="16" y2="15" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M16 14c4 4 6 7 6 10a6 6 0 0 1-12 0c0-3 2-6 6-10z" fill="#fff"/></svg></span>
+    <h2>Especifique antes. O Claude só executa.</h2>
+    <p>O Prumo gera a documentação prévia do projeto e o kit de skills, subagentes e hooks que deixa o Claude Code trabalhar direto, sem fase de "pensar".</p>
+    <div class="linha-acao" style="justify-content:center"><button class="btn pri" data-acao="novo">${ic("seta")}Novo projeto</button>
+    <button class="btn" data-acao="abrir-existente">Abrir projeto existente</button></div>
+    <div class="passos-vazio"><div><b>1. Criar</b><span>Escolha o perfil (web, API, mobile…) e o Prumo monta os documentos e o kit.</span></div>
+    <div><b>2. Especificar</b><span>O Claude preenche requisitos, UML, banco e backlog com IDs rastreáveis.</span></div>
+    <div><b>3. Executar</b><span>Com tudo decidido, o Claude implementa cada história seguindo o kit.</span></div></div></div></div>`;
 }
 
-async function abrirProjeto(caminho) {
-  E.projeto = caminho; E.docSel = null;
-  $("#app").innerHTML = `<div class="carregando">Abrindo projeto…</div>`;
+async function abrirProjeto(caminho, aba) {
+  if (E.sujo && !await confirmar("Descartar alterações?", "Há edições não salvas no documento aberto.", "Descartar", true)) return;
+  E.sujo = false; E.projeto = caminho; E.docSel = null; E.kit = null; E.kitSel = null; E.validacao = null; if (aba) E.aba = aba;
+  document.body.classList.remove("menu-aberto");
+  $("#app").innerHTML = `<div class="painel"><div class="esqueleto" style="width:40%;height:28px"></div><div class="esqueleto" style="width:25%"></div><div class="esqueleto" style="height:180px;margin-top:24px"></div></div>`;
   try { E.status = await prumo(["status"], caminho); } catch (e) { falhou(e); return telaVazia(); }
+  guardar("ultimo", caminho);
   carregarProjetos(); desenharProjeto();
 }
 async function atualizarStatus() { E.status = await prumo(["status"], E.projeto); }
 
-function desenharProjeto() {
-  const s = E.status;
-  const abas = [["geral", "Visão geral"], ["docs", "Documentos"], ["claude", "Claude"], ["qualidade", "Qualidade"], ["gestao", "Gestão"]];
+const ABAS = [["geral", "Visão geral", "geral"], ["docs", "Documentos", "doc"], ["kit", "Kit do Claude", "kit"], ["claude", "Executar com o Claude", "claude"],
+              ["qualidade", "Qualidade", "qualidade"], ["gestao", "Gestão", "gestao"], ["config", "Configurações", "config"]];
+function irPara(aba, extra = {}) { Object.assign(E, extra); E.aba = aba; guardar("aba", aba); desenharProjeto(); $("#principal").scrollTop = 0; }
+
+async function desenharProjeto() {
+  const s = E.status, lac = s.documentos.reduce((a, d) => a + d.lacunas, 0);
+  if (!ABAS.some(a => a[0] === E.aba)) E.aba = "geral";
   $("#app").innerHTML = `
-    <div class="cab"><div><h1>${esc(s.projeto)}</h1>
-      <div class="meta"><span>${esc(s.cliente)}</span><span class="chip">${esc(s.perfil)}</span>${s.figma ? '<span class="chip azul">Figma</span>' : ""}<span class="mono" style="color:var(--fraco)">${esc(s.caminho)}</span></div></div>
-      <div class="acoes"><button class="btn fan" onclick="abrirNo('pasta')">Pasta</button><button class="btn fan" onclick="abrirNo('vscode')">VS Code</button>
-      <button class="btn" onclick="abrirNo('claude')">Abrir Claude Code</button></div></div>
-    <div class="abas">${abas.map(([id, n]) => `<button class="aba ${E.aba === id ? "ativa" : ""}" data-a="${id}">${n}</button>`).join("")}</div>
+    <div class="cab"><button class="btn fan menu-mob" data-acao="menu" aria-label="Menu">${ic("menu")}</button>
+      <div style="min-width:0"><h1>${esc(s.projeto)}</h1>
+      <div class="meta">${s.cliente && !s.cliente.startsWith("[") ? `<span>${esc(s.cliente)}</span>` : ""}<span class="chip">${esc(s.perfil)}</span>${s.figma ? '<span class="chip roxo">Figma</span>' : ""}
+        <span class="mono" style="color:var(--fraco)">${esc(s.caminho)}</span></div></div>
+      <div class="acoes"><button class="btn fan" data-abrir="pasta">${ic("pasta")}Pasta</button><button class="btn fan" data-abrir="vscode">${ic("codigo")}VS Code</button>
+      <button class="btn" data-abrir="claude">${ic("terminal")}Abrir Claude Code</button></div></div>
+    <nav class="abas" role="tablist">${ABAS.map(([id, n, i]) => `<button class="aba ${E.aba === id ? "ativa" : ""}" data-a="${id}" role="tab" aria-selected="${E.aba === id}">${ic(i)}${n}${id === "docs" && lac ? `<span class="cont">${lac}</span>` : ""}</button>`).join("")}</nav>
     <div id="painel"></div>`;
-  document.querySelectorAll(".aba").forEach(b => b.onclick = () => { E.aba = b.dataset.a; desenharProjeto(); });
-  ({geral: painelGeral, docs: painelDocs, claude: painelClaude, qualidade: painelQualidade, gestao: painelGestao})[E.aba]();
+  $$(".aba").forEach(b => b.onclick = async () => {
+    if (E.sujo && !await confirmar("Descartar alterações?", "Há edições não salvas no documento aberto.", "Descartar", true)) return;
+    E.sujo = false; irPara(b.dataset.a);
+  });
+  $$("[data-abrir]").forEach(b => b.onclick = () => abrirNo(b.dataset.abrir));
+  ({geral: painelGeral, docs: painelDocs, kit: painelKit, claude: painelClaude, qualidade: painelQualidade, gestao: painelGestao, config: painelConfig})[E.aba]();
 }
 
-function painelGeral() {
-  const s = E.status, docs = s.documentos, total = docs.length || 1;
-  const completos = docs.filter(d => d.estado !== "em andamento").length, lac = docs.reduce((a, d) => a + d.lacunas, 0);
+/* ------------------------------------------------------------------ visão geral: a jornada */
+function resumo() {
+  const docs = E.status.documentos, total = docs.length || 1;
+  const completos = docs.filter(d => d.estado !== "em andamento").length;
   const aprov = docs.filter(d => d.estado.startsWith("aprovado")).length;
-  const prox = docs.find(d => d.estado === "em andamento");
-  const ids = Object.entries(s.ids || {});
+  const alterados = docs.filter(d => d.estado.includes("ALTERADO")).length;
+  const lac = docs.reduce((a, d) => a + d.lacunas, 0);
+  const kit = E.kit, kitOk = kit ? kit.filter(k => k.estado !== "ausente").length / (kit.length || 1) : null;
+  const val = E.validacao, valOk = val ? (val.erros.length ? 0 : 1) : null;
+  // especificar pesa mais; validação só conta na proporção do que já foi especificado
+  const pontos = completos / total * 45 + aprov / total * 20 + (valOk ?? 0) * (completos / total) * 20 + (kitOk ?? 0) * 15;
+  return {docs, total, completos, aprov, alterados, lac, kitOk, valOk, pct: Math.round(pontos)};
+}
+async function painelGeral() {
+  const r = resumo(), s = E.status, ids = Object.entries(s.ids || {});
+  const prox = r.docs.find(d => d.estado === "em andamento");
+  const etapas = [
+    {n: "Criar", t: "Projeto e kit", ok: true, ir: () => irPara("kit")},
+    {n: "Especificar", t: `${r.completos}/${r.docs.length} documentos`, ok: r.completos === r.docs.length, ir: () => irPara("docs", {docSel: prox ? prox.documento : null})},
+    {n: "Validar", t: r.valOk == null ? "verificando…" : r.valOk ? "sem erros" : `${E.validacao.erros.length} erro(s)`, ok: r.valOk === 1 && r.completos === r.docs.length, ir: () => irPara("qualidade")},
+    {n: "Aprovar", t: `${r.aprov}/${r.docs.length} com o cliente`, ok: r.aprov === r.docs.length && !r.alterados, ir: () => irPara("docs")},
+    {n: "Executar", t: "Claude implementa", ok: false, ir: () => irPara("claude", {tarefa: "implementar"})}];
+  const atual = etapas.findIndex(e => !e.ok);
+  let titulo, texto, botoes;
+  if (prox) {
+    titulo = "Complete a especificação"; texto = `Falta completar <b>${esc(prox.documento.replace(/^docs\//, ""))}</b> (${prox.lacunas} lacuna${prox.lacunas === 1 ? "" : "s"}). Quanto mais decidido aqui, menos o Claude precisa pensar depois.`;
+    botoes = `<button class="btn pri" id="h-esp">${ic("claude")}Especificar com o Claude</button><button class="btn" id="h-doc">Editar eu mesmo</button>`;
+  } else if (r.valOk === 0) {
+    titulo = "Corrija o que a validação apontou"; texto = "A especificação está sem lacunas, mas há IDs ou diagramas com problema.";
+    botoes = `<button class="btn pri" id="h-val">Ver problemas</button>`;
+  } else if (r.aprov < r.docs.length) {
+    titulo = "Aprove com o cliente"; texto = "Especificação pronta. Depois de aprovada, os documentos viram somente leitura para os agentes.";
+    botoes = `<button class="btn pri" id="h-apr">Revisar e aprovar</button><button class="btn" id="h-prop">${ic("claude")}Gerar proposta</button>`;
+  } else {
+    titulo = "Pronto para executar"; texto = "Tudo decidido e aprovado. O Claude pode implementar cada história direto, seguindo o kit.";
+    botoes = `<button class="btn pri" id="h-impl">${ic("seta")}Implementar uma história</button>`;
+  }
+  const C = 2 * Math.PI * 74;
   $("#painel").innerHTML = `<div class="painel grade">
+    <section class="heroi">
+      <div class="anel" title="Prontidão: documentos completos, validação, aprovação e kit">
+        <svg viewBox="0 0 170 170"><circle class="fundo-anel" cx="85" cy="85" r="74" fill="none" stroke-width="12"/>
+        <circle class="frente" cx="85" cy="85" r="74" fill="none" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C}"/></svg>
+        <div class="val"><div><b>${r.pct}%</b><span>pronto para executar</span></div></div></div>
+      <div><div class="etapas">${etapas.map((e, i) => `<button class="etapa ${e.ok ? "ok" : ""} ${i === atual ? "atual" : ""}" data-e="${i}">
+          <div class="n"><i>${e.ok ? "✓" : i + 1}</i>${e.n}</div><span>${e.t}</span></button>`).join("")}</div>
+        <h2>${titulo}</h2><p>${texto}</p><div class="linha-acao">${botoes}</div></div>
+    </section>
     <div class="grade g4">
-      <div class="cartao"><div class="legenda">Documentos completos</div><div class="num">${completos}<small>de ${docs.length}</small></div><div class="barra"><i style="width:${Math.round(completos / total * 100)}%"></i></div></div>
-      <div class="cartao"><div class="legenda">Lacunas a preencher</div><div class="num">${lac}</div></div>
-      <div class="cartao"><div class="legenda">Aprovados pelo cliente</div><div class="num">${aprov}</div></div>
+      <div class="cartao"><div class="legenda">Documentos completos</div><div class="num">${r.completos}<small>de ${r.docs.length}</small></div><div class="barra"><i style="width:${Math.round(r.completos / r.total * 100)}%"></i></div></div>
+      <div class="cartao"><div class="legenda">Lacunas a preencher</div><div class="num" style="color:${r.lac ? "var(--ambar)" : "inherit"}">${r.lac}</div></div>
+      <div class="cartao"><div class="legenda">Aprovados pelo cliente</div><div class="num">${r.aprov}<small>de ${r.docs.length}</small></div>${r.alterados ? `<span class="chip verm" style="margin-top:8px">${r.alterados} alterado(s) depois</span>` : ""}</div>
       <div class="cartao"><div class="legenda">Itens rastreados</div><div class="num">${ids.reduce((a, [, v]) => a + v, 0)}</div></div>
     </div>
     <div class="grade g2">
-      <div class="cartao"><h3>Próximo passo</h3>
-        ${prox ? `<p style="margin:0 0 14px">Completar <b>${esc(prox.documento)}</b> (${prox.lacunas} lacuna${prox.lacunas === 1 ? "" : "s"}).</p>` : `<p style="margin:0 0 14px">Especificação sem lacunas. Hora de aprovar com o cliente e implementar.</p>`}
-        <div class="linha-acao"><button class="btn pri" onclick="E.aba='claude';E.tarefa='especificar';desenharProjeto()">Especificar com o Claude</button>
-        <button class="btn" onclick="acaoRapida('validar')">Validar</button><button class="btn" onclick="acaoRapida('rastreabilidade')">Rastreabilidade</button></div></div>
-      <div class="cartao"><h3>Itens da especificação</h3><div class="linha-acao">${ids.length ? ids.map(([k, v]) => `<span class="chip cinza">${k} · ${v}</span>`).join("") : '<span class="legenda">Nenhum ID ainda.</span>'}</div>
+      <div class="cartao"><h3>${ic("doc")}Documentos<button class="btn fan peq dir" id="g-docs">ver todos</button></h3><div class="linhas">${r.docs.slice(0, 8).map(d => `
+        <div class="linha clic" data-d="${esc(d.documento)}"><i class="ponto ${estadoPonto(d)}"></i><span class="nome">${esc(nomeDoc(d.documento))}</span>${chipDoc(d)}</div>`).join("")}</div></div>
+      <div class="cartao"><h3>${ic("kit")}Kit do Claude<button class="btn fan peq dir" id="g-kit">abrir</button></h3><div id="g-kit-res" class="carregando">Lendo o kit…</div>
+        <h3 style="margin-top:18px">Itens da especificação</h3><div class="linha-acao">${ids.length ? ids.map(([k, v]) => `<span class="chip azul">${k} · ${v}</span>`).join("") : '<span class="legenda">Nenhum ID ainda.</span>'}</div>
         <p class="legenda" style="margin:14px 0 0">Stack: ${esc(s.stack)}</p></div>
     </div></div>`;
+  requestAnimationFrame(() => { const f = $(".anel .frente"); if (f) f.style.strokeDashoffset = C * (1 - r.pct / 100); });
+  $$(".etapa").forEach(b => b.onclick = () => etapas[+b.dataset.e].ir());
+  const liga = (id, fn) => { const b = $("#" + id); if (b) b.onclick = fn; };
+  liga("h-esp", () => irPara("claude", {tarefa: "especificar"})); liga("h-doc", () => irPara("docs", {docSel: prox.documento, modoDoc: "editar"}));
+  liga("h-val", () => irPara("qualidade")); liga("h-apr", () => irPara("docs", {docSel: r.docs.find(d => !d.estado.startsWith("aprovado"))?.documento}));
+  liga("h-prop", () => irPara("claude", {tarefa: "proposta"})); liga("h-impl", () => irPara("claude", {tarefa: "implementar"}));
+  liga("g-docs", () => irPara("docs")); liga("g-kit", () => irPara("kit"));
+  $$("#painel .linha.clic[data-d]").forEach(l => l.onclick = () => irPara("docs", {docSel: l.dataset.d, modoDoc: "ver"}));
+  // dados que não vêm no status: kit e validação (rodam em paralelo e redesenham o resumo)
+  const proj = E.projeto;
+  const precisa = [];
+  if (!E.kit) precisa.push(prumo(["agentes", "listar"], proj).then(k => { if (E.projeto === proj) E.kit = k; }).catch(() => { E.kit = []; }));
+  if (!E.validacao) precisa.push(prumo(["validar"], proj).then(v => { if (E.projeto === proj) E.validacao = v; }).catch(() => {}));
+  if (precisa.length) { await Promise.all(precisa); if (E.projeto === proj && E.aba === "geral") return painelGeral(); }
+  const k = E.kit || [], el = $("#g-kit-res"); if (!el) return;
+  const cont = t => k.filter(x => x.tipo === t).length, mod = k.filter(x => x.estado === "modificado").length, aus = k.filter(x => x.estado === "ausente").length;
+  el.className = "";
+  el.innerHTML = `<div class="grade g3" style="gap:10px"><div><div class="num">${cont("skill")}</div><div class="legenda">skills</div></div>
+    <div><div class="num">${cont("subagente")}</div><div class="legenda">subagentes</div></div><div><div class="num">${cont("hook")}</div><div class="legenda">hooks</div></div></div>
+    <p class="legenda" style="margin:12px 0 0">${aus ? `<span class="chip verm">${aus} ausente(s)</span> ` : ""}${mod ? `<span class="chip terra">${mod} personalizado(s)</span> ` : ""}${!aus && !mod ? "Kit completo e igual ao modelo do Prumo." : ""}</p>`;
 }
 
-async function acaoRapida(cmd) {
-  try {
-    const d = await prumo([cmd], E.projeto);
-    if (cmd === "validar") toast(`${d.erros.length} erro(s), ${d.avisos.length} aviso(s)`, d.erros.length > 0);
-    else toast(`Matriz gerada em ${d.arquivo}`);
-  } catch (e) { falhou(e); }
-}
-
+/* ------------------------------------------------------------------ documentos */
+const nomeDoc = d => d.replace(/^docs\//, "").replace(/\.md$/, "");
 function estadoPonto(d) { return d.estado.startsWith("aprovado") ? (d.estado.includes("ALTERADO") ? "err" : "apr") : d.estado === "completo" ? "ok" : "and"; }
+function chipDoc(d) {
+  if (d.estado.includes("ALTERADO")) return '<span class="chip verm">alterado</span>';
+  if (d.estado.startsWith("aprovado")) return '<span class="chip azul">aprovado</span>';
+  return d.lacunas ? `<span class="chip ambar">${d.lacunas}</span>` : '<span class="chip">ok</span>';
+}
 
 function painelDocs() {
-  const docs = E.status.documentos;
+  const docs = E.status.documentos, f = E.filtroDoc.toLowerCase();
+  if (!E.docSel && docs.length) E.docSel = (docs.find(d => d.estado === "em andamento") || docs[0]).documento;
   $("#painel").innerHTML = `<div class="painel docs">
-    <div class="cartao" style="padding:10px"><div class="linhas">${docs.map(d => `
-      <div class="linha clic ${E.docSel === d.documento ? "sel" : ""}" data-d="${esc(d.documento)}"><i class="ponto ${estadoPonto(d)}"></i>
-        <span class="nome">${esc(d.documento.replace(/^docs\//, ""))}</span>
-        ${d.lacunas ? `<span class="chip ambar">${d.lacunas}</span>` : d.estado.startsWith("aprovado") ? '<span class="chip azul">aprovado</span>' : '<span class="chip">ok</span>'}</div>`).join("")}</div>
-      <div class="linha-acao" style="padding:10px 6px 4px"><button class="btn fan" onclick="novoRegistro('adr')">＋ ADR</button><button class="btn fan" onclick="novoRegistro('mudanca')">＋ Mudança</button><button class="btn fan" onclick="adicionarDoc()">＋ Documento</button></div></div>
-    <div class="cartao preview" id="preview"><div class="legenda">Selecione um documento para visualizar.</div></div></div>`;
-  document.querySelectorAll(".linha.clic").forEach(l => l.onclick = () => { E.docSel = l.dataset.d; painelDocs(); });
-  if (E.docSel) mostrarDoc(E.docSel);
+    <div class="cartao lateral-docs">
+      <div class="busca" style="margin:2px 2px 8px"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="filtro-doc" placeholder="Filtrar documentos" value="${esc(E.filtroDoc)}"></div>
+      <div class="linhas" id="lista-docs">${docs.filter(d => !f || d.documento.toLowerCase().includes(f)).map(d => `
+      <div class="linha clic ${E.docSel === d.documento ? "sel" : ""}" data-d="${esc(d.documento)}" tabindex="0"><i class="ponto ${estadoPonto(d)}"></i>
+        <span class="nome">${esc(nomeDoc(d.documento))}</span>${chipDoc(d)}</div>`).join("")}</div>
+      <div class="linha-acao" style="padding:10px 4px 2px;border-top:1px solid var(--borda);margin-top:8px"><button class="btn fan peq" id="d-adr">＋ ADR</button><button class="btn fan peq" id="d-mud">＋ Mudança</button><button class="btn fan peq" id="d-doc">＋ Documento</button></div></div>
+    <div class="cartao preview" id="preview"><div class="legenda">Selecione um documento.</div></div></div>`;
+  const sel = async d => {
+    if (E.sujo && !await confirmar("Descartar alterações?", "Há edições não salvas neste documento.", "Descartar", true)) return;
+    E.sujo = false; E.docSel = d; painelDocs();
+  };
+  $$("#lista-docs .linha.clic").forEach(l => { l.onclick = () => sel(l.dataset.d); l.onkeydown = e => { if (e.key === "Enter") sel(l.dataset.d); }; });
+  $("#filtro-doc").oninput = e => { E.filtroDoc = e.target.value; const pos = e.target.selectionStart; painelDocs(); const n = $("#filtro-doc"); n.focus(); n.setSelectionRange(pos, pos); };
+  $("#d-adr").onclick = () => novoRegistro("adr"); $("#d-mud").onclick = () => novoRegistro("mudanca"); $("#d-doc").onclick = adicionarDoc;
+  if (E.docSel) mostrarArquivo(E.docSel, $("#preview"), {doc: E.status.documentos.find(x => x.documento === E.docSel)});
 }
 
-async function mostrarDoc(arq) {
-  const d = E.status.documentos.find(x => x.documento === arq); if (!d) return;
-  try {
-    const r = await api("/api/ler", {projeto: E.projeto, arquivo: arq});
-    const aprovado = d.estado.startsWith("aprovado");
-    $("#preview").innerHTML = `<div class="linha-acao" style="margin-bottom:12px"><span class="mono legenda" style="flex:1">${esc(arq)}</span>
-      <button class="btn fan" onclick="abrirNo('arquivo','${esc(arq)}')">Abrir no editor</button>
-      ${aprovado ? `<button class="btn" onclick="aprovacao('desaprovar','${esc(arq)}')">Liberar edição</button>` : `<button class="btn" onclick="aprovacao('aprovar','${esc(arq)}')">Marcar como aprovado</button>`}</div>
-      <div class="md">${md(r.texto || "")}</div>`;
-  } catch (e) { falhou(e); }
+/* visualização/edição compartilhada por documentos e kit */
+async function mostrarArquivo(arq, alvo, {doc, editavel = true, extraBarra = ""} = {}) {
+  alvo.innerHTML = `<div class="esqueleto" style="width:50%"></div><div class="esqueleto"></div><div class="esqueleto" style="width:80%"></div>`;
+  let r; try { r = await api("/api/ler", {projeto: E.projeto, arquivo: arq}); if (r.erro) throw new Error(r.erro); } catch (e) { alvo.innerHTML = `<div class="legenda">${esc(e.message)}</div>`; return; }
+  const aprovado = doc && doc.estado.startsWith("aprovado"), ehMd = /\.md$/i.test(arq), podeEditar = editavel && ehMd && !aprovado;
+  if (!podeEditar && E.modoDoc === "editar") E.modoDoc = "ver";
+  let versao = r.versao, texto = r.texto || "";
+  const desenhar = () => {
+    const lac = (texto.match(/\[PREENCHER/g) || []).length;
+    alvo.innerHTML = `<div class="barra-doc"><span class="cam" title="${esc(arq)}">${esc(arq)}</span>
+      ${ehMd ? `<div class="seg"><button data-m="ver" class="${E.modoDoc === "ver" ? "ativo" : ""}">Visualizar</button><button data-m="editar" class="${E.modoDoc === "editar" ? "ativo" : ""}" ${podeEditar ? "" : "disabled title='Documento aprovado: libere a edição primeiro'"}>Editar</button></div>` : ""}
+      ${lac ? `<button class="btn peq" id="b-lac" title="Ir para a próxima lacuna (F3)">${ic("alvo")}Próxima lacuna <span class="chip ambar">${lac}</span></button>` : ""}
+      ${E.modoDoc === "editar" ? `<button class="btn pri peq" id="b-salvar" title="Ctrl+S">${ic("salvar")}Salvar</button>` : ""}
+      <button class="btn fan peq" id="b-ext" title="Abrir no editor do sistema">${ic("codigo")}Editor externo</button>
+      ${doc ? (aprovado ? `<button class="btn peq" id="b-apr" data-a="desaprovar">Liberar edição</button>` : `<button class="btn peq" id="b-apr" data-a="aprovar">Aprovar</button>`) : ""}${extraBarra}</div>
+      ${E.modoDoc === "editar" ? `<textarea class="editor" id="editor" spellcheck="true">${esc(texto)}</textarea>`
+        : ehMd ? `<div class="doc-corpo"><div class="md" id="md">${md(texto)}</div><nav class="toc" id="toc"></nav></div>` : `<pre class="editor" style="min-height:0;white-space:pre-wrap;overflow:auto">${esc(texto)}</pre>`}`;
+    $$(".seg button", alvo).forEach(b => b.onclick = () => { if (b.disabled) return; if (E.modoDoc === "editar") texto = $("#editor").value; E.modoDoc = b.dataset.m; desenhar(); });
+    $("#b-ext", alvo).onclick = () => abrirNo("arquivo", arq);
+    const ba = $("#b-apr", alvo); if (ba) ba.onclick = () => aprovacao(ba.dataset.a, arq);
+    const bl = $("#b-lac", alvo); if (bl) bl.onclick = proximaLacuna;
+    const ed = $("#editor", alvo);
+    if (ed) {
+      ed.oninput = () => { E.sujo = true; $("#b-salvar").classList.add("sujo"); };
+      ed.onkeydown = e => { if (e.key === "Tab") { e.preventDefault(); ed.setRangeText("  ", ed.selectionStart, ed.selectionEnd, "end"); ed.oninput(); } };
+      $("#b-salvar").onclick = salvar;
+    } else if (ehMd) {
+      const toc = $("#toc", alvo), tits = $$("#md h2, #md h3", alvo);
+      toc.parentElement.classList.toggle("com-toc", tits.length > 2);
+      toc.innerHTML = tits.length > 2 ? `<div class="rotulo" style="padding:0;margin-top:0">Neste documento</div>` + tits.map(h => `<a class="${h.tagName.toLowerCase()}" data-t="${h.id}">${esc(h.textContent)}</a>`).join("") : "";
+      $$("a", toc).forEach(a => a.onclick = () => document.getElementById(a.dataset.t).scrollIntoView({behavior: "smooth", block: "start"}));
+      desenharDiagramas(alvo);
+    }
+  };
+  const salvar = async () => {
+    const ed = $("#editor"); if (!ed) return; texto = ed.value;
+    try {
+      const s = await api("/api/salvar", {projeto: E.projeto, arquivo: arq, texto, versao});
+      if (s.erro) throw new Error(s.erro);
+      versao = s.versao; E.sujo = false; $("#b-salvar").classList.remove("sujo"); toast("Salvo.");
+      await atualizarStatus().catch(() => {}); E.validacao = null; E.kit = null;
+      const lista = $("#lista-docs"); if (lista && doc) { const nd = E.status.documentos.find(x => x.documento === arq); const l = $(`.linha[data-d="${CSS.escape(arq)}"]`, lista); if (nd && l) l.lastElementChild.outerHTML = chipDoc(nd); }
+    } catch (e) { falhou(e); }
+  };
+  E.salvarAtual = salvar;
+  desenhar();
+}
+let lacIdx = -1;
+function proximaLacuna() {
+  const ed = $("#editor");
+  if (ed) {
+    let i = ed.value.indexOf("[PREENCHER", ed.selectionEnd); if (i < 0) i = ed.value.indexOf("[PREENCHER");
+    if (i < 0) return toast("Nenhuma lacuna neste documento.");
+    const fim = ed.value.indexOf("]", i) + 1 || i + 10; ed.focus(); ed.setSelectionRange(i, fim);
+    const linha = ed.value.slice(0, i).split("\n").length; ed.scrollTop = Math.max(0, (linha - 5) * 20.8); return;
+  }
+  const lacs = $$("#md .lac"); if (!lacs.length) return toast("Nenhuma lacuna neste documento.");
+  lacs.forEach(l => l.classList.remove("foco")); lacIdx = (lacIdx + 1) % lacs.length;
+  lacs[lacIdx].classList.add("foco"); lacs[lacIdx].scrollIntoView({behavior: "smooth", block: "center"});
 }
 
 async function aprovacao(acao, arq) {
   try {
-    if (acao === "aprovar" && !confirm("Marcar como aprovado pelo cliente? O documento fica somente leitura para os agentes.")) return;
-    await prumo([acao, arq], E.projeto); await atualizarStatus(); toast(acao === "aprovar" ? "Documento aprovado." : "Documento liberado para edição."); painelDocs();
+    if (acao === "aprovar" && !await confirmar("Aprovar com o cliente?", "O documento fica somente leitura para os agentes. Se for alterado depois, o Prumo avisa.", "Aprovar")) return;
+    await prumo([acao, arq], E.projeto); await atualizarStatus(); E.validacao = null;
+    toast(acao === "aprovar" ? "Documento aprovado." : "Documento liberado para edição."); painelDocs();
   } catch (e) { falhou(e); }
 }
 async function novoRegistro(tipo) {
-  const t = prompt(tipo === "adr" ? "Título da decisão arquitetural:" : "Título do pedido de mudança:"); if (!t) return;
-  try { const d = await prumo([tipo, t], E.projeto); await atualizarStatus(); E.docSel = d.arquivo; toast(`${d.id} criado.`); painelDocs(); } catch (e) { falhou(e); }
+  const t = await pedirTexto(tipo === "adr" ? "Nova decisão arquitetural" : "Novo pedido de mudança", "Título", tipo === "adr" ? "Usar PostgreSQL em vez de MySQL" : "Cliente pediu login com Google");
+  if (!t) return;
+  try { const d = await prumo([tipo, t], E.projeto); await atualizarStatus(); E.docSel = d.arquivo; E.modoDoc = "editar"; toast(`${d.id} criado.`); painelDocs(); } catch (e) { falhou(e); }
 }
 async function adicionarDoc() {
   try {
     const lista = (await prumo(["doc", "--listar"], E.projeto)).filter(d => !d.no_projeto);
     if (!lista.length) return toast("Todos os documentos do catálogo já estão no projeto.");
-    const id = prompt("Documento para adicionar:\n" + lista.map(d => `• ${d.id} — ${d.descricao}`).join("\n")); if (!id) return;
-    await prumo(["doc", id.trim()], E.projeto); await atualizarStatus(); toast("Documento adicionado."); painelDocs();
+    const id = await dialogo({titulo: "Adicionar documento", desc: "Modelos do catálogo do Prumo que este projeto ainda não tem.", botoes: [["Cancelar", null]],
+      corpo: `<div class="escolhas">${lista.map(d => `<button class="escolha" data-id="${esc(d.id)}"><b>${esc(d.id)}</b><span>${esc(d.descricao)}</span></button>`).join("")}</div>`,
+      aoAbrir: (f, fechar) => $$(".escolha", f).forEach(b => b.onclick = () => fechar(b.dataset.id))});
+    if (!id) return;
+    const r = await prumo(["doc", id], E.projeto); await atualizarStatus(); E.docSel = r.arquivo; toast("Documento adicionado."); painelDocs();
   } catch (e) { falhou(e); }
 }
 
-/* ------------------------------------------------ Claude */
-const TAREFAS = [
-  ["especificar", "Especificar tudo"], ["requisitos", "Requisitos"], ["casos-de-uso", "Casos de uso"], ["interface", "Interface"], ["uml", "UML"], ["banco", "Banco"],
-  ["arquitetura", "Arquitetura"], ["backlog", "Backlog"], ["testes", "Testes"], ["proposta", "Proposta"],
-  ["implementar", "Implementar HU"], ["revisar", "Revisar"], ["documentar", "Atualizar docs"], ["seguranca", "Segurança"],
-  ["mudanca", "Mudança"], ["tela", "Tela do Figma"], ["figjam", "FigJam"], ["livre", "Pedido livre"]];
-const COM_ALVO = {implementar: "História (ex.: HU-003)", revisar: "História ou vazio para as mudanças atuais", tela: "Tela (TL-002) ou URL do frame"};
+/* ------------------------------------------------------------------ kit do Claude */
+const GRUPOS_KIT = [["skill", "Skills", "Passo a passo que o Claude segue em cada tarefa"], ["subagente", "Subagentes", "Especialistas com contexto próprio"],
+                    ["hook", "Hooks", "Regras automáticas que bloqueiam ou avisam"], ["instruções", "Instruções", "Lidas em toda sessão"], ["configuração", "Configuração", ""]];
+const chipKit = e => e === "igual ao kit" ? '<span class="chip">ok</span>' : e === "modificado" ? '<span class="chip terra">personalizado</span>' : e === "próprio" ? '<span class="chip roxo">do projeto</span>' : '<span class="chip verm">ausente</span>';
+async function painelKit() {
+  $("#painel").innerHTML = `<div class="painel"><div class="carregando">Lendo o kit…</div></div>`;
+  if (!E.kit) { try { E.kit = await prumo(["agentes", "listar"], E.projeto); } catch (e) { return falhou(e); } }
+  const k = E.kit, aus = k.filter(x => x.estado === "ausente").length, mod = k.filter(x => x.estado === "modificado").length;
+  if (!E.kitSel || !k.some(x => x.arquivo === E.kitSel)) E.kitSel = (k.find(x => x.tipo === "instruções") || k[0] || {}).arquivo;
+  $("#painel").innerHTML = `<div class="painel grade">
+    <div class="cartao" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
+      <div style="flex:1;min-width:260px"><h3 style="margin-bottom:4px">${ic("kit")}O kit que guia o Claude neste projeto</h3>
+        <div class="legenda">Skills, subagentes e hooks gerados a partir da especificação. O Claude Code os carrega sozinho ao abrir a pasta.${aus ? ` <span class="chip verm">${aus} ausente(s)</span>` : ""}${mod ? ` <span class="chip terra">${mod} personalizado(s)</span>` : ""}</div></div>
+      <div class="linha-acao"><button class="btn" id="k-exp">${ic("exportar")}Exportar p/ Gemini, Copilot e Cursor</button><button class="btn pri" id="k-atu">${ic("atualizar")}Regenerar kit</button></div></div>
+    <div class="docs"><div class="cartao lateral-docs">${GRUPOS_KIT.map(([t, n, d]) => { const it = k.filter(x => x.tipo === t); return it.length ? `<div class="kit-grupo">
+      <div class="rotulo" title="${esc(d)}">${n} <span style="color:var(--fraco);font-weight:500">${it.length}</span></div><div class="linhas">${it.map(x => `
+      <div class="linha clic kit-item ${E.kitSel === x.arquivo ? "sel" : ""}" data-k="${esc(x.arquivo)}" tabindex="0"><span class="nome">${esc(x.nome)}<small>${esc(x.descricao || x.arquivo)}</small></span>${chipKit(x.estado)}</div>`).join("")}</div></div>` : ""; }).join("")}</div>
+    <div class="cartao preview" id="kit-prev"></div></div></div>`;
+  $$(".kit-item").forEach(l => { const ir = async () => { if (E.sujo && !await confirmar("Descartar alterações?", "Há edições não salvas.", "Descartar", true)) return; E.sujo = false; E.kitSel = l.dataset.k; E.modoDoc = "ver"; painelKit(); };
+    l.onclick = ir; l.onkeydown = e => { if (e.key === "Enter") ir(); }; });
+  $("#k-exp").onclick = exportarAgentes; $("#k-atu").onclick = atualizarKit;
+  const x = k.find(i => i.arquivo === E.kitSel), prev = $("#kit-prev");
+  if (!x) return;
+  if (x.estado === "ausente") { prev.innerHTML = `<p class="legenda">Este arquivo não existe no projeto. Use <b>Regenerar kit</b> para criá-lo.</p>`; return; }
+  const editavel = /\.md$/.test(x.arquivo) && x.tipo !== "configuração";
+  await mostrarArquivo(x.arquivo, prev, {editavel});
+  if (x.eventos && x.eventos.length) $(".barra-doc", prev).insertAdjacentHTML("afterend", `<div class="eventos"><span class="legenda">Roda em:</span>${x.eventos.map(e => `<span class="chip azul">${esc(e)}</span>`).join("")}</div>`);
+}
+async function exportarAgentes() { try { const d = await prumo(["agentes", "exportar"], E.projeto); toast("Gerado: " + d.arquivos.join(", ")); } catch (e) { falhou(e); } }
+async function atualizarKit() {
+  const mod = (E.kit || []).filter(x => x.estado === "modificado");
+  const ok = await dialogo({titulo: "Regenerar o kit do Claude?", desc: "Recria skills, subagentes e hooks a partir dos modelos do Prumo e dos dados atuais do projeto.",
+    corpo: (mod.length ? `<p class="legenda" style="margin-top:0">Arquivos personalizados que voltam ao modelo:</p><div class="linha-acao" style="margin-bottom:12px">${mod.map(m => `<span class="chip terra">${esc(m.nome)}</span>`).join("")}</div>` : "")
+      + `<label class="troca"><input type="checkbox" id="k-set"><i></i>Sobrescrever também o .claude/settings.json</label>`,
+    botoes: [["Cancelar", null], ["Regenerar", f => ({settings: $("#k-set", f).checked}), "pri"]]});
+  if (!ok) return;
+  try { const d = await prumo(["agentes", "atualizar", ...(ok.settings ? ["--incluir-settings"] : [])], E.projeto); toast(`${d.arquivos.length} arquivo(s) do kit regenerados.`); E.kit = null; painelKit(); } catch (e) { falhou(e); }
+}
+
+/* ------------------------------------------------------------------ executar com o Claude */
+const GRUPOS_TAREFA = [
+  ["Especificar", [["especificar", "Tudo, em sequência"], ["requisitos", "Requisitos"], ["casos-de-uso", "Casos de uso"], ["interface", "Interface"], ["uml", "UML"], ["banco", "Banco"],
+                   ["arquitetura", "Arquitetura"], ["backlog", "Backlog"], ["testes", "Testes"], ["proposta", "Proposta"]]],
+  ["Executar", [["implementar", "Implementar HU"], ["revisar", "Revisar"], ["documentar", "Atualizar docs"], ["seguranca", "Segurança"], ["mudanca", "Mudança"]]],
+  ["Figma", [["tela", "Tela do Figma"], ["figjam", "FigJam"]]],
+  ["Outro", [["livre", "Pedido livre"]]]];
+const COM_ALVO = {implementar: "História (ex.: HU-003)", revisar: "História, ou vazio para as mudanças atuais", tela: "Tela (TL-002) ou URL do frame"};
 
 function painelClaude() {
   const t = E.tarefa, alvo = COM_ALVO[t];
+  const hus = Object.keys(E.status.ids || {}).includes("HU");
   $("#painel").innerHTML = `<div class="painel grade">
-    <div class="cartao"><div class="tarefas">${TAREFAS.filter(([id]) => E.status.figma || !["tela", "figjam"].includes(id))
-      .map(([id, n]) => `<button class="pill ${t === id ? "ativa" : ""}" data-t="${id}">${n}</button>`).join("")}</div>
-      ${alvo ? `<div class="campo"><label>${alvo}</label><input type="text" id="alvo" placeholder="${t === "implementar" ? "HU-001" : ""}"></div>` : ""}
-      <div class="campo"><label>${t === "livre" ? "Pedido para o Claude" : t === "mudanca" ? "O que o cliente pediu" : "Instruções adicionais (opcional)"}</label>
+    <div class="cartao"><div class="grupos-tarefa">${GRUPOS_TAREFA.filter(([g]) => g !== "Figma" || E.status.figma).map(([g, ts]) => `<div class="grupo-t"><span class="rotulo">${g}</span>
+      ${ts.map(([id, n]) => `<button class="pill ${t === id ? "ativa" : ""}" data-t="${id}">${n}</button>`).join("")}</div>`).join("")}</div>
+      ${alvo ? `<div class="campo"><label for="alvo">${alvo}</label><input type="text" id="alvo" placeholder="${t === "implementar" ? "HU-001" : ""}" ${t === "implementar" && hus ? 'list="lista-hu"' : ""}></div>` : ""}
+      <div class="campo"><label for="texto">${t === "livre" ? "Pedido para o Claude" : t === "mudanca" ? "O que o cliente pediu" : "Instruções adicionais (opcional)"}</label>
         <textarea id="texto" placeholder="${t === "livre" ? "Ex.: crie o componente de listagem de pedidos seguindo a TL-004" : ""}"></textarea></div>
-      <div class="linha-acao"><button class="btn pri" id="enviar">Enviar ao Claude</button><button class="btn oculto" id="parar">Parar</button>
+      <div class="linha-acao"><button class="btn pri" id="enviar">${ic("seta")}Enviar ao Claude</button><button class="btn perigo oculto" id="parar">Parar</button>
         <label class="troca"><input type="checkbox" id="continuar"><i></i>Continuar a última sessão</label>
-        <span class="legenda" style="margin-left:auto">O Claude Code roda em modo não interativo nesta pasta.</span></div></div>
-    <div class="console" id="console"><span class="f">Pronto. A saída do Claude aparece aqui.</span></div>
+        <span class="legenda" style="margin-left:auto">Roda o Claude Code em modo não interativo nesta pasta, com o kit do projeto.</span></div></div>
+    <div class="console" id="console" aria-live="polite"><span class="f">Pronto. A saída do Claude aparece aqui.</span></div>
     <div class="cartao"><h3>Histórico</h3><div id="hist" class="carregando">Carregando…</div></div></div>`;
-  document.querySelectorAll(".pill").forEach(b => b.onclick = () => { E.tarefa = b.dataset.t; painelClaude(); });
+  $$(".pill").forEach(b => b.onclick = () => { E.tarefa = b.dataset.t; painelClaude(); });
   $("#enviar").onclick = enviarClaude; $("#parar").onclick = pararClaude;
+  $("#texto").onkeydown = e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) enviarClaude(); };
   if (E.job) { $("#enviar").disabled = true; $("#parar").classList.remove("oculto"); acompanhar(E.job, 0, true); }
   carregarHistorico();
 }
 
 async function enviarClaude() {
+  if (E.job) return;
   const t = E.tarefa, alvo = ($("#alvo") || {}).value || "", texto = $("#texto").value.trim();
   if (t === "livre" && !texto) return toast("Escreva o pedido para o Claude.", true);
   if (t === "mudanca" && !texto) return toast("Descreva a mudança pedida pelo cliente.", true);
@@ -381,16 +820,17 @@ async function acompanhar(id, desde, redesenhar) {
   try {
     const r = await api(`/api/tarefas/${id}?desde=${redesenhar ? 0 : desde}`);
     if (redesenhar) c.innerHTML = "";
+    const fimVisivel = c.scrollHeight - c.scrollTop - c.clientHeight < 40;
     for (const l of r.linhas) {
       const s = document.createElement("div");
       s.className = /^\s*→/.test(l) ? "f" : /^\[Prumo\]|^===/.test(l) ? "s" : /erro|error/i.test(l) ? "e" : "";
       s.textContent = l; c.append(s);
     }
-    if (r.linhas.length) c.scrollTop = c.scrollHeight;
+    if (r.linhas.length && fimVisivel) c.scrollTop = c.scrollHeight;
     if (r.fim) {
       E.job = null; const b = $("#enviar"); if (b) b.disabled = false; const p = $("#parar"); if (p) p.classList.add("oculto");
       toast(r.codigo === 0 ? "Claude concluiu a tarefa." : "A tarefa terminou com erro.", r.codigo !== 0);
-      await atualizarStatus().catch(() => {}); carregarHistorico(); return;
+      E.validacao = null; E.kit = null; await atualizarStatus().catch(() => {}); carregarHistorico(); return;
     }
     setTimeout(() => acompanhar(id, r.total), 700);
   } catch (e) { falhou(e); E.job = null; }
@@ -404,66 +844,75 @@ async function carregarHistorico() {
       ${h.slice().reverse().map(x => `<tr><td>${esc((x.inicio || "").replace("T", " ").slice(0, 16))}</td><td>${esc(x.tarefa)}</td><td>${esc(x.alvo || "")}</td>
       <td>${x.duracao_s ?? ""}s</td><td>${x.custo_usd != null ? "US$ " + Number(x.custo_usd).toFixed(3) : ""}</td>
       <td>${x.erro ? '<span class="chip verm">erro</span>' : '<span class="chip">ok</span>'}</td></tr>`).join("")}</table>` : '<span class="legenda">Nenhuma execução ainda.</span>';
-  } catch (e) { const el = $("#hist"); if (el) el.textContent = ""; }
+  } catch { const el = $("#hist"); if (el) { el.className = ""; el.textContent = ""; } }
 }
 
-/* ------------------------------------------------ qualidade */
+/* ------------------------------------------------------------------ qualidade */
 function painelQualidade() {
   $("#painel").innerHTML = `<div class="painel grade g2">
-    <div class="cartao"><div class="linha-acao" style="margin-bottom:10px"><h3 style="margin:0;flex:1">Validação</h3><button class="btn" onclick="rodarValidar()">Validar</button></div><div id="val" class="legenda">Verifica lacunas, diagramas Mermaid, IDs indefinidos ou duplicados e documentos aprovados alterados.</div></div>
-    <div class="cartao"><div class="linha-acao" style="margin-bottom:10px"><h3 style="margin:0;flex:1">Segurança</h3><button class="btn" onclick="rodarSeguranca()">Varrer código</button></div><div id="seg" class="legenda">Procura segredos, injeção, eval, TLS desligado, CORS aberto e outros padrões de risco.</div></div>
-    <div class="cartao" style="grid-column:1/-1"><div class="linha-acao" style="margin-bottom:10px"><h3 style="margin:0;flex:1">Rastreabilidade</h3><button class="btn" onclick="rodarRastreio()">Gerar matriz</button></div><div id="ras" class="legenda">Liga requisitos, casos de uso, histórias, testes e código.</div></div></div>`;
+    <div class="cartao"><h3>${ic("qualidade")}Validação<button class="btn peq dir" id="q-val">Validar</button></h3><div id="val" class="legenda">Verifica lacunas, diagramas Mermaid, IDs indefinidos ou duplicados e documentos aprovados alterados.</div></div>
+    <div class="cartao"><h3>Segurança<button class="btn peq dir" id="q-seg">Varrer código</button></h3><div id="seg" class="legenda">Procura segredos, injeção, eval, TLS desligado, CORS aberto e outros padrões de risco.</div></div>
+    <div class="cartao" style="grid-column:1/-1"><h3>Rastreabilidade<button class="btn peq dir" id="q-ras">Gerar matriz</button></h3><div id="ras" class="legenda">Liga requisitos, casos de uso, histórias, testes e código.</div></div></div>`;
+  $("#q-val").onclick = rodarValidar; $("#q-seg").onclick = rodarSeguranca; $("#q-ras").onclick = rodarRastreio;
+  rodarValidar();
 }
 const listaMsgs = (itens, classe) => itens.map(m => `<div class="linha"><i class="ponto ${classe}"></i><span>${esc(m)}</span></div>`).join("");
 async function rodarValidar() {
   const el = $("#val"); el.className = "carregando"; el.textContent = "Validando…";
-  try { const d = await prumo(["validar"], E.projeto); el.className = "linhas";
-    el.innerHTML = (d.erros.length || d.avisos.length) ? listaMsgs(d.erros, "err") + listaMsgs(d.avisos, "and") : '<span class="legenda">Tudo certo.</span>'; } catch (e) { falhou(e); }
+  try { const d = await prumo(["validar"], E.projeto); E.validacao = d; el.className = "linhas";
+    el.innerHTML = (d.erros.length || d.avisos.length) ? listaMsgs(d.erros, "err") + listaMsgs(d.avisos, "and") : '<div class="linha"><i class="ponto ok"></i><span>Tudo certo.</span></div>'; } catch (e) { el.className = "legenda"; el.textContent = ""; falhou(e); }
 }
 async function rodarSeguranca() {
   const el = $("#seg"); el.className = "carregando"; el.textContent = "Varrendo…";
   try { const d = await prumo(["seguranca"], E.projeto); el.className = "";
     el.innerHTML = d.achados.length ? `<table class="tab-simples"><tr><th>Gravidade</th><th>Local</th><th>Problema</th></tr>${d.achados.map(a => `<tr><td><span class="chip ${a.gravidade === "Baixa" ? "cinza" : a.gravidade === "Média" ? "ambar" : "verm"}">${a.gravidade}</span></td><td class="mono">${esc(a.arquivo)}:${a.linha}</td><td>${esc(a.descricao)}</td></tr>`).join("")}</table>`
-      : '<span class="legenda">Nenhum padrão de risco encontrado. Complete com a revisão manual (tarefa "Segurança" na aba Claude).</span>'; } catch (e) { falhou(e); }
+      : '<span class="legenda">Nenhum padrão de risco encontrado. Complete com a revisão manual (tarefa "Segurança" em Executar com o Claude).</span>'; } catch (e) { el.className = "legenda"; el.textContent = ""; falhou(e); }
 }
 async function rodarRastreio() {
   const el = $("#ras"); el.className = "carregando"; el.textContent = "Gerando…";
   try { const d = await prumo(["rastreabilidade"], E.projeto); el.className = "linhas";
-    el.innerHTML = `<div class="legenda" style="margin-bottom:6px">Matriz em <span class="mono">${esc(d.arquivo)}</span> <button class="btn fan" onclick="E.aba='docs';E.docSel=null;abrirNo('arquivo','${esc(d.arquivo)}')">abrir</button></div>`
-      + (d.problemas.length ? listaMsgs(d.problemas.map(p => p.mensagem), "and") : '<span class="legenda">Nenhum problema de rastreabilidade.</span>'); } catch (e) { falhou(e); }
+    el.innerHTML = `<div class="legenda" style="margin-bottom:6px">Matriz em <span class="mono">${esc(d.arquivo)}</span> <button class="btn fan peq" id="ras-ver">ver</button></div>`
+      + (d.problemas.length ? listaMsgs(d.problemas.map(p => p.mensagem), "and") : '<span class="legenda">Nenhum problema de rastreabilidade.</span>');
+    $("#ras-ver").onclick = () => verArquivoSolto(d.arquivo);
+  } catch (e) { el.className = "legenda"; el.textContent = ""; falhou(e); }
+}
+async function verArquivoSolto(arq) {
+  dialogo({titulo: arq, peq: false, botoes: [["Fechar", null]], corpo: `<div id="solto"></div>`, aoAbrir: f => { E.modoDoc = "ver"; mostrarArquivo(arq, $("#solto", f), {editavel: false}); }});
 }
 
-/* ------------------------------------------------ gestão */
+/* ------------------------------------------------------------------ gestão */
 function painelGestao() {
   $("#painel").innerHTML = `<div class="painel grade g2">
     <div class="cartao"><h3>Orçamento</h3>
-      <div class="grade g2" style="gap:10px"><div class="campo"><label>Valor da hora (R$)</label><input type="number" id="vh" min="0" step="5" placeholder="do config"></div>
-      <div class="campo"><label>Contingência (%)</label><input type="number" id="ct" min="0" step="5" placeholder="20"></div></div>
-      <button class="btn pri" onclick="rodarOrcamento()">Calcular a partir do backlog</button><div id="orc" style="margin-top:14px"></div></div>
-    <div class="cartao"><h3>Horas trabalhadas</h3><p class="legenda" style="margin-top:0">Estimadas pela atividade registrada nos hooks do Claude Code.</p>
-      <button class="btn" onclick="rodarHoras()">Atualizar</button><div id="hrs" style="margin-top:14px"></div></div>
-    <div class="cartao"><h3>Figma</h3>
-      ${E.status.figma ? `<div class="campo"><label>URL do arquivo</label><input type="text" id="furl" placeholder="https://www.figma.com/design/..."></div>
-      <div class="campo"><label>Token pessoal (ou variável FIGMA_TOKEN)</label><input type="text" id="ftok" placeholder="figd_…" autocomplete="off"></div>
-      <div class="linha-acao"><button class="btn pri" onclick="rodarFigma()">Sincronizar telas</button><label class="troca"><input type="checkbox" id="fimg"><i></i>Baixar imagens</label></div><div id="fig" class="legenda" style="margin-top:12px"></div>`
-      : `<p class="legenda" style="margin-top:0">A integração com o Figma não está ativa neste projeto.</p><button class="btn" onclick="ativarFigma()">Ativar Figma</button>`}</div>
-    <div class="cartao"><h3>Outros agentes</h3><p class="legenda" style="margin-top:0">Gera GEMINI.md, instruções do Copilot e regra do Cursor a partir do AGENTS.md.</p>
-      <div class="linha-acao"><button class="btn" onclick="exportarAgentes()">Exportar instruções</button><button class="btn fan" onclick="atualizarKit()">Atualizar skills e hooks</button></div></div></div>`;
+      <div class="grade g2" style="gap:10px"><div class="campo"><label for="vh">Valor da hora (R$)</label><input type="number" id="vh" min="0" step="5" placeholder="dos seus dados"></div>
+      <div class="campo"><label for="ct">Contingência (%)</label><input type="number" id="ct" min="0" step="5" placeholder="20"></div></div>
+      <button class="btn pri" id="ge-orc">Calcular a partir do backlog</button><div id="orc" style="margin-top:14px"></div></div>
+    <div class="cartao"><h3>Horas trabalhadas<button class="btn peq dir" id="ge-hrs">Atualizar</button></h3><p class="legenda" style="margin-top:0">Estimadas pela atividade registrada nos hooks do Claude Code.</p>
+      <div id="hrs"></div></div>
+    <div class="cartao" style="grid-column:1/-1"><h3>Figma</h3>
+      ${E.status.figma ? `<div class="grade g2" style="gap:10px"><div class="campo"><label for="furl">URL do arquivo</label><input type="text" id="furl" placeholder="https://www.figma.com/design/..."></div>
+      <div class="campo"><label for="ftok">Token pessoal (ou variável FIGMA_TOKEN)</label><input type="text" id="ftok" placeholder="figd_…" autocomplete="off"></div></div>
+      <div class="linha-acao"><button class="btn pri" id="ge-fig">Sincronizar telas</button><label class="troca"><input type="checkbox" id="fimg"><i></i>Baixar imagens</label></div><div id="fig" class="legenda" style="margin-top:12px"></div>`
+      : `<p class="legenda" style="margin-top:0">A integração com o Figma não está ativa neste projeto.</p><button class="btn" id="ge-atf">Ativar Figma</button>`}</div></div>`;
+  $("#ge-orc").onclick = rodarOrcamento; $("#ge-hrs").onclick = rodarHoras;
+  const bf = $("#ge-fig"); if (bf) bf.onclick = rodarFigma; const ba = $("#ge-atf"); if (ba) ba.onclick = ativarFigma;
+  rodarHoras();
 }
+const brl = (v, moeda = "BRL") => v == null ? "—" : Number(v).toLocaleString("pt-BR", {style: "currency", currency: moeda});
+const horasBr = h => Number(h).toFixed(1).replace(".", ",");
 async function rodarOrcamento() {
   const args = ["orcamento"], vh = $("#vh").value, ct = $("#ct").value;
   if (vh) args.push("--valor-hora", vh); if (ct) args.push("--contingencia", ct);
   try { const o = await prumo(args, E.projeto);
-    const fmt = v => v == null ? "—" : v.toLocaleString("pt-BR", {style: "currency", currency: o.moeda || "BRL"});
-    $("#orc").innerHTML = `<div class="grade g2" style="gap:10px"><div><div class="legenda">Total de horas</div><div class="num">${o.horas_total.toFixed(1).replace(".", ",")}<small>h</small></div></div>
-      <div><div class="legenda">Valor</div><div class="num" style="font-size:22px">${fmt(o.valor_total)}</div></div></div>
-      <p class="legenda">${o.historias} histórias · base ${o.horas_base.toFixed(1)}h + ${o.contingencia}%${(o.opcionais || []).length ? ` · opcionais (Could, fora do total): ${o.opcionais.length}, ${o.horas_opcionais.toFixed(1)}h` : ""}${(o.fora || []).length ? ` · fora desta entrega (Won't): ${o.fora.length}` : ""}${o.sem_estimativa.length ? ` · sem estimativa: ${esc(o.sem_estimativa.join(", "))}` : ""}</p>`;
+    $("#orc").innerHTML = `<div class="grade g2" style="gap:10px"><div><div class="legenda">Total de horas</div><div class="num">${horasBr(o.horas_total)}<small>h</small></div></div>
+      <div><div class="legenda">Valor</div><div class="num" style="font-size:24px">${brl(o.valor_total, o.moeda || "BRL")}</div></div></div>
+      <p class="legenda">${o.historias} histórias · base ${horasBr(o.horas_base)}h + ${o.contingencia}%${(o.opcionais || []).length ? ` · opcionais (Could, fora do total): ${o.opcionais.length}, ${horasBr(o.horas_opcionais)}h` : ""}${(o.fora || []).length ? ` · fora desta entrega (Won't): ${o.fora.length}` : ""}${o.sem_estimativa.length ? ` · sem estimativa: ${esc(o.sem_estimativa.join(", "))}` : ""}</p>`;
   } catch (e) { falhou(e); }
 }
 async function rodarHoras() {
   try { const h = await prumo(["horas"], E.projeto), dias = Object.entries(h.dias);
-    $("#hrs").innerHTML = `<div class="num">${h.total_horas.toFixed(1).replace(".", ",")}<small>h no total</small></div>
-      <table class="tab-simples" style="margin-top:10px">${dias.slice(-10).reverse().map(([d, v]) => `<tr><td>${d.split("-").reverse().join("/")}</td><td>${v.sessoes} sessão(ões)</td><td>${v.horas.toFixed(1).replace(".", ",")}h</td></tr>`).join("")}</table>`;
+    $("#hrs").innerHTML = `<div class="num">${horasBr(h.total_horas)}<small>h no total</small></div>
+      ${dias.length ? `<table class="tab-simples" style="margin-top:10px">${dias.slice(-10).reverse().map(([d, v]) => `<tr><td>${d.split("-").reverse().join("/")}</td><td>${v.sessoes} sessão(ões)</td><td>${horasBr(v.horas)}h</td></tr>`).join("")}</table>` : ""}`;
   } catch (e) { $("#hrs").innerHTML = `<span class="legenda">${esc(e.message)}</span>`; }
 }
 async function rodarFigma() {
@@ -473,54 +922,169 @@ async function rodarFigma() {
   try { const r = await prumo(args, E.projeto); $("#fig").className = "legenda"; $("#fig").textContent = `${r.telas} tela(s) sincronizadas em ${r.documento}.`; await atualizarStatus(); }
   catch (e) { $("#fig").className = "legenda"; $("#fig").textContent = ""; falhou(e); }
 }
-async function ativarFigma() { try { await prumo(["figma", "ativar"], E.projeto); await atualizarStatus(); toast("Figma ativado."); desenharProjeto(); } catch (e) { falhou(e); } }
-async function exportarAgentes() { try { const d = await prumo(["agentes", "exportar"], E.projeto); toast("Gerado: " + d.arquivos.join(", ")); } catch (e) { falhou(e); } }
-async function atualizarKit() { try { const d = await prumo(["agentes", "atualizar"], E.projeto); toast(`${d.arquivos.length} arquivo(s) do kit atualizados.`); } catch (e) { falhou(e); } }
+async function ativarFigma() { try { await prumo(["figma", "ativar"], E.projeto); await atualizarStatus(); E.kit = null; toast("Figma ativado."); desenharProjeto(); } catch (e) { falhou(e); } }
 
-/* ------------------------------------------------ abrir / novo */
+/* ------------------------------------------------------------------ configurações */
+const CAMPOS_FREELANCER = [["nome", "Seu nome", "text", "vira o autor dos documentos"], ["email", "E-mail", "email", ""],
+  ["valor_hora", "Valor da hora", "number", "padrão do orçamento"], ["moeda", "Moeda", "text", "BRL, USD, EUR…"], ["contingencia_percentual", "Contingência (%)", "number", "margem sobre as estimativas"]];
+const CAMPOS_PROJETO = [
+  ["Projeto", [["projeto", "Nome", "text"], ["cliente", "Cliente", "text"], ["stack", "Stack", "text", "", "larga"]]],
+  ["Comandos (usados pelos hooks)", [["comandos.formatar", "Formatar", "text", "rodado após cada edição; {arquivo} vira o arquivo"], ["comandos.lint", "Lint", "text", "rodado após cada edição"],
+    ["comandos.testar", "Testar", "text", "liberado nas tarefas implementar, revisar e segurança", "larga"]]],
+  ["Hooks", [["hooks.registrar_horas", "Registrar horas trabalhadas", "bool"], ["hooks.testes_ao_parar", "Rodar testes antes de o Claude encerrar", "bool"],
+    ["hooks.revisao_pos_mudanca", "Exigir docs e segurança após mudança grande", "bool"], ["hooks.limite_arquivos", "Mudança grande: arquivos", "number"],
+    ["hooks.limite_linhas", "Mudança grande: linhas", "number"], ["hooks.comandos_permitidos", "Comandos liberados (regex, um por linha)", "lista", "", "larga"]]],
+  ["Claude e orçamento", [["claude.modelo", "Modelo do Claude", "text", "vazio = padrão do Claude Code"], ["claude.max_turnos", "Máximo de turnos", "number"],
+    ["orcamento.valor_hora", "Valor da hora neste projeto", "number", "vazio = seus dados"], ["orcamento.contingencia_percentual", "Contingência neste projeto (%)", "number"],
+    ["pastas_codigo", "Pastas de código (uma por linha)", "lista", "varridas pela rastreabilidade e pela segurança", "larga"]]]];
+function campoHtml(pref, [k, rot, tipo, ajuda = "", cl = ""], v) {
+  const id = `${pref}-${k.replace(/\./g, "_")}`;
+  if (tipo === "bool") return `<div class="campo ${cl}" style="justify-content:flex-end"><label class="troca" style="color:var(--texto)"><input type="checkbox" id="${id}" data-k="${k}" data-tipo="bool" ${v ? "checked" : ""}><i></i>${esc(rot)}</label></div>`;
+  if (tipo === "lista") return `<div class="campo ${cl}"><label for="${id}">${esc(rot)}</label><textarea id="${id}" data-k="${k}" data-tipo="lista" style="min-height:70px" class="mono">${esc((v || []).join("\n"))}</textarea>${ajuda ? `<span class="ajuda">${esc(ajuda)}</span>` : ""}</div>`;
+  return `<div class="campo ${cl}"><label for="${id}">${esc(rot)}</label><input type="${tipo}" id="${id}" data-k="${k}" data-tipo="${tipo}" value="${esc(v ?? "")}" ${tipo === "number" ? 'min="0" step="any"' : ""}>${ajuda ? `<span class="ajuda">${esc(ajuda)}</span>` : ""}</div>`;
+}
+function coletar(raiz, prefixo) {
+  return $$("[data-k]", raiz).map(el => {
+    const v = el.dataset.tipo === "bool" ? (el.checked ? "sim" : "não") : el.dataset.tipo === "lista" ? JSON.stringify(el.value.split("\n").map(s => s.trim()).filter(Boolean)) : el.value;
+    return `${prefixo}.${el.dataset.k}=${v}`;
+  });
+}
+async function painelConfig() {
+  $("#painel").innerHTML = `<div class="painel"><div class="carregando">Lendo configurações…</div></div>`;
+  let c; try { c = await prumo(["config"], E.projeto); } catch (e) { return falhou(e); }
+  const sug = Object.entries(c.comandos_sugeridos || {}).filter(([, v]) => v);
+  $("#painel").innerHTML = `<div class="painel grade">
+    ${CAMPOS_PROJETO.map(([sec, campos]) => `<div class="cartao"><h3>${esc(sec)}</h3><div class="form-sec" data-sec>${campos.map(f => campoHtml("cp", f, c.projeto[f[0]])).join("")}</div>
+      ${sec.startsWith("Comandos") && sug.length ? `<div class="linha-acao" style="margin-top:4px"><span class="legenda">Sugeridos pelo perfil:</span>${sug.map(([k, v]) => `<span class="chip cinza mono">${esc(k)}: ${esc(v)}</span>`).join("")}<button class="btn fan peq" id="cp-sug">usar sugeridos</button></div>` : ""}</div>`).join("")}
+    <div class="linha-acao" style="position:sticky;bottom:0;background:var(--bg);padding:12px 0"><button class="btn pri" id="cp-salvar">${ic("salvar")}Salvar configurações do projeto</button>
+      <span class="legenda">Grava em projeto.prumo.json. Depois de mudar comandos ou hooks, regenere o kit se quiser o settings.json atualizado.</span></div></div>`;
+  const bs = $("#cp-sug"); if (bs) bs.onclick = () => { for (const [k, v] of sug) { const el = $(`#cp-comandos_${k}`); if (el) el.value = v; } toast("Comandos sugeridos preenchidos. Salve para gravar."); };
+  $("#cp-salvar").onclick = async () => {
+    try { const args = ["config"]; coletar($("#painel"), "projeto").forEach(d => args.push("--definir", d));
+      await prumo(args, E.projeto); await atualizarStatus(); toast("Configurações salvas."); E.kit = null; carregarProjetos(); desenharProjeto(); } catch (e) { falhou(e); }
+  };
+}
+async function meusDados() {
+  let c; try { c = await prumo(["config"], E.projeto || undefined); } catch (e) { return falhou(e); }
+  const r = await dialogo({titulo: "Meus dados", desc: "Usados como autor dos documentos e como padrão do orçamento e da proposta.",
+    corpo: `<div class="form-sec">${CAMPOS_FREELANCER.map(f => campoHtml("fr", f, c.freelancer[f[0]])).join("")}</div><p class="legenda mono" style="margin:4px 0 0">${esc(c.arquivo_freelancer)}</p>`,
+    botoes: [["Cancelar", null], ["Salvar", f => coletar(f, "freelancer"), "pri"]]});
+  if (!r) return;
+  try { const args = ["config"]; r.forEach(d => args.push("--definir", d)); await prumo(args); toast("Seus dados foram salvos."); } catch (e) { falhou(e); }
+}
+
+/* ------------------------------------------------------------------ abrir / novo */
 async function abrirNo(alvo, arquivo) { try { const r = await api("/api/abrir", {projeto: E.projeto, alvo, arquivo}); if (r.erro) toast(r.erro, true); } catch (e) { falhou(e); } }
 async function escolherPasta() { try { return (await api("/api/escolher-pasta", {})).pasta || ""; } catch { return ""; } }
 async function abrirExistente() {
-  let p = await escolherPasta(); if (!p) p = prompt("Caminho da pasta do projeto:") || ""; if (p) abrirProjeto(p.trim());
+  let p = await escolherPasta();
+  if (!p) p = await dialogo({titulo: "Abrir projeto", corpo: `<div class="campo"><label>Caminho da pasta do projeto</label><input type="text" id="dlg-txt" placeholder="D:\\Projetos\\loja-da-ana"></div>`,
+                              botoes: [["Cancelar", null], ["Abrir", f => $("#dlg-txt", f).value.trim() || null, "pri"]]}) || "";
+  if (p) abrirProjeto(p.trim(), "geral");
 }
+const slugJs = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 async function abrirNovo() {
   if (!E.perfis.length) { try { E.perfis = await prumo(["perfis"]); } catch (e) { return falhou(e); } }
-  let perfil = E.perfis.find(p => p.id === "web-fullstack") || E.perfis[0];
-  const f = document.createElement("div"); f.className = "fundo";
-  f.innerHTML = `<div class="modal"><h2>Novo projeto</h2>
-    <div class="grade g2" style="gap:10px"><div class="campo"><label>Nome do projeto</label><input type="text" id="n-nome" placeholder="Loja da Ana"></div>
-    <div class="campo"><label>Cliente</label><input type="text" id="n-cli" placeholder="Ana Doces Ltda."></div></div>
-    <div class="campo"><label>Pasta onde criar</label><div class="linha-acao"><input type="text" id="n-pasta" style="flex:1" placeholder="D:\\Projetos\\loja-da-ana"><button class="btn" id="n-esc">Escolher…</button></div></div>
+  let perfil = E.perfis.find(p => p.id === "web-fullstack") || E.perfis[0], pastaBase = lembrar("pastaBase", ""), pastaManual = false;
+  await dialogo({titulo: "Novo projeto", peq: false, desc: "O Prumo cria os documentos de especificação do perfil, o kit do Claude (skills, subagentes, hooks) e o repositório git.", botoes: [],
+    corpo: `<div class="grade g2" style="gap:10px"><div class="campo"><label for="n-nome">Nome do projeto</label><input type="text" id="n-nome" placeholder="Loja da Ana"></div>
+    <div class="campo"><label for="n-cli">Cliente</label><input type="text" id="n-cli" placeholder="Ana Doces Ltda."></div></div>
+    <div class="campo"><label for="n-pasta">Pasta onde criar</label><div class="linha-acao"><input type="text" id="n-pasta" style="flex:1" placeholder="D:\\Projetos\\loja-da-ana"><button class="btn" id="n-esc">Escolher…</button></div></div>
     <div class="campo"><label>Perfil</label><div class="perfis">${E.perfis.map(p => `<button class="perfil ${p.id === perfil.id ? "ativo" : ""}" data-p="${p.id}"><b>${esc(p.nome)}</b><span>${esc(p.descricao)}</span></button>`).join("")}</div></div>
-    <div class="campo"><label>Stack</label><input type="text" id="n-stack" value="${esc(perfil.stack)}"></div>
-    <div class="campo"><label>Arquivo do Figma (opcional)</label><input type="text" id="n-figma" placeholder="https://www.figma.com/design/..."></div>
-    <div class="linha-acao" style="justify-content:flex-end;margin-top:8px"><button class="btn fan" id="n-canc">Cancelar</button><button class="btn pri" id="n-ok">Criar projeto</button></div></div>`;
-  document.body.append(f);
-  const fechar = () => f.remove();
-  f.onclick = e => { if (e.target === f) fechar(); }; $("#n-canc", f).onclick = fechar;
-  $("#n-esc", f).onclick = async () => { const p = await escolherPasta(); if (p) { const nome = $("#n-nome", f).value.trim(); $("#n-pasta", f).value = nome ? p.replace(/[\\/]$/, "") + (p.includes("\\") ? "\\" : "/") + nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") : p; } };
-  f.querySelectorAll(".perfil").forEach(b => b.onclick = () => { perfil = E.perfis.find(p => p.id === b.dataset.p);
-    f.querySelectorAll(".perfil").forEach(x => x.classList.toggle("ativo", x === b)); $("#n-stack", f).value = perfil.stack; });
-  $("#n-nome", f).focus();
-  $("#n-ok", f).onclick = async () => {
-    const pasta = $("#n-pasta", f).value.trim(), nome = $("#n-nome", f).value.trim();
-    if (!pasta || !nome) return toast("Informe o nome e a pasta do projeto.", true);
-    const args = ["novo", pasta, "--perfil", perfil.id, "--nome", nome, "--cliente", $("#n-cli", f).value.trim(), "--stack", $("#n-stack", f).value.trim()];
-    const fig = $("#n-figma", f).value.trim(); if (fig) args.push("--figma", fig);
-    $("#n-ok", f).disabled = true; $("#n-ok", f).textContent = "Criando…";
-    try { const r = await prumo(args); fechar(); toast("Projeto criado."); E.aba = "geral"; abrirProjeto(r.caminho); }
-    catch (e) { falhou(e); $("#n-ok", f).disabled = false; $("#n-ok", f).textContent = "Criar projeto"; }
-  };
+    <div class="campo"><label for="n-stack">Stack</label><input type="text" id="n-stack" value="${esc(perfil.stack)}"></div>
+    <div class="campo"><label for="n-figma">Arquivo do Figma (opcional)</label><input type="text" id="n-figma" placeholder="https://www.figma.com/design/..."></div>
+    <div class="rodape"><button class="btn fan" id="n-canc">Cancelar</button><button class="btn pri" id="n-ok">${ic("seta")}Criar projeto</button></div>`,
+    aoAbrir: (f, fechar) => {
+      const sep = p => p.includes("\\") ? "\\" : "/";
+      const sugerir = () => { if (pastaManual || !pastaBase) return; const n = slugJs($("#n-nome", f).value.trim()); $("#n-pasta", f).value = pastaBase.replace(/[\\/]$/, "") + (n ? sep(pastaBase) + n : ""); };
+      $("#n-nome", f).oninput = sugerir; $("#n-pasta", f).oninput = () => { pastaManual = true; }; sugerir();
+      $("#n-canc", f).onclick = () => fechar(null);
+      $("#n-esc", f).onclick = async () => { const p = await escolherPasta(); if (p) { pastaBase = p; pastaManual = false; guardar("pastaBase", p); sugerir(); } };
+      $$(".perfil", f).forEach(b => b.onclick = () => { perfil = E.perfis.find(p => p.id === b.dataset.p);
+        $$(".perfil", f).forEach(x => x.classList.toggle("ativo", x === b)); $("#n-stack", f).value = perfil.stack; });
+      $("#n-ok", f).onclick = async () => {
+        const pasta = $("#n-pasta", f).value.trim(), nome = $("#n-nome", f).value.trim();
+        if (!pasta || !nome) return toast("Informe o nome e a pasta do projeto.", true);
+        const args = ["novo", pasta, "--perfil", perfil.id, "--nome", nome, "--cliente", $("#n-cli", f).value.trim(), "--stack", $("#n-stack", f).value.trim()];
+        const fig = $("#n-figma", f).value.trim(); if (fig) args.push("--figma", fig);
+        const b = $("#n-ok", f); b.disabled = true; b.textContent = "Criando…";
+        try { const r = await prumo(args); fechar(true); toast("Projeto criado com documentos e kit do Claude."); abrirProjeto(r.caminho, "geral"); }
+        catch (e) { falhou(e); b.disabled = false; b.innerHTML = `${ic("seta")}Criar projeto`; }
+      };
+    }});
 }
 
-/* ------------------------------------------------ início */
+/* ------------------------------------------------------------------ paleta de comandos (Ctrl+K) */
+function comandos() {
+  const c = [["Novo projeto", "ação", abrirNovo], ["Abrir pasta de projeto", "ação", abrirExistente], ["Meus dados", "ação", meusDados], ["Trocar tema", "ação", trocarTema]];
+  if (E.projeto) {
+    ABAS.forEach(([id, n]) => c.push([n, "aba", () => irPara(id)]));
+    c.push(["Validar especificação", "ação", () => irPara("qualidade")], ["Especificar tudo com o Claude", "Claude", () => irPara("claude", {tarefa: "especificar"})],
+           ["Implementar história", "Claude", () => irPara("claude", {tarefa: "implementar"})], ["Regenerar kit do Claude", "kit", () => { irPara("kit"); setTimeout(atualizarKit, 50); }],
+           ["Abrir Claude Code no terminal", "ação", () => abrirNo("claude")], ["Abrir no VS Code", "ação", () => abrirNo("vscode")]);
+    (E.status.documentos || []).forEach(d => c.push([nomeDoc(d.documento), "documento", () => irPara("docs", {docSel: d.documento, modoDoc: "ver"})]));
+    (E.kit || []).forEach(k => c.push([k.nome, k.tipo, () => irPara("kit", {kitSel: k.arquivo, modoDoc: "ver"})]));
+  }
+  E.projetos.filter(p => p.caminho !== E.projeto).forEach(p => c.push([p.nome, "projeto", () => abrirProjeto(p.caminho)]));
+  return c;
+}
+function abrirPaleta() {
+  if ($(".paleta")) return;
+  const todos = comandos(); let sel = 0, vis = todos;
+  const f = document.createElement("div"); f.className = "fundo";
+  f.innerHTML = `<div class="modal paleta" role="dialog" aria-label="Comandos"><input type="text" placeholder="Buscar comando, documento, skill ou projeto…" aria-label="Buscar comando"><div class="res"></div></div>`;
+  const inp = $("input", f), res = $(".res", f);
+  const fechar = () => f.remove();
+  const norm = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const desenhar = () => {
+    const q = norm(inp.value.trim());
+    vis = todos.filter(([n, t]) => !q || q.split(/\s+/).every(p => norm(n + " " + t).includes(p))).slice(0, 40); sel = Math.min(sel, Math.max(0, vis.length - 1));
+    res.innerHTML = vis.length ? vis.map(([n, t], i) => `<div class="op ${i === sel ? "sel" : ""}" data-i="${i}">${esc(n)}<small>${esc(t)}</small></div>`).join("") : '<div class="legenda" style="padding:12px">Nada encontrado.</div>';
+    $$(".op", res).forEach(o => { o.onclick = () => { fechar(); vis[+o.dataset.i][2](); }; o.onmousemove = () => { if (sel !== +o.dataset.i) { sel = +o.dataset.i; desenhar(); } }; });
+    const s = $(".op.sel", res); if (s) s.scrollIntoView({block: "nearest"});
+  };
+  inp.oninput = () => { sel = 0; desenhar(); };
+  inp.onkeydown = e => {
+    if (e.key === "ArrowDown") { e.preventDefault(); sel = Math.min(sel + 1, vis.length - 1); desenhar(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); sel = Math.max(sel - 1, 0); desenhar(); }
+    else if (e.key === "Enter" && vis[sel]) { fechar(); vis[sel][2](); }
+    else if (e.key === "Escape") fechar();
+  };
+  f.addEventListener("mousedown", e => { if (e.target === f) fechar(); });
+  document.body.append(f); desenhar(); inp.focus();
+}
+
+/* ------------------------------------------------------------------ atalhos e ações globais */
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-acao]"); if (!b) return;
+  ({"novo": abrirNovo, "abrir-existente": abrirExistente, "meus-dados": meusDados, "paleta": abrirPaleta, "tema": trocarTema,
+    "menu": () => document.body.classList.toggle("menu-aberto")})[b.dataset.acao]?.();
+});
+document.addEventListener("keydown", e => {
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); abrirPaleta(); }
+  else if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); if ($("#editor") && E.salvarAtual) E.salvarAtual(); }
+  else if (e.key === "F3" || (mod && e.key.toLowerCase() === "j")) { if ($("#md") || $("#editor")) { e.preventDefault(); proximaLacuna(); } }
+  else if (mod && /^[1-7]$/.test(e.key) && E.projeto && !$(".fundo")) { e.preventDefault(); $$(".aba")[+e.key - 1]?.click(); }
+});
+window.addEventListener("beforeunload", e => { if (E.sujo) { e.preventDefault(); e.returnValue = ""; } });
+$("#filtro-proj").oninput = desenharLista;
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => { if (lembrar("tema", "sistema") === "sistema" && E.projeto && ["docs", "kit"].includes(E.aba)) desenharProjeto(); });
+
+/* ------------------------------------------------------------------ início */
 (async function iniciar() {
-  try { const p = await api("/api/ping"); $("#versao").textContent = "v" + p.versao;
+  aplicarTema(lembrar("tema", "sistema"));
+  try {
+    const p = await api("/api/ping"); $("#versao").textContent = "v" + p.versao;
     setInterval(() => api("/api/ping").catch(() => {}), 15000);
     await carregarProjetos();
-    if (p.projeto_inicial) abrirProjeto(p.projeto_inicial); else if (E.projetos[0]) abrirProjeto(E.projetos[0].caminho); else telaVazia();
-  } catch (e) { document.body.innerHTML = `<div class="vazio"><div><h2>Sessão expirada</h2><p>Abra a interface de novo com <span class="mono">prumo gui</span>.</p></div></div>`; }
+    const ultimo = lembrar("ultimo", "");
+    const inicial = p.projeto_inicial || (E.projetos.some(x => x.caminho === ultimo) ? ultimo : E.projetos[0] && E.projetos[0].caminho);
+    if (inicial) abrirProjeto(inicial); else telaVazia();
+  } catch (e) {
+    document.body.innerHTML = `<div class="vazio" style="grid-column:1/-1"><div><h2>Sessão expirada</h2><p>Abra a interface de novo com <span class="mono">prumo gui</span> ou pelo prumo-app.exe.</p></div></div>`;
+  }
 })();
 </script>
 </body>

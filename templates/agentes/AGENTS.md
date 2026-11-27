@@ -31,6 +31,15 @@ Mudança significativa = 3 ou mais arquivos de código, 80 ou mais linhas, ou qu
 
 No Claude Code um hook exige essas duas etapas automaticamente; nos demais agentes, siga esta regra por conta própria.
 
+## Escrita dos documentos
+
+- **Um fato, um lugar.** Termos do negócio são definidos uma vez no glossário de `docs/02-requisitos.md`; cada ID, no documento dono. Nos demais, cite o ID em vez de repetir o texto.
+- **Estrutura antes de prosa:** tabelas e listas; parágrafos de até 3 frases; frases de até 40 palavras.
+- **Verificável:** números, nomes e critérios. Termo vago ("rápido", "intuitivo", "moderno") vira métrica ou pergunta P-xx.
+- **Sem enchimento:** nada de introduções que repetem o título, "é importante ressaltar", "a fim de" (use "para").
+- **Instruções no imperativo**, uma ação por item. Seção que não se aplica: "Não se aplica: motivo", em uma linha.
+- `{{prumo}} validar` aponta os excessos como avisos de estilo.
+
 ## Economia de tokens (sem perder qualidade)
 
 - **Carregue só a trilha necessária:** `{{prumo}} contexto HU-003` (ou UC-xxx, RF-xxx...) imprime apenas os blocos ligados àquele item. Prefira isso a ler documentos inteiros; para achar algo pontual, use busca por ID (`Grep "UC-004" docs/`).

@@ -9,22 +9,56 @@ A interface é uma página única em HTML, CSS e JavaScript puros (`prumo_cli/gu
 - `prumo gui --projeto D:\Projetos\loja` já abre no projeto.
 - `prumo gui --sem-janela` só inicia o servidor e mostra o endereço (útil para abrir em outro navegador).
 
+## Para que serve
+
+A interface existe para um fluxo: **criar o projeto → completar a especificação → gerar o kit do Claude → executar**.
+Quanto mais a especificação decide, menos o Claude precisa "pensar" na hora de implementar; por isso a tela inicial
+de cada projeto mostra a prontidão e o próximo passo, e o kit do Claude tem uma aba própria.
+
 ## Telas
 
 | Área | O que tem |
 |---|---|
-| **Barra lateral** | Novo projeto, projetos recentes, abrir pasta de projeto |
-| **Visão geral** | Documentos completos, lacunas, aprovados, itens rastreados, próximo passo e atalhos |
-| **Documentos** | Lista com o estado de cada documento; visualização em Markdown com as lacunas destacadas; abrir no editor; aprovar/liberar; criar ADR, mudança ou documento do catálogo |
-| **Claude** | Escolha da tarefa (especificar, etapas, implementar, revisar, documentar, segurança, mudança, Figma, pedido livre), alvo, instruções, continuar sessão, saída ao vivo, botão de parar e histórico com duração e custo |
-| **Qualidade** | Validação, varredura de segurança e matriz de rastreabilidade |
-| **Gestão** | Orçamento (valor da hora e contingência), horas trabalhadas, sincronização com o Figma e exportação para outros agentes |
+| **Barra lateral** | Novo projeto, busca e lista de projetos recentes (com botão para tirar da lista), abrir pasta, **Meus dados**, paleta de comandos e tema |
+| **Visão geral** | Anel de prontidão para executar (documentos completos, validação, aprovação e kit), a jornada em 5 etapas (Criar, Especificar, Validar, Aprovar, Executar) com o próximo passo, indicadores, documentos e resumo do kit |
+| **Documentos** | Lista filtrável com o estado de cada documento; visualização com índice das seções, IDs destacados e **diagramas Mermaid desenhados**; **editor embutido** (Ctrl+S salva) com botão **Próxima lacuna**; aprovar/liberar; criar ADR, mudança ou documento do catálogo |
+| **Kit do Claude** | Skills, subagentes, hooks (com os eventos em que rodam), `CLAUDE.md`, `AGENTS.md` e `settings.json`, cada um marcado como ok, personalizado, do projeto ou ausente; ver e editar skills e subagentes; regenerar o kit; exportar para Gemini, Copilot e Cursor |
+| **Executar com o Claude** | Tarefas agrupadas (Especificar, Executar, Figma, Outro), alvo, instruções, continuar sessão, saída ao vivo, parar e histórico com duração e custo |
+| **Qualidade** | Validação (roda ao abrir), varredura de segurança e matriz de rastreabilidade |
+| **Gestão** | Orçamento, horas trabalhadas e Figma |
+| **Configurações** | Nome, cliente, stack, comandos usados pelos hooks (com os sugeridos pelo perfil), opções dos hooks, modelo do Claude, orçamento do projeto e pastas de código |
 
 Os botões **Pasta**, **VS Code** e **Abrir Claude Code** abrem a pasta do projeto no Explorer, no VS Code ou num terminal já com o `claude` rodando.
 
+O editor só grava Markdown em `docs/`, `.claude/skills/`, `.claude/agents/`, `CLAUDE.md` e `AGENTS.md`. Documentos aprovados
+ficam bloqueados até você liberar a edição, e se o arquivo mudou fora da interface desde que foi aberto, ela pede para recarregar em vez de sobrescrever.
+
+## Atalhos
+
+| Atalho | Ação |
+|---|---|
+| Ctrl+K | Paleta de comandos: abas, documentos, skills, projetos e ações |
+| Ctrl+1 … Ctrl+7 | Troca de aba |
+| Ctrl+S | Salva o documento em edição |
+| F3 ou Ctrl+J | Próxima lacuna `[PREENCHER]` |
+| Ctrl+Enter | Envia a tarefa ao Claude |
+| Esc | Fecha diálogos |
+
 ## Visual
 
-Tons quentes e suaves, cantos arredondados, sombras discretas e transições curtas. O modo escuro segue o sistema operacional (`prefers-color-scheme`).
+Papel quente, tinta grafite e o verde-petróleo do prumo como cor principal, com terracota de acento. Tema claro, escuro
+ou o do sistema (botão **Tema** na barra lateral). Cada estado tem sua cor: verde = completo, âmbar = lacunas,
+índigo = aprovado, tijolo = erro.
+
+A paleta é verificada por `tools/cores.py` (também roda nos testes): contraste WCAG AA (texto ≥ 4,5:1, elementos ≥ 3:1)
+nos dois temas e cores de estado distinguíveis sob protanopia, deuteranopia e tritanopia (ΔE2000 ≥ 15). Mudou uma cor? Rode:
+
+```
+python tools/cores.py
+```
+
+Os diagramas usam o [Mermaid](https://mermaid.js.org) embutido em `prumo_cli/gui/mermaid.min.js` (licença MIT em
+`mermaid.LICENSE.txt`), sem internet. Ele é servido só com o token da sessão.
 
 ## Como funciona
 
@@ -47,5 +81,5 @@ sequenceDiagram
 ```
 
 - O servidor escuta só em `127.0.0.1`, numa porta aleatória, e exige um token aleatório gerado a cada abertura (sem ele, a página e a API respondem 403).
-- Só os comandos de uma lista fixa podem ser chamados pela interface; a leitura de arquivos fica restrita à pasta do projeto e a extensões de texto.
+- Só os comandos de uma lista fixa podem ser chamados pela interface; a leitura de arquivos fica restrita à pasta do projeto e a extensões de texto, e a gravação às áreas descritas acima.
 - Ao fechar a janela, o servidor encerra sozinho em cerca de um minuto (se não houver tarefa do Claude em andamento).

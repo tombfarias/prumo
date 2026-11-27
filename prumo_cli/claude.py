@@ -39,6 +39,8 @@ REGRAS_ESPECIFICACAO = (
     "- **Proporcionalidade:** o tamanho da especificação acompanha o tamanho do pedido. O que o cliente não pediu "
     "(monitoramento, CI elaborado, painéis extras, rotinas de LGPD além do necessário, funções \"seria bom ter\") entra com "
     "prioridade Could, fora do escopo base. Seção do modelo que não se aplica: escreva \"Não se aplica\" e o motivo em uma linha.\n"
+    "- **Concisão:** siga a seção \"Escrita dos documentos\" do AGENTS.md. Tabelas e listas antes de prosa, um fato em um só lugar "
+    "(cite o ID em vez de repetir), sem frases de enchimento. Avisos \"estilo:\" do `prumo validar` indicam o que enxugar.\n"
     "- **Perguntas ao cliente:** uma linha por pergunta na tabela da seção 9 do briefing (IDs P-01, P-02...), marcando as que "
     "bloqueiam a proposta. Não repita perguntas já registradas."
 )

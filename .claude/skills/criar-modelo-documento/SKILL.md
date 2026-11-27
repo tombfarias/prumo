@@ -15,4 +15,4 @@ description: Adiciona um novo modelo de documento de especificação ao Prumo (e
 4. Descreva o documento em `DESCRICOES` (`prumo_cli/projeto.py`) e inclua-o nos perfis que devem tê-lo.
 5. Se uma skill deve preencher o documento, crie ou ajuste a skill em `templates/agentes/claude/skills/` e, se fizer sentido,
    uma tarefa em `TAREFAS` (`prumo_cli/claude.py`) e na lista da interface (`prumo_cli/gui/index.html`).
-6. Rode os testes e documente em `docs/perfis-e-modelos.md`.
+6. Escreva conforme `docs/guia-de-escrita.md` (os testes falham com avisos de estilo). Rode os testes e documente em `docs/perfis-e-modelos.md`.

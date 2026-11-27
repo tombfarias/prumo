@@ -24,10 +24,10 @@ from .util import CONGELADO, RAIZ_KIT, VERSAO, executavel_console, progresso
 PAGINA = Path(__file__).resolve().parent / "gui" / "index.html"
 PERMITIDOS = {"perfis", "projetos", "novo", "mapear", "ferramentas", "status", "validar", "rastreabilidade", "contexto", "aprovar",
               "desaprovar", "adr", "mudanca", "doc", "agentes", "orcamento", "horas", "seguranca", "diagramas",
-              "figma", "versao"}
+              "figma", "versao", "config"}
 LIMITE_CORPO = 2_000_000  # bytes aceitos no corpo de um POST
 DESCARTE_MAXIMO = 16_000_000  # acima disso a conexão fecha sem ler o resto
-EXT_LEITURA = {".md", ".json", ".txt", ".mmd", ".log"}
+EXT_LEITURA = {".md", ".json", ".txt", ".mmd", ".log", ".py"}
 
 
 def comando_base():
@@ -132,9 +132,14 @@ def criar_handler(estado):
                 self.send_header("Content-Length", str(len(html)))
                 self.send_header("Cache-Control", "no-store")
                 self.send_header("Content-Security-Policy",
-                                 "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:")
+                                 "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:")
                 self.end_headers()
                 return self.wfile.write(html)
+            if url.path.startswith("/estatico/"):
+                # <script src> não envia cabeçalhos: o token vem na URL, como na página
+                if not secrets.compare_digest((parse_qs(url.query).get("t") or [""])[0], estado.token):
+                    return self._responder(HTTPStatus.FORBIDDEN, {"erro": "token inválido"})
+                return self._estatico(url.path[len("/estatico/"):])
             if not self._autorizado():
                 return self._responder(HTTPStatus.FORBIDDEN, {"erro": "token inválido"})
             if url.path == "/api/ping":
@@ -148,6 +153,14 @@ def criar_handler(estado):
                 return self._responder(200, {"linhas": tarefa.linhas[desde:], "total": len(tarefa.linhas),
                                              "fim": tarefa.fim, "codigo": tarefa.codigo})
             return self._responder(404, {"erro": "não encontrado"})
+
+        def _estatico(self, nome):
+            # arquivos da própria interface (ex.: mermaid.min.js); exigem o token como a API
+            arq = (PAGINA.parent / nome).resolve()
+            if arq.parent != PAGINA.parent or arq.suffix not in (".js", ".css") or not arq.is_file():
+                return self._responder(404, {"erro": "não encontrado"})
+            tipo = "text/javascript; charset=utf-8" if arq.suffix == ".js" else "text/css; charset=utf-8"
+            return self._responder(200, arq.read_bytes(), tipo)
 
         def do_POST(self):
             # Lê o corpo antes de recusar: no Windows, fechar o socket com dados não lidos
@@ -179,6 +192,8 @@ def criar_handler(estado):
                     return self._responder(200, {"ok": True})
                 if rota == "/api/ler":
                     return self._responder(200, ler_arquivo(corpo))
+                if rota == "/api/salvar":
+                    return self._responder(200, salvar_arquivo(corpo))
                 if rota == "/api/abrir":
                     return self._responder(200, abrir(corpo))
                 if rota == "/api/escolher-pasta":
@@ -225,7 +240,31 @@ def ler_arquivo(corpo):
     alvo = _dentro(corpo["projeto"], corpo["arquivo"])
     if alvo.suffix.lower() not in EXT_LEITURA or alvo.name.startswith(".env"):
         return {"erro": "tipo de arquivo não permitido"}
-    return {"texto": alvo.read_text(encoding="utf-8", errors="replace")[:400_000]}
+    return {"texto": alvo.read_text(encoding="utf-8", errors="replace")[:400_000], "versao": alvo.stat().st_mtime_ns}
+
+
+def salvar_arquivo(corpo):
+    """Grava um Markdown editado na interface: documentos em docs/, skills e subagentes em .claude/, CLAUDE.md e AGENTS.md.
+    Nunca grava um documento aprovado pelo cliente nem sobrescreve uma alteração feita fora da interface."""
+    raiz = Path(corpo["projeto"]).resolve()
+    config = json.loads((raiz / "projeto.prumo.json").read_text(encoding="utf-8-sig"))
+    alvo = _dentro(raiz, corpo["arquivo"])
+    rel = alvo.relative_to(raiz).as_posix()
+    editavel = rel.startswith(("docs/", ".claude/skills/", ".claude/agents/")) or rel in ("CLAUDE.md", "AGENTS.md")
+    if alvo.suffix.lower() != ".md" or not editavel:
+        return {"erro": "este arquivo não pode ser editado pela interface"}
+    if rel in (config.get("aprovados") or {}):
+        return {"erro": "documento aprovado pelo cliente: libere a edição antes de alterar"}
+    if not alvo.is_file():
+        return {"erro": "arquivo não encontrado"}
+    if corpo.get("versao") is not None and alvo.stat().st_mtime_ns != int(corpo["versao"]):
+        return {"erro": "o arquivo foi alterado fora da interface; recarregue antes de salvar", "conflito": True}
+    texto = str(corpo.get("texto", ""))
+    if len(texto) > 2_000_000:
+        return {"erro": "arquivo grande demais"}
+    with open(alvo, "w", encoding="utf-8", newline="\n") as f:
+        f.write(texto.replace("\r\n", "\n"))
+    return {"ok": True, "versao": alvo.stat().st_mtime_ns}
 
 
 def _abrir_no_sistema(caminho):
