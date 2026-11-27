@@ -22,7 +22,7 @@ from urllib.parse import parse_qs, urlparse
 from .util import CONGELADO, RAIZ_KIT, VERSAO, executavel_console, progresso
 
 PAGINA = Path(__file__).resolve().parent / "gui" / "index.html"
-PERMITIDOS = {"perfis", "projetos", "novo", "status", "validar", "rastreabilidade", "contexto", "aprovar",
+PERMITIDOS = {"perfis", "projetos", "novo", "mapear", "ferramentas", "status", "validar", "rastreabilidade", "contexto", "aprovar",
               "desaprovar", "adr", "mudanca", "doc", "agentes", "orcamento", "horas", "seguranca", "diagramas",
               "figma", "versao"}
 LIMITE_CORPO = 2_000_000  # bytes aceitos no corpo de um POST

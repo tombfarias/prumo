@@ -52,6 +52,7 @@ DICAS_VALIDACAO = (
 
 # tarefa -> (skill, descrição, ferramentas, documentos que indicam se a etapa existe no projeto)
 TAREFAS = {
+    "mapear": ("mapear-projeto-existente", "Mapear projeto existente", ESCRITA + GIT_LEITURA, []),
     "requisitos": ("levantar-requisitos", "Visão e requisitos", ESCRITA, ["01-visao", "02-requisitos"]),
     "casos-de-uso": ("especificar-casos-de-uso", "Casos de uso", ESCRITA, ["03-casos-de-uso"]),
     "interface": ("especificar-interface", "Interface e telas", ESCRITA, ["05-interface"]),

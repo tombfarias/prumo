@@ -17,6 +17,14 @@ flowchart LR
     mud --> aprov
 ```
 
+## Projeto que já existe
+
+Quando o cliente traz um sistema pronto (manutenção, evolução, projeto herdado), o começo muda:
+
+1. `prumo mapear D:\Projetos\sistema-do-cliente --cliente "Cliente"` (use `--simular` antes, se quiser ver só a detecção). Nada do cliente é sobrescrito; os comandos dos hooks já saem preenchidos.
+2. No Claude Code, `/mapear-projeto-existente` (ou `prumo claude mapear`): requisitos, casos de uso, UML, banco e arquitetura descrevem o que existe hoje, cada item com o arquivo de origem; dúvidas viram perguntas ao cliente.
+3. Revise e aprove (`prumo aprovar`). A partir daí o fluxo é o mesmo: o que o cliente pede de novo vira história no backlog ou pedido de mudança.
+
 ## 1. Primeiro contato e briefing
 
 - `prumo novo` com o perfil mais próximo. Na dúvida, comece com `minimo` e adicione documentos depois (`prumo doc 03-casos-de-uso`).

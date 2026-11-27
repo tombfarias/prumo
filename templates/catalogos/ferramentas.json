@@ -1,0 +1,82 @@
+{
+  "descricao": "Ferramentas por linguagem, para stacks fora dos perfis e para mapear projetos existentes. 'marcadores' são arquivos que denunciam a linguagem num projeto; 'palavras' são termos que, no texto da stack (prumo novo --stack), indicam a mesma ferramenta. Os comandos vão para os hooks: {arquivo} é o arquivo editado.",
+  "itens": [
+    {
+      "id": "node", "nome": "Node.js / JavaScript / TypeScript", "marcadores": ["package.json"],
+      "palavras": ["node", "typescript", "javascript", "react", "vue", "svelte", "angular", "next", "nuxt", "express", "nest", "fastify", "astro", "remix", "electron"],
+      "extensoes": [".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".vue", ".svelte"],
+      "comandos": {"formatar": "npx prettier --write {arquivo}", "lint": "npx eslint {arquivo}", "testar": "npm test"},
+      "convencao": "Use o gerenciador de pacotes do lockfile (npm, pnpm, yarn ou bun); não misture."
+    },
+    {
+      "id": "deno", "nome": "Deno", "marcadores": ["deno.json", "deno.jsonc"], "palavras": ["deno"],
+      "extensoes": [".ts", ".tsx", ".js"],
+      "comandos": {"formatar": "deno fmt {arquivo}", "lint": "deno lint {arquivo}", "testar": "deno test"}
+    },
+    {
+      "id": "python", "nome": "Python", "marcadores": ["pyproject.toml", "requirements.txt", "setup.py", "setup.cfg", "Pipfile"],
+      "palavras": ["python", "django", "flask", "fastapi", "pandas", "streamlit"],
+      "extensoes": [".py"],
+      "comandos": {"formatar": "ruff format {arquivo}", "lint": "ruff check {arquivo}", "testar": "pytest -q"},
+      "convencao": "Ambiente virtual em .venv; dependências declaradas no pyproject.toml ou requirements.txt."
+    },
+    {
+      "id": "php", "nome": "PHP", "marcadores": ["composer.json"], "palavras": ["php", "laravel", "symfony", "wordpress", "codeigniter"],
+      "extensoes": [".php"],
+      "comandos": {"formatar": "", "lint": "php -l {arquivo}", "testar": "./vendor/bin/phpunit"},
+      "convencao": "Siga a PSR-12; dependências pelo Composer, sem editar vendor/."
+    },
+    {
+      "id": "go", "nome": "Go", "marcadores": ["go.mod"], "palavras": ["go", "golang", "gin", "echo", "fiber"],
+      "extensoes": [".go"],
+      "comandos": {"formatar": "gofmt -w {arquivo}", "lint": "go vet ./...", "testar": "go test ./..."},
+      "convencao": "Erros retornados e tratados explicitamente; pacotes pequenos em internal/ quando não forem públicos."
+    },
+    {
+      "id": "rust", "nome": "Rust", "marcadores": ["Cargo.toml"], "palavras": ["rust", "cargo", "axum", "actix", "tauri"],
+      "extensoes": [".rs"],
+      "comandos": {"formatar": "rustfmt {arquivo}", "lint": "cargo clippy --quiet", "testar": "cargo test"},
+      "convencao": "Sem unwrap() fora de testes; erros com Result e tipos próprios."
+    },
+    {
+      "id": "elixir", "nome": "Elixir", "marcadores": ["mix.exs"], "palavras": ["elixir", "phoenix", "liveview"],
+      "extensoes": [".ex", ".exs", ".heex"],
+      "comandos": {"formatar": "mix format {arquivo}", "lint": "", "testar": "mix test"}
+    },
+    {
+      "id": "ruby", "nome": "Ruby", "marcadores": ["Gemfile"], "palavras": ["ruby", "rails", "sinatra"],
+      "extensoes": [".rb", ".erb"],
+      "comandos": {"formatar": "bundle exec rubocop -a {arquivo}", "lint": "bundle exec rubocop {arquivo}", "testar": "bundle exec rspec"}
+    },
+    {
+      "id": "java-maven", "nome": "Java/Kotlin com Maven", "marcadores": ["pom.xml"], "palavras": ["maven", "spring", "quarkus", "java"],
+      "extensoes": [".java", ".kt"],
+      "comandos": {"formatar": "", "lint": "", "testar": "mvn -q test"}
+    },
+    {
+      "id": "java-gradle", "nome": "Java/Kotlin com Gradle", "marcadores": ["build.gradle", "build.gradle.kts"], "palavras": ["gradle", "kotlin", "ktor", "android"],
+      "extensoes": [".java", ".kt", ".kts"],
+      "comandos": {"formatar": "", "lint": "", "testar": "./gradlew test"}
+    },
+    {
+      "id": "dotnet", "nome": ".NET (C#)", "marcadores": ["*.csproj", "*.sln", "*.fsproj"], "palavras": [".net", "dotnet", "c#", "csharp", "asp.net", "blazor"],
+      "extensoes": [".cs", ".fs", ".razor"],
+      "comandos": {"formatar": "dotnet format --include {arquivo}", "lint": "", "testar": "dotnet test"}
+    },
+    {
+      "id": "dart", "nome": "Dart / Flutter", "marcadores": ["pubspec.yaml"], "palavras": ["dart", "flutter"],
+      "extensoes": [".dart"],
+      "comandos": {"formatar": "dart format {arquivo}", "lint": "dart analyze {arquivo}", "testar": "flutter test"}
+    },
+    {
+      "id": "swift", "nome": "Swift", "marcadores": ["Package.swift"], "palavras": ["swift", "swiftui", "ios"],
+      "extensoes": [".swift"],
+      "comandos": {"formatar": "", "lint": "", "testar": "swift test"}
+    },
+    {
+      "id": "cpp", "nome": "C / C++ (CMake)", "marcadores": ["CMakeLists.txt"], "palavras": ["c++", "cpp", "cmake", "qt"],
+      "extensoes": [".c", ".cc", ".cpp", ".h", ".hpp"],
+      "comandos": {"formatar": "clang-format -i {arquivo}", "lint": "", "testar": "ctest --test-dir build"}
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from . import mapear
 from .util import (
     ARQUIVO_PROJETO, CONGELADO, RAIZ_KIT, python_disponivel, TEMPLATES, URL_PRUMO, VERSAO, ErroPrumo, agora_iso, aviso,
     comando_prumo, comando_python, config_freelancer, contar_lacunas, git_usuario, gravar,
@@ -29,6 +30,7 @@ DESCRICOES = {
     "09-plano-de-testes": "Estratégia e casos de teste (CT), homologação",
     "10-proposta-comercial": "Proposta para o cliente: escopo, cronograma, investimento, condições",
     "11-entrega": "Implantação, checklist de entrega, manual de operação",
+    "00-mapa-do-codigo": "Projeto existente: stack, comandos, estrutura e arquivos-chave detectados (gerado por `prumo mapear`)",
     "12-seguranca": "Superfície de ataque, ameaças, checklist OWASP, achados (SEG) e histórico de revisões",
 }
 SKILLS_FIGMA = {"implementar-tela-figma", "diagramas-figjam"}
@@ -128,6 +130,9 @@ class Projeto:
         ctx["lista_documentos"] = _lista_documentos(c.get("documentos") or [])
         ctx["lista_skills"] = _lista_skills(figma)
         ctx["convencoes"] = renderizar(ler(TEMPLATES / "perfis" / "convencoes" / perfil["convencoes"]), ctx).strip()
+        extras = mapear.convencoes_das_ferramentas(c.get("ferramentas") or [])
+        if extras:
+            ctx["convencoes"] += "\n\n### Ferramentas da stack deste projeto\n\n" + extras
         ctx["comandos_figma"] = (
             f"| `{ctx['prumo']} figma telas` | Sincroniza o inventário de telas (TL) de `docs/05-interface.md` com o arquivo do Figma |\n"
             if figma else ""
@@ -226,7 +231,9 @@ def _lista_skills(figma):
 # ---------------------------------------------------------------- criação
 
 def criar_projeto(destino, perfil_id, nome=None, cliente="", stack=None, autor=None, figma=None,
-                  figma_url="", git=True, python=None, hooks_absolutos=False, hooks_via=None, forcar=False):
+                  figma_url="", git=True, python=None, hooks_absolutos=False, hooks_via=None, forcar=False,
+                  comandos=None, existente=False, pastas_codigo=None, ferramentas=None):
+    """Cria o projeto. Com existente=True (prumo mapear), não sobrescreve nenhum arquivo que já esteja na pasta."""
     destino = Path(destino).resolve()
     if destino.exists() and any(destino.iterdir()) and not forcar:
         raise ErroPrumo(f"A pasta {destino} já existe e não está vazia (use --forcar para usar mesmo assim).")
@@ -238,6 +245,14 @@ def criar_projeto(destino, perfil_id, nome=None, cliente="", stack=None, autor=N
     usar_figma = perfil.get("figma", False) if figma is None else figma
     usar_figma = usar_figma or bool(figma_url)
     documentos = [f"docs/{d}.md" for d in perfil["documentos"]]
+    # Stack fora do perfil: os comandos sugeridos vêm das ferramentas citadas no texto (Go, Rust, Elixir...).
+    if ferramentas is None:
+        ferramentas = mapear.ferramentas_da_stack(stack) if stack and stack != perfil["stack"] else []
+    sugeridos = perfil.get("comandos_sugeridos", {})
+    if ferramentas and not existente:
+        sugeridos = mapear.comandos_das_ferramentas(ferramentas)
+    if existente:
+        documentos.insert(0, mapear.MAPA)
 
     destino.mkdir(parents=True, exist_ok=True)
     config = {
@@ -254,13 +269,15 @@ def criar_projeto(destino, perfil_id, nome=None, cliente="", stack=None, autor=N
         "hooks_via": hooks_via or ("prumo" if CONGELADO and not python_disponivel() else "python"),
         "documentos": documentos,
         "aprovados": {},
-        "comandos": {"formatar": "", "lint": "", "testar": ""},
-        "comandos_sugeridos": perfil.get("comandos_sugeridos", {}),
+        "comandos": {"formatar": "", "lint": "", "testar": "", **(comandos or {})},
+        "comandos_sugeridos": sugeridos,
+        "ferramentas": ferramentas,
+        "existente": bool(existente),
         "hooks": {
             "registrar_horas": True, "testes_ao_parar": False, "comandos_permitidos": [],
             "revisao_pos_mudanca": True, "limite_arquivos": 3, "limite_linhas": 80, "caminhos_sensiveis": [],
         },
-        "pastas_codigo": perfil.get("pastas") or ["src", "tests"],
+        "pastas_codigo": pastas_codigo or perfil.get("pastas") or ["src", "tests"],
         "figma": {"ativo": usar_figma, "arquivo": figma_url, "telas": {}},
         "orcamento": {"valor_hora": None, "contingencia_percentual": None},
         "claude": {"modelo": "", "max_turnos": None, "ferramentas_extras": []},
@@ -269,23 +286,52 @@ def criar_projeto(destino, perfil_id, nome=None, cliente="", stack=None, autor=N
     projeto = Projeto(destino)
     ctx = projeto.contexto()
 
+    def novo_arquivo(rel, texto):
+        """Grava só se não existir (num projeto existente, nada do cliente é sobrescrito)."""
+        alvo = destino / rel
+        if existente and alvo.exists():
+            pulados.append(rel)
+            return False
+        gravar(alvo, texto)
+        escritos.append(rel)
+        return True
+
+    escritos, pulados = [], []
     for doc in perfil["documentos"]:
         texto = renderizar(ler(TEMPLATES / "documentos" / f"{doc}.md"), ctx)
         if doc == "05-interface" and figma_url:
             texto = texto.replace("| Arquivo do Figma | [PREENCHER: URL] |", f"| Arquivo do Figma | {figma_url} |")
-        gravar(destino / "docs" / f"{doc}.md", texto)
+        novo_arquivo(f"docs/{doc}.md", texto)
     for pasta, modelo, prefixo in (("adr", "adr", "ADR"), ("mudancas", "mudanca", "CM")):
         ctx_modelo = dict(ctx, id=f"{prefixo}-NNN", titulo="Título")
-        gravar(destino / "docs" / pasta / "_modelo.md", renderizar(ler(TEMPLATES / "documentos" / f"{modelo}.md"), ctx_modelo))
+        novo_arquivo(f"docs/{pasta}/_modelo.md", renderizar(ler(TEMPLATES / "documentos" / f"{modelo}.md"), ctx_modelo))
 
-    _limpar_exemplos_orfaos(projeto)
+    _limpar_exemplos_orfaos(projeto, [destino / r for r in escritos if r.startswith("docs/")])
     base = TEMPLATES / "agentes"
-    gravar(destino / "AGENTS.md", renderizar(ler(base / "AGENTS.md"), ctx))
-    gravar(destino / "CLAUDE.md", renderizar(ler(base / "CLAUDE.md"), ctx))
-    gravar(destino / "README.md", renderizar(ler(base / "README.md"), ctx))
-    gravar(destino / ".gitignore", ler(base / "gitignore"))
-    gravar(destino / ".env.example", "# Variáveis de ambiente do projeto (sem valores reais). Copie para .env.\n")
-    projeto.instalar_kit_agentes()
+    agentes = renderizar(ler(base / "AGENTS.md"), ctx)
+    if existente:
+        agentes = agentes.rstrip("\n") + "\n\n" + renderizar(mapear.BLOCO_AGENTES, dict(ctx, mapa=mapear.MAPA))
+        for arq, texto in (("AGENTS.md", agentes), ("CLAUDE.md", renderizar(ler(base / "CLAUDE.md"), ctx))):
+            if novo_arquivo(arq, texto):
+                continue
+            # O arquivo do cliente fica intacto; o do Prumo vai ao lado e é importado num bloco no fim.
+            lado = arq.replace(".md", ".prumo.md")
+            gravar(destino / lado, texto)
+            mapear.mesclar_bloco(destino / arq, f"## Prumo\n\n@{lado}")
+            escritos.append(lado)
+        mapear.mesclar_bloco(destino / ".gitignore", ler(base / "gitignore"))
+    else:
+        gravar(destino / "AGENTS.md", agentes)
+        gravar(destino / "CLAUDE.md", renderizar(ler(base / "CLAUDE.md"), ctx))
+        gravar(destino / ".gitignore", ler(base / "gitignore"))
+    novo_arquivo("README.md", renderizar(ler(base / "README.md"), ctx))
+    if not (destino / ".env.example").exists():
+        gravar(destino / ".env.example", "# Variáveis de ambiente do projeto (sem valores reais). Copie para .env.\n")
+    projeto.instalar_kit_agentes(incluir_settings=not existente, sobrescrever=not existente)
+    if existente:
+        mapear.mesclar_settings(destino / ".claude" / "settings.json", projeto.settings_claude())
+        projeto.pulados = pulados
+        return projeto
     for pasta in config["pastas_codigo"]:
         (destino / pasta).mkdir(parents=True, exist_ok=True)
         gravar(destino / pasta / ".gitkeep", "")
@@ -295,14 +341,15 @@ def criar_projeto(destino, perfil_id, nome=None, cliente="", stack=None, autor=N
     return projeto
 
 
-def _limpar_exemplos_orfaos(projeto):
-    """Nos modelos, exemplos citam IDs de documentos que o perfil pode não ter (ex.: UC-001 no perfil mínimo)."""
+def _limpar_exemplos_orfaos(projeto, arquivos=None):
+    """Nos modelos, exemplos citam IDs de documentos que o perfil pode não ter (ex.: UC-001 no perfil mínimo).
+    Só mexe nos arquivos que o Prumo acabou de gravar (num projeto existente, os docs do cliente ficam intactos)."""
     from . import rastreio
     orfaos = set(rastreio.analisar_projeto(projeto).indefinidos())
     if not orfaos:
         return
     padrao = re.compile(r"\b(" + "|".join(re.escape(o) for o in orfaos) + r")\b")
-    for arq in projeto.arquivos_docs():
+    for arq in (projeto.arquivos_docs() if arquivos is None else arquivos):
         texto = ler(arq)
         novo = padrao.sub("—", texto)
         if novo != texto:

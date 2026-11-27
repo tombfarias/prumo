@@ -16,7 +16,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
-from prumo_cli import claude, figma, formulario, gestao, projeto as mp, rastreio, seguranca, validacao  # noqa: E402
+from prumo_cli import claude, figma, formulario, mapear, gestao, projeto as mp, rastreio, seguranca, validacao  # noqa: E402
 from prumo_cli.cli import main  # noqa: E402
 from prumo_cli.util import ErroPrumo, gravar, ler  # noqa: E402
 
@@ -154,6 +154,83 @@ class TestCriacao(unittest.TestCase):
             self.assertIn(p.raiz.as_posix(), ler(p.raiz / ".claude" / "settings.json"))
             p.config["hooks_via"] = "prumo"
             self.assertIn(" hook guarda_comandos", p.comando_hook("guarda_comandos"))
+
+
+
+class TestMapear(unittest.TestCase):
+    def _existente(self, tmp):
+        raiz = Path(tmp) / "loja"
+        gravar(raiz / "package.json", json.dumps({
+            "scripts": {"test": "vitest run"},
+            "dependencies": {"next": "14", "react": "18", "@prisma/client": "5"},
+            "devDependencies": {"prettier": "3", "eslint": "8", "vitest": "1"}}))
+        gravar(raiz / "pnpm-lock.yaml", "")
+        gravar(raiz / "prisma" / "schema.prisma", "model Pedido { id Int @id }\n")
+        gravar(raiz / "src" / "routes" / "pedidos.ts", "export const x = 1\n")
+        gravar(raiz / "node_modules" / "lixo" / "index.js", "x")
+        gravar(raiz / "README.md", "# Loja do cliente\n")
+        gravar(raiz / "CLAUDE.md", "Regras do cliente\n")
+        gravar(raiz / "docs" / "01-visao.md", "visão escrita pelo cliente\n")
+        gravar(raiz / ".claude" / "settings.json", json.dumps({"permissions": {"allow": ["Bash(pnpm dev)"]}}))
+        return raiz
+
+    def test_detectar(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            det = mapear.detectar(self._existente(tmp))
+            self.assertEqual(det["perfil"], "web-fullstack")
+            self.assertIn("Next.js", det["stack"])
+            self.assertEqual(det["gerenciador"], "pnpm")
+            self.assertEqual(det["comandos"], {"formatar": "pnpm exec prettier --write {arquivo}",
+                                               "lint": "pnpm exec eslint {arquivo}", "testar": "pnpm test"})
+            self.assertEqual(det["pastas_codigo"], ["src"])
+            self.assertIn("prisma/schema.prisma", det["arquivos_chave"]["Modelos e banco"])
+            self.assertNotIn("node_modules", " ".join(det["pastas_topo"]))
+            gravar(Path(tmp) / "go" / "go.mod", "module x\nrequire github.com/gin-gonic/gin v1\n")
+            gravar(Path(tmp) / "go" / "cmd" / "api" / "main.go", "package main\n")
+            det = mapear.detectar(Path(tmp) / "go")
+            self.assertEqual((det["perfil"], det["stack"]), ("api-rest", "Go + Gin"))
+            self.assertEqual(det["comandos"]["testar"], "go test ./...")
+
+    def test_mapear_nao_sobrescreve(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = self._existente(tmp)
+            p, det = mapear.mapear_projeto(raiz, cliente="Cliente")
+            self.assertEqual(ler(raiz / "README.md"), "# Loja do cliente\n")
+            self.assertEqual(ler(raiz / "docs" / "01-visao.md"), "visão escrita pelo cliente\n")
+            claude_md = ler(raiz / "CLAUDE.md")
+            self.assertTrue(claude_md.startswith("Regras do cliente\n"))
+            self.assertIn("@CLAUDE.prumo.md", claude_md)
+            self.assertIn("@AGENTS.md", ler(raiz / "CLAUDE.prumo.md"))
+            self.assertIn("mapear-projeto-existente", ler(raiz / "AGENTS.md"))
+            settings = json.loads(ler(raiz / ".claude" / "settings.json"))
+            self.assertIn("Bash(pnpm dev)", settings["permissions"]["allow"])
+            self.assertIn("PreToolUse", settings["hooks"])
+            self.assertTrue((raiz / ".claude" / "skills" / "mapear-projeto-existente" / "SKILL.md").exists())
+            self.assertEqual(p.config["comandos"]["testar"], "pnpm test")
+            self.assertTrue(p.config["existente"])
+            self.assertFalse((raiz / ".git").exists())
+            self.assertIn("Next.js", ler(raiz / mapear.MAPA))
+            self.assertEqual([m for g, m in validacao.validar(p) if g == "erro"], [])
+            # de novo: idempotente (atualiza o mapa, não duplica blocos nem hooks)
+            mapear.mapear_projeto(raiz)
+            self.assertEqual(ler(raiz / "CLAUDE.md").count("prumo:inicio"), 1)
+            settings2 = json.loads(ler(raiz / ".claude" / "settings.json"))
+            self.assertEqual(len(settings2["hooks"]["PreToolUse"]), len(settings["hooks"]["PreToolUse"]))
+
+    def test_stack_personalizada(self):
+        self.assertEqual(mapear.ferramentas_da_stack("Elixir + Phoenix + PostgreSQL"), ["elixir"])
+        self.assertEqual(mapear.ferramentas_da_stack("Django e HTMX"), ["python"])  # "go" não casa dentro de "Django"
+        with tempfile.TemporaryDirectory() as tmp:
+            p = criar(tmp, "api-rest", stack="Go + Gin + PostgreSQL")
+            self.assertEqual(p.config["ferramentas"], ["go"])
+            self.assertEqual(p.config["comandos_sugeridos"]["formatar"], "gofmt -w {arquivo}")
+            self.assertIn("Go", ler(p.raiz / "AGENTS.md"))
+            self.assertIn("go test ./...", ler(p.raiz / "AGENTS.md"))
+        with tempfile.TemporaryDirectory() as tmp, redirect_stdout(io.StringIO()):
+            codigo = main(["novo", str(Path(tmp) / "x"), "--perfil", "minimo", "--sem-git", "--stack", "Lua + LÖVE",
+                           "--comando", "testar=busted"])
+            self.assertEqual(codigo, 0)
+            self.assertEqual(json.loads(ler(Path(tmp) / "x" / "projeto.prumo.json"))["comandos"]["testar"], "busted")
 
 
 class TestRastreio(unittest.TestCase):

@@ -25,7 +25,7 @@ EXT_CODIGO = {
     ".cs", ".go", ".rb", ".php", ".rs", ".dart", ".swift", ".sql", ".feature", ".html", ".css", ".scss",
 }
 IGNORAR_PASTAS = {"node_modules", ".git", "dist", "build", ".next", ".astro", ".venv", "venv", "__pycache__",
-                  "coverage", ".prumo", "vendor", "target", ".dart_tool", "Pods"}
+                  "coverage", ".prumo", ".claude", "vendor", "target", ".dart_tool", "Pods"}
 
 
 def tipo_de(ident):

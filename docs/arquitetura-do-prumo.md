@@ -51,6 +51,7 @@ flowchart TB
 | `projeto.py` | Perfis, criação de projetos, instalação do kit de agentes, geração do `settings.json`, aprovação, ADR/mudança, Figma |
 | `rastreio.py` | Parser de IDs (definição × referência por bloco), varredura do código, problemas de cobertura, matriz, estimativas |
 | `validacao.py` | Status, validação (aprovados, lacunas, Mermaid leve ou mmdc, rastreabilidade), contexto compacto, extração de diagramas |
+| `mapear.py` | Projetos existentes: detecção de stack/comandos/arquivos-chave, `docs/00-mapa-do-codigo.md`, mescla sem sobrescrever (`CLAUDE.md`, `settings.json`); catálogo de ferramentas por linguagem para stacks fora dos perfis |
 | `gestao.py` | Orçamento, horas, exportação para Gemini/Copilot/Cursor |
 | `seguranca.py` | Regras da varredura estática e mascaramento de segredos |
 | `figma.py` | API REST do Figma: telas, IDs estáveis, preservação da coluna de casos de uso, imagens |
