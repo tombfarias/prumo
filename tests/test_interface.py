@@ -163,9 +163,18 @@ class TestServidorInterface(unittest.TestCase):
             urllib.request.urlopen(f"{self.base}/estatico/../servidor.py?t={self.estado.token}", timeout=30)
 
     def test_comandos_novos_permitidos(self):
-        r = self.post("/api/executar", {"args": ["agentes", "listar"], "projeto": str(self.p.raiz)})
-        self.assertTrue(any(i["tipo"] == "hook" for i in r["dados"]))
-        self.assertIn("config", servidor.PERMITIDOS)
+        # pela API sem rodar o subprocesso: ele gravaria o projeto de teste nos recentes reais do Prumo
+        self.assertTrue({"config", "agentes", "projetos"} <= servidor.PERMITIDOS)
+        r = self.post("/api/executar", {"args": ["hook", "x"]})
+        self.assertEqual(r["codigo"], 2)
+
+
+class TestAgentesListarCli(KitIsolado):
+    def test_listar_pela_cli(self):
+        p = criar(self.tmp)
+        codigo, itens = rodar("agentes", "listar", "--projeto", str(p.raiz))
+        self.assertEqual(codigo, 0)
+        self.assertTrue(any(i["tipo"] == "hook" and i["eventos"] for i in itens))
 
 
 class TestPaleta(unittest.TestCase):
