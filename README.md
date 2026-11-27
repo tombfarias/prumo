@@ -11,9 +11,10 @@ O nome vem do fio de prumo, a ferramenta que mantém a obra alinhada. No Prumo, 
 | | |
 |---|---|
 | **Perfis de projeto** | API REST, aplicação web full-stack, sistema de gestão, site institucional, automação/bot, app mobile e mínimo, cada um com documentos, stack sugerida e convenções próprias |
+| **Projetos existentes e stacks livres** | `prumo mapear` detecta a stack de um código que já existe e instala o kit sem sobrescrever nada; `--stack` reconhece Go, Rust, Elixir, Ruby, Java, .NET e outras e ajusta comandos e convenções |
 | **Especificação rastreável** | IDs `RF`, `RN`, `UC`, `TL`, `HU`, `CT`, `SEG`, `ADR`, `CM` ligados entre si e ao código; matriz de rastreabilidade gerada |
 | **UML completa e banco em Mermaid** | Os 14 diagramas da UML 2.5 (estruturais e comportamentais) e o diagrama ER, validados automaticamente |
-| **Kit de agentes** | Até 16 skills (do levantamento de requisitos à revisão de segurança), 4 subagentes e 7 hooks em cada projeto criado |
+| **Kit de agentes** | Até 18 skills (do levantamento de requisitos à revisão de segurança), 4 subagentes e 7 hooks em cada projeto criado |
 | **Guarda-corpos** | Hooks bloqueiam comandos destrutivos, acesso a `.env` e edição de documentos aprovados pelo cliente |
 | **Mudanças significativas** | Ao fim de uma mudança relevante, o Claude é obrigado a atualizar a documentação e procurar falhas de segurança |
 | **Economia de tokens** | `prumo contexto HU-003` carrega só a trilha necessária; regras e bloqueios de leitura evitam desperdício |

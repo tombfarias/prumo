@@ -36,7 +36,8 @@ Cria um projeto completo.
 |---|---|
 | `--perfil, -p` | `api-rest`, `web-fullstack` (padrão), `sistema-gestao`, `site-institucional`, `wordpress`, `automacao-bot`, `app-mobile`, `banco-de-dados`, `minimo` |
 | `--nome`, `--cliente`, `--autor` | Metadados usados nos documentos (autor padrão: `config/freelancer.json` ou `git config user.name`) |
-| `--stack` | Substitui a stack sugerida do perfil |
+| `--stack` | Substitui a stack sugerida do perfil. Linguagens fora dos perfis (Go, Rust, Elixir, Ruby, Java/Kotlin, .NET, Dart, Swift, C/C++, Deno, PHP) são reconhecidas no texto e trazem comandos sugeridos e convenções (catálogo `templates/catalogos/ferramentas.json`) |
+| `--comando USO=CMD` | Define direto um comando dos hooks (`formatar`, `lint`, `testar`; repetível). Ex.: `--comando testar="busted"`, `--comando formatar="stylua {arquivo}"` |
 | `--figma URL` | Ativa a integração com o Figma e registra o arquivo |
 | `--com-figma` / `--sem-figma` | Força ligar/desligar o Figma independentemente do perfil |
 | `--sem-git` | Não cria o repositório git |
@@ -44,6 +45,25 @@ Cria um projeto completo.
 | `--hooks-absolutos` | Caminho absoluto nos hooks em vez de `$CLAUDE_PROJECT_DIR` |
 | `--hooks-via python\|prumo` | Rodar hooks pelo Python ou pelo `prumo.exe` |
 | `--forcar` | Usa uma pasta que já tem arquivos |
+
+### `prumo mapear [PASTA]`
+Instala o Prumo num projeto **que já tem código**. Lê a pasta (sem executar nada), detecta linguagens, frameworks, gerenciador de pacotes, comandos de formatar/lint/testar, pastas de código e arquivos-chave, e:
+
+- grava `docs/00-mapa-do-codigo.md` (gerado; não edite) e `projeto.prumo.json` com os comandos já preenchidos;
+- cria os documentos do perfil, o kit do Claude e o `AGENTS.md` **só onde não existe nada**. `CLAUDE.md`, `AGENTS.md` e `.gitignore` do cliente ficam intactos e ganham só um bloco `<!-- prumo:inicio -->…<!-- prumo:fim -->` no fim (com `@CLAUDE.prumo.md`/`@AGENTS.prumo.md`); o `.claude/settings.json` existente é mesclado (permissões e hooks somados);
+- não cria git nem commit.
+
+Depois, `/mapear-projeto-existente` (ou `prumo claude mapear`) descreve o sistema como ele é hoje nos documentos, citando o arquivo de origem de cada item.
+
+| Opção | Descrição |
+|---|---|
+| `--simular` | Só mostra o que foi detectado, sem gravar nada |
+| `--atualizar` | Refaz o mapa num projeto já mapeado (preenche comandos que estiverem vazios) |
+| `--perfil`, `--stack`, `--comando USO=CMD` | Sobrepõem o que foi detectado |
+| `--nome`, `--cliente`, `--autor`, `--com-figma`, `--sem-figma`, `--python`, `--hooks-via` | Como em `prumo novo` |
+
+### `prumo ferramentas [--stack TEXTO]`
+Lista as ferramentas por linguagem. Com `--stack "Elixir + Phoenix"`, mostra o que o texto implica (ferramentas e comandos), sem criar nada.
 
 ### `prumo status`
 Documentos com lacunas e estado (em andamento, completo, aprovado, aprovado ALTERADO), contagem de IDs e o próximo documento a completar.
@@ -109,6 +129,7 @@ Horas por dia a partir de `.prumo/atividade.log`, que os hooks gravam a cada ped
 |---|---|---|
 | `especificar` | Todas as etapas de especificação do perfil, com validação entre elas | — |
 | `requisitos`, `casos-de-uso`, `uml`, `banco`, `arquitetura`, `backlog`, `testes`, `proposta` | Uma etapa | — |
+| `mapear` | Engenharia reversa de um projeto existente (skill `mapear-projeto-existente`) | — |
 | `implementar` | Implementa uma história (trilha injetada no prompt) | `HU-003` |
 | `revisar` | Revisão de conformidade (só leitura) | `HU-003` ou nada |
 | `documentar` | Atualiza a documentação após mudanças | opcional |

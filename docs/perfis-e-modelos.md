@@ -63,6 +63,21 @@ Documentos que o perfil não traz podem ser adicionados a qualquer momento: `pru
 - Lacunas: `[PREENCHER: dica]`. `prumo status` conta quantas restam por documento.
 - Exemplos dos modelos que citam IDs de documentos ausentes no perfil viram "—" na criação do projeto.
 
+## Tecnologia que nenhum perfil cobre
+
+Escolha o perfil pelo **tipo** de projeto (API, site, bot...) e descreva a tecnologia em `--stack`:
+
+```powershell
+prumo novo D:\Projetos\painel --perfil api-rest --stack "Elixir + Phoenix + PostgreSQL"
+prumo ferramentas --stack "Elixir + Phoenix"   # só para conferir antes
+```
+
+O Prumo procura a linguagem no texto (`templates/catalogos/ferramentas.json`: Node, Deno, Python, PHP, Go, Rust, Elixir, Ruby, Java/Kotlin com Maven ou Gradle, .NET, Dart/Flutter, Swift, C/C++), troca os `comandos_sugeridos` do perfil pelos dessa linguagem e acrescenta as convenções dela ao `AGENTS.md`. Linguagem fora do catálogo: informe os comandos com `--comando formatar="..." --comando lint="..." --comando testar="..."`. Se a mesma stack for se repetir em outros clientes, vale criar um perfil com `/criar-perfil`.
+
+## Projeto que já existe
+
+`prumo mapear PASTA` detecta a stack pelo código e instala o Prumo sem sobrescrever nada; a skill `mapear-projeto-existente` faz a engenharia reversa da especificação. Detalhes em [comandos](comandos.md#prumo-mapear-pasta) e no [fluxo de trabalho](fluxo-de-trabalho.md#projeto-que-já-existe).
+
 ## Criar perfis e modelos
 
 O próprio repositório do Prumo traz skills para isso (abra o Claude Code na pasta do Prumo):

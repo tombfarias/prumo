@@ -12,6 +12,7 @@ from prumo_comum import (
 GERADOS = {
     "docs/rastreabilidade.md": "prumo rastreabilidade",
     "docs/orcamento.md": "prumo orcamento",
+    "docs/00-mapa-do-codigo.md": "prumo mapear --atualizar",
 }
 EXEMPLOS_ENV = {".env.example", ".env.sample", ".env.template"}
 

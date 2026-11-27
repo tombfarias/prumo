@@ -11,7 +11,8 @@ Você conduz a especificação de `{{projeto}}` em etapas. Cada etapa tem uma sk
 
 1. Rode `{{prumo}} status` para ver quais documentos existem e quantas lacunas `[PREENCHER]` cada um tem.
 2. Leia `docs/00-briefing.md`. Se estiver vazio, peça ao usuário as anotações do cliente (e-mails, áudios transcritos, mensagens) e preencha o briefing primeiro, sem inventar nada.
-3. Leia `projeto.prumo.json` para saber quais documentos fazem parte deste perfil. Pule as etapas cujos documentos não existem.
+3. Se `projeto.prumo.json` tiver `"existente": true`, o código já existia: rode antes a skill `mapear-projeto-existente` (os documentos descrevem o que existe) e use o fluxo abaixo só para o trabalho novo.
+4. Leia `projeto.prumo.json` para saber quais documentos fazem parte deste perfil. Pule as etapas cujos documentos não existem.
 
 ## Etapas
 

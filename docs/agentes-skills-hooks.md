@@ -18,6 +18,7 @@ CLAUDE.md                 @AGENTS.md + específicos do Claude Code
 
 | Skill | Quando |
 |---|---|
+| `mapear-projeto-existente` | Engenharia reversa: descreve em `docs/` o sistema que já existe, citando o arquivo de origem (depois de `prumo mapear`) |
 | `especificar-projeto` | Conduz a especificação completa, etapa por etapa, com pausa para revisão |
 | `levantar-requisitos` | Briefing → visão e requisitos (RF, RNF, RN), perguntas ao cliente |
 | `especificar-casos-de-uso` | Atores, diagrama e especificação dos casos de uso |

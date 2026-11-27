@@ -7,7 +7,7 @@ import runpy
 import sys
 from pathlib import Path
 
-from . import claude, figma, formulario, gestao, projeto as mod_projeto, rastreio, seguranca, validacao
+from . import claude, figma, mapear, formulario, gestao, projeto as mod_projeto, rastreio, seguranca, validacao
 from .util import (
     CONGELADO, RAIZ_KIT, VERSAO, ErroPrumo, configurar_console, formatar_horas, formatar_moeda, info,
     config_freelancer, ler, ler_json, gravar_json, tabela_console, agora_iso,
@@ -64,18 +64,73 @@ def cmd_perfis(args):
     saida(perfis, "\n".join(f"{p['id']:<20} {p['nome']}\n{'':<20} {p['descricao']}\n{'':<20} stack: {p['stack']}\n" for p in perfis))
 
 
+def _comandos_args(lista):
+    """--comando formatar="..." (repetível) -> dict."""
+    saida = {}
+    for item in lista or []:
+        chave, sep, valor = item.partition("=")
+        if not sep or chave.strip() not in ("formatar", "lint", "testar"):
+            raise ErroPrumo(f"Use --comando formatar=\"...\", lint=\"...\" ou testar=\"...\" (recebido: {item}).")
+        saida[chave.strip()] = valor.strip()
+    return saida
+
+
 def cmd_novo(args):
     figma_flag = True if args.com_figma else (False if args.sem_figma else None)
     p = mod_projeto.criar_projeto(
         args.pasta, args.perfil, nome=args.nome, cliente=args.cliente, stack=args.stack, autor=args.autor,
         figma=figma_flag, figma_url=args.figma or "", git=not args.sem_git, python=args.python,
         hooks_absolutos=args.hooks_absolutos, hooks_via=args.hooks_via, forcar=args.forcar,
+        comandos=_comandos_args(args.comando),
     )
     registrar_recente(p)
     if JSON:
         saida({"caminho": str(p.raiz), "config": p.config})
     else:
         mod_projeto.instrucoes_iniciais(p)
+
+
+def cmd_ferramentas(args):
+    if args.stack:
+        ids = mapear.ferramentas_da_stack(" ".join(args.stack))
+        cmds = mapear.comandos_das_ferramentas(ids)
+        saida({"ferramentas": ids, "comandos": cmds},
+              ("Ferramentas: " + (", ".join(ids) or "nenhuma reconhecida (defina os comandos com --comando)") + "\n"
+               + "\n".join(f"  {k:<9} {v or '—'}" for k, v in cmds.items())))
+        return
+    itens = mapear._ferramentas()
+    saida(itens, "\n".join(f"{f['id']:<12} {f['nome']}  (" + ", ".join(f.get("marcadores", [])) + ")" for f in itens))
+
+
+def cmd_mapear(args):
+    pasta = args.pasta or (args.projeto if getattr(args, "projeto", None) else ".")
+    if args.simular:
+        det = mapear.detectar(pasta)
+        saida(det, mapear.texto_mapa(det))
+        return
+    if args.atualizar:
+        p, det = mapear.atualizar_mapa(mod_projeto.Projeto.localizar(pasta))
+        saida({"caminho": str(p.raiz), "deteccao": det}, f"Mapa atualizado: {p.raiz / mapear.MAPA}")
+        return
+    figma_flag = True if args.com_figma else (False if args.sem_figma else None)
+    p, det = mapear.mapear_projeto(pasta, perfil_id=args.perfil, nome=args.nome, cliente=args.cliente,
+                                   stack=args.stack, autor=args.autor, comandos=_comandos_args(args.comando),
+                                   python=args.python, hooks_via=args.hooks_via, figma=figma_flag)
+    registrar_recente(p)
+    pulados = getattr(p, "pulados", [])
+    if JSON:
+        saida({"caminho": str(p.raiz), "deteccao": det, "preservados": pulados, "config": p.config})
+        return
+    pr = mod_projeto.comando_prumo(p.config.get("python"))
+    linhas = [f"Prumo instalado no projeto existente {p.raiz}", "",
+              f"Stack detectada: {det['stack']}", f"Perfil: {p.config['perfil']}",
+              "Comandos dos hooks: " + (", ".join(f"{k}={v}" for k, v in p.config["comandos"].items() if v) or "nenhum detectado"),
+              f"Mapa do código: {mapear.MAPA}"]
+    if pulados:
+        linhas.append("Arquivos que já existiam e foram preservados: " + ", ".join(pulados))
+    linhas += ["", "Próximo passo: abra o Claude Code na pasta e rode /mapear-projeto-existente",
+               f"  (ou {pr} claude mapear) para descrever o sistema como ele é hoje em docs/."]
+    info("\n".join(linhas))
 
 
 def cmd_status(args):
@@ -528,6 +583,24 @@ def montar_parser():
     s.add_argument("--hooks-absolutos", action="store_true", help="caminhos absolutos nos hooks em vez de $CLAUDE_PROJECT_DIR")
     s.add_argument("--hooks-via", choices=["python", "prumo"], help="executar hooks pelo Python ou pelo prumo.exe")
     s.add_argument("--forcar", action="store_true")
+    s.add_argument("--comando", action="append", metavar="USO=CMD",
+                   help='comando dos hooks para stack fora dos perfis: formatar="mix format {arquivo}", lint=..., testar=...')
+    s = novo("mapear", cmd_mapear, "instala o Prumo num projeto que já existe: detecta a stack e não sobrescreve nada")
+    s.add_argument("pasta", nargs="?", help="pasta do projeto (padrão: a atual)")
+    s.add_argument("--perfil", "-p", help="padrão: sugerido pela detecção")
+    s.add_argument("--nome")
+    s.add_argument("--cliente", default="")
+    s.add_argument("--stack", help="padrão: a detectada")
+    s.add_argument("--autor")
+    s.add_argument("--comando", action="append", metavar="USO=CMD", help="sobrepõe um comando detectado")
+    s.add_argument("--com-figma", action="store_true")
+    s.add_argument("--sem-figma", action="store_true")
+    s.add_argument("--python")
+    s.add_argument("--hooks-via", choices=["python", "prumo"])
+    s.add_argument("--simular", action="store_true", help="só mostra o que foi detectado, sem gravar nada")
+    s.add_argument("--atualizar", action="store_true", help="refaz docs/00-mapa-do-codigo.md num projeto já mapeado")
+    s = novo("ferramentas", cmd_ferramentas, "ferramentas por linguagem (stacks fora dos perfis)")
+    s.add_argument("--stack", nargs="+", help="texto da stack: mostra as ferramentas e os comandos que ela implica")
     novo("status", cmd_status, "resumo dos documentos, lacunas e IDs")
     s = novo("validar", cmd_validar, "verifica lacunas, Mermaid, IDs e documentos aprovados")
     s.add_argument("--estrito", action="store_true", help="avisos também contam como erro")

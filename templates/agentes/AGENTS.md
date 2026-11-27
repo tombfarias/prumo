@@ -21,6 +21,7 @@
 4. **Documentos aprovados são somente leitura** (lista em `projeto.prumo.json` → `aprovados`). Pedidos de alteração viram um registro de mudança: `{{prumo}} mudanca "título"`.
 5. **Não invente requisitos.** Dúvidas sobre o negócio viram perguntas na seção 9 de `docs/00-briefing.md`.
 6. Trechos `[PREENCHER: ...]` são lacunas. Ao preencher um documento, substitua todas ou deixe explícito por que ficaram em aberto.
+{{projeto_existente}}
 
 ## Situações adversas (o que fazer sem improvisar)
 
