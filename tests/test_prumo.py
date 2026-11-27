@@ -202,6 +202,8 @@ class TestMapear(unittest.TestCase):
             self.assertIn("@CLAUDE.prumo.md", claude_md)
             self.assertIn("@AGENTS.md", ler(raiz / "CLAUDE.prumo.md"))
             self.assertIn("mapear-projeto-existente", ler(raiz / "AGENTS.md"))
+            self.assertNotRegex(ler(raiz / "AGENTS.md"), r"\{\{\w+\}\}|\{prumo\}|\{mapa\}")
+            self.assertEqual([k["nome"] for k in p.listar_kit() if k["estado"] != "igual ao kit"], ["settings.json"])  # mesclado com o do cliente
             settings = json.loads(ler(raiz / ".claude" / "settings.json"))
             self.assertIn("Bash(pnpm dev)", settings["permissions"]["allow"])
             self.assertIn("PreToolUse", settings["hooks"])

@@ -489,9 +489,9 @@ def mesclar_settings(caminho, gerado):
 
 BLOCO_AGENTES = """## Projeto existente (mapeado pelo Prumo)
 
-- O código já existia quando o Prumo foi instalado. O mapa da stack, dos comandos e dos arquivos-chave está em `{mapa}`.
-- Primeiro passo: `/mapear-projeto-existente` (ou `{prumo} claude mapear`) para descrever em `docs/` o sistema **como ele é hoje**, citando o arquivo de onde cada item saiu.
-- Até a especificação estar revisada, **não altere código**. Depois, pedidos novos do cliente viram histórias (HU) ou registros de mudança (`{prumo} mudanca "título"`).
+- O código já existia quando o Prumo foi instalado. O mapa da stack, dos comandos e dos arquivos-chave está em `{{mapa}}`.
+- Primeiro passo: `/mapear-projeto-existente` (ou `{{prumo}} claude mapear`) para descrever em `docs/` o sistema **como ele é hoje**, citando o arquivo de onde cada item saiu.
+- Até a especificação estar revisada, **não altere código**. Depois, pedidos novos do cliente viram histórias (HU) ou registros de mudança (`{{prumo}} mudanca "título"`).
 - Siga as convenções que o código já usa (nomes, pastas, estilo, bibliotecas), mesmo que a stack do perfil sugira outra.
 """
 

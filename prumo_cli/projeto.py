@@ -135,6 +135,7 @@ class Projeto:
             "prumo": comando_prumo(python),
             "url_prumo": URL_PRUMO,
         }
+        ctx["projeto_existente"] = ("\n" + renderizar(mapear.BLOCO_AGENTES, dict(ctx, mapa=mapear.MAPA))) if c.get("existente") else ""
         ctx["lista_documentos"] = _lista_documentos(c.get("documentos") or [])
         ctx["lista_skills"] = _lista_skills(figma)
         ctx["convencoes"] = renderizar(ler(TEMPLATES / "perfis" / "convencoes" / perfil["convencoes"]), ctx).strip()
@@ -257,8 +258,10 @@ class Projeto:
                 if rel not in modelos:
                     nome = arq.parent.name if tipo == "skill" else arq.stem
                     item(tipo, nome, rel, None)
-        item("instruções", "CLAUDE.md", "CLAUDE.md", renderizar(ler(base / "CLAUDE.md"), ctx), "Instruções que o Claude Code lê em toda sessão")
-        item("instruções", "AGENTS.md", "AGENTS.md", renderizar(ler(base / "AGENTS.md"), ctx), "Regras do projeto para qualquer agente de IA")
+        # num projeto mapeado, se o cliente já tinha CLAUDE.md/AGENTS.md, a versão do Prumo fica em *.prumo.md
+        lado = lambda nome: nome.replace(".md", ".prumo.md") if (self.raiz / nome.replace(".md", ".prumo.md")).exists() else nome
+        item("instruções", lado("CLAUDE.md"), lado("CLAUDE.md"), renderizar(ler(base / "CLAUDE.md"), ctx), "Instruções que o Claude Code lê em toda sessão")
+        item("instruções", lado("AGENTS.md"), lado("AGENTS.md"), renderizar(ler(base / "AGENTS.md"), ctx), "Regras do projeto para qualquer agente de IA")
         item("configuração", "settings.json", ".claude/settings.json", self.settings_claude(), "Permissões e ligação dos hooks aos eventos do Claude Code")
         return itens
 
@@ -378,7 +381,6 @@ def criar_projeto(destino, perfil_id, nome=None, cliente="", stack=None, autor=N
     base = TEMPLATES / "agentes"
     agentes = renderizar(ler(base / "AGENTS.md"), ctx)
     if existente:
-        agentes = agentes.rstrip("\n") + "\n\n" + renderizar(mapear.BLOCO_AGENTES, dict(ctx, mapa=mapear.MAPA))
         for arq, texto in (("AGENTS.md", agentes), ("CLAUDE.md", renderizar(ler(base / "CLAUDE.md"), ctx))):
             if novo_arquivo(arq, texto):
                 continue

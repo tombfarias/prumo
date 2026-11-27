@@ -21,7 +21,7 @@
 4. **Documentos aprovados são somente leitura** (lista em `projeto.prumo.json` → `aprovados`). Pedidos de alteração viram um registro de mudança: `{{prumo}} mudanca "título"`.
 5. **Não invente requisitos.** Dúvidas sobre o negócio viram perguntas na seção 9 de `docs/00-briefing.md`.
 6. Trechos `[PREENCHER: ...]` são lacunas. Ao preencher um documento, substitua todas ou deixe explícito por que ficaram em aberto.
-
+{{projeto_existente}}
 ## Depois de toda mudança significativa
 
 Mudança significativa = 3 ou mais arquivos de código, 80 ou mais linhas, ou qualquer alteração em autenticação/autorização, banco de dados (migrações, models), rotas/API, dependências, infraestrutura (Docker, CI/CD), configuração ou dados sensíveis. Ao concluir uma mudança assim, **antes de encerrar**:
