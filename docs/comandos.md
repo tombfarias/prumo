@@ -151,6 +151,8 @@ Horas por dia a partir de `.prumo/atividade.log`, que os hooks gravam a cada ped
 | `--de`, `--ate`, `--sem-pausa` | Na especificação: intervalo de etapas e sem perguntas entre elas |
 | `--sessoes grupos\|unica\|etapa` | Na especificação: 3 sessões (análise, solução, planejamento; padrão), uma sessão só ou uma por etapa. Também em `projeto.prumo.json` → `claude.sessoes_especificacao` |
 
+Cada execução fica em `.prumo/claude/` (log e `historico.jsonl`). Se o Claude Code não estiver no PATH ou não tiver login, o Prumo diz como resolver. Ctrl+C (ou **Parar** na interface) encerra o Claude e os processos dele, e a execução fica no histórico como `interrompido`.
+
 Detalhes em [PowerShell e Claude](powershell-e-claude.md).
 
 ## Figma

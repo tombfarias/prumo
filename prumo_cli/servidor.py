@@ -47,6 +47,12 @@ def _flags_sem_janela():
     return {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
 
 
+def _flags_tarefa():
+    if os.name == "nt":
+        return _flags_sem_janela()
+    return {"start_new_session": True}  # grupo próprio: parar encerra também os filhos
+
+
 class Tarefa:
     def __init__(self, args, cwd):
         self.linhas = []
@@ -54,14 +60,20 @@ class Tarefa:
         self.codigo = None
         self.inicio = time.time()
         self.proc = subprocess.Popen(comando_base() + args, cwd=cwd, stdin=subprocess.DEVNULL,
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=_env(), **_flags_sem_janela())
+                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=_env(), **_flags_tarefa())
         threading.Thread(target=self._ler, daemon=True).start()
 
     def _ler(self):
-        for bruto in self.proc.stdout:
-            self.linhas.append(bruto.decode("utf-8", "replace").rstrip("\r\n"))
-        self.codigo = self.proc.wait()
+        with self.proc:  # fecha o pipe e espera o processo
+            for bruto in self.proc.stdout:
+                self.linhas.append(bruto.decode("utf-8", "replace").rstrip("\r\n"))
+        self.codigo = self.proc.returncode
         self.fim = True
+
+    def parar(self):
+        """Encerra o Prumo e o Claude Code que ele abriu (no Windows, terminate() deixaria o Claude órfão)."""
+        from .claude import encerrar_arvore
+        encerrar_arvore(self.proc)
 
 
 class Estado:
@@ -188,7 +200,7 @@ def criar_handler(estado):
                 if rota.startswith("/api/tarefas/") and rota.endswith("/parar"):
                     tarefa = estado.tarefas.get(rota.split("/")[3])
                     if tarefa and not tarefa.fim:
-                        tarefa.proc.terminate()
+                        tarefa.parar()
                     return self._responder(200, {"ok": True})
                 if rota == "/api/ler":
                     return self._responder(200, ler_arquivo(corpo))
